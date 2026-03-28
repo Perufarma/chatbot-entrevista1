@@ -123,12 +123,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script>
 const TOTAL_Q = 6;
 let jobs = [], selectedJobId = null, chatHistory = [], candName = '', qNum = 0, busy = false;
-const apiKey = localStorage.getItem('rapikey') || '';
+// API key is handled server-side via /api/chat
 
 // Load jobs from recruiter's localStorage via shared origin
-function loadJobs() {
-  jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
+async function loadJobs() {
   const list = document.getElementById('jobList');
+  list.innerHTML = '<div class="no-jobs">Cargando puestos...</div>';
+  try {
+    // Try server first
+    const res = await fetch('/api/jobs');
+    const data = await res.json();
+    if (data.jobs && data.jobs.length) {
+      jobs = data.jobs;
+    } else {
+      // Fallback to localStorage (same device)
+      jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
+    }
+  } catch {
+    jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
+  }
   if (!jobs.length) {
     list.innerHTML = '<div class="no-jobs">No hay puestos disponibles en este momento. Contacta al reclutador.</div>';
     return;
@@ -150,7 +163,7 @@ async function startInterview() {
   candName = document.getElementById('candNombre').value.trim();
   if (!candName) { alert('Por favor ingresa tu nombre'); return; }
   if (!selectedJobId) { alert('Selecciona el puesto al que aplicas'); return; }
-  if (!apiKey) { alert('El sistema no está configurado aún. Contacta al reclutador.'); return; }
+
   const job = jobs.find(j => j.id === selectedJobId);
   document.getElementById('setupPanel').style.display = 'none';
   const cp = document.getElementById('chatPanel');
