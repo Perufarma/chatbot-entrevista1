@@ -49,6 +49,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .msg.user .bubble{background:var(--accent2);color:white;border-radius:14px 14px 4px 14px;}
 .msg-time{font-size:10px;color:var(--muted);padding:0 2px;}
 .msg.user .msg-time{text-align:right;}
+.msg.bot .bubble p{margin:0 0 6px 0;}
+.msg.bot .bubble p:last-child{margin-bottom:0;}
+.msg.bot .bubble strong{font-weight:500;color:var(--text);}
+.msg.bot .bubble em{font-style:italic;color:var(--muted);}
+.msg.bot .bubble br{display:block;margin:2px 0;}
 .typing{display:flex;align-items:center;gap:4px;padding:10px 14px;background:var(--surface);border:0.5px solid var(--border);border-radius:4px 14px 14px 14px;align-self:flex-start;}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite;}
 .dot:nth-child(2){animation-delay:.2s;}
@@ -205,12 +210,27 @@ async function callClaude(job, msgs) {
   } catch { return 'Error de conexión. Intenta de nuevo.'; }
 }
 
+function parseMarkdown(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/
+
+/g, '</p><p>')
+    .replace(/
+/g, '<br>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>')
+    .replace(/<p><\/p>/g, '');
+}
+
 function addMsg(role, text) {
   const box = document.getElementById('messages');
   const t = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
   const d = document.createElement('div');
   d.className = 'msg '+role;
-  d.innerHTML = `<div class="bubble">${text}</div><div class="msg-time">${t}</div>`;
+  const content = role === 'bot' ? parseMarkdown(text) : text;
+  d.innerHTML = `<div class="bubble">${content}</div><div class="msg-time">${t}</div>`;
   box.appendChild(d); box.scrollTop = box.scrollHeight;
 }
 function showTyping() {
