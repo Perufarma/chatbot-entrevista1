@@ -68,6 +68,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="nav-logo">Recruit<span>AI</span></div>
   <button class="nav-tab active" onclick="showTab('puestos',this)">Puestos</button>
   <button class="nav-tab" onclick="showTab('resultados',this);renderResultados()">Resultados</button>
+  <button class="nav-tab" onclick="showTab('candidatos',this)">Candidatos</button>
   <button class="nav-tab" onclick="showTab('config',this)">Configuración</button>
 </nav>
 
@@ -96,6 +97,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="form-group"><label>Experiencia requerida</label><input type="text" id="f_exp" placeholder="Ej: 1+ año en almacén"></div>
       <div class="form-group"><label>Habilidades clave (separadas por coma)</label><input type="text" id="f_skills" placeholder="Ej: picking, inventario, Excel"></div>
     </div>
+    <div class="form-group"><label>Instrucciones para el entrevistador IA</label><textarea id="f_instrucciones" placeholder="Ej: Enfócate en experiencia práctica en almacén. Pregunta sobre manejo de montacargas. Descarta candidatos sin experiencia mínima de 1 año. Evalúa disponibilidad para turno noche..." style="height:80px;"></textarea></div>
+    <div style="font-size:12px;color:var(--muted);background:#fef8ee;border:0.5px solid #f0d090;border-radius:8px;padding:10px 12px;line-height:1.5;">
+      <strong style="color:#7a5000;">Tip:</strong> Escribe en lenguaje natural. Claude seguirá estas instrucciones al generar y evaluar las preguntas.
+    </div>
     <div style="display:flex;gap:8px;">
       <button class="btn btn-primary" onclick="saveJob()">Guardar puesto</button>
       <button class="btn btn-secondary" onclick="toggleForm()">Cancelar</button>
@@ -115,6 +120,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
   <div id="resultsPanel"></div>
+</div>
+
+<!-- CANDIDATOS -->
+<div class="panel" id="tab-candidatos">
+  <div style="margin-bottom:24px;"><div class="section-title">Envío a candidatos</div><div class="section-sub">Ingresa los datos de tus candidatos y genera los mensajes listos para enviar</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:13px;font-weight:500;">Lista de candidatos</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">Un candidato por línea. Puedes ingresar nombre, email y/o teléfono separados por coma.</div>
+        <textarea id="candidatosList" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);resize:vertical;height:180px;width:100%;outline:none;line-height:1.6;" placeholder="Juan Pérez, juan@email.com, 999888777&#10;María Torres, maria@email.com, 988777666&#10;Carlos Silva, carlos@email.com"></textarea>
+        <div style="font-size:11px;color:var(--muted);">Formato: Nombre, email, teléfono (los campos que tengas)</div>
+        <div class="form-group" style="margin-top:4px;">
+          <label>Puesto al que aplican</label>
+          <select id="candidatosPuesto" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%;">
+            <option value="">Selecciona un puesto...</option>
+          </select>
+        </div>
+        <button class="btn btn-accent" onclick="generarMensajes()">Generar mensajes →</button>
+      </div>
+    </div>
+    <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:12px;"></div>
+  </div>
 </div>
 
 <!-- CONFIG -->
@@ -147,6 +175,7 @@ if (apiKey) { document.getElementById('apiKeyInput').value = apiKey; updateKeySt
 renderJobs();
 
 function showTab(id, btn) {
+  if (id === 'candidatos') renderPuestosSelect();
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
@@ -168,14 +197,14 @@ function updateKeyStatus() {
 function toggleForm() {
   const f = document.getElementById('addJobForm');
   f.classList.toggle('open');
-  if (f.classList.contains('open')) ['f_titulo','f_area','f_desc','f_exp','f_skills'].forEach(id => document.getElementById(id).value = '');
+  if (f.classList.contains('open')) ['f_titulo','f_area','f_desc','f_exp','f_skills','f_instrucciones'].forEach(id => document.getElementById(id).value = '');
 }
 
 function saveJob() {
   const titulo = document.getElementById('f_titulo').value.trim();
   const desc = document.getElementById('f_desc').value.trim();
   if (!titulo || !desc) { toast('Completa nombre y descripción'); return; }
-  jobs.push({ id: Date.now(), titulo, area: document.getElementById('f_area').value.trim(), desc, exp: document.getElementById('f_exp').value.trim(), skills: document.getElementById('f_skills').value.trim() });
+  jobs.push({ id: Date.now(), titulo, area: document.getElementById('f_area').value.trim(), desc, exp: document.getElementById('f_exp').value.trim(), skills: document.getElementById('f_skills').value.trim(), instrucciones: document.getElementById('f_instrucciones').value.trim() });
   localStorage.setItem('rjobs', JSON.stringify(jobs));
   renderJobs();
   toggleForm();
@@ -202,6 +231,7 @@ function renderJobs() {
         <div class="active-dot"></div>
       </div>
       <div class="job-card-body">${j.desc.substring(0,100)}${j.desc.length>100?'…':''}</div>
+      ${j.instrucciones?`<div style="font-size:11px;color:#7a5000;background:#fef8ee;border-radius:6px;padding:5px 8px;line-height:1.4;">Instrucciones: ${j.instrucciones.substring(0,80)}${j.instrucciones.length>80?'…':''}</div>`:''}
       <div style="display:flex;flex-wrap:wrap;gap:4px;">${j.skills?j.skills.split(',').slice(0,3).map(s=>`<span class="job-tag">${s.trim()}</span>`).join(''):''}${j.exp?`<span class="job-tag">${j.exp}</span>`:''}</div>
       <button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})">Eliminar</button>
     </div>`).join('');
@@ -264,6 +294,48 @@ function clearResults() {
 
 function copyLink() {
   navigator.clipboard.writeText(candidateUrl).then(() => toast('Link copiado'));
+}
+
+function renderPuestosSelect() {
+  const sel = document.getElementById('candidatosPuesto');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Selecciona un puesto...</option>' + jobs.map(j => `<option value="${j.id}">${j.titulo}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+function generarMensajes() {
+  const raw = document.getElementById('candidatosList').value.trim();
+  const jobId = parseInt(document.getElementById('candidatosPuesto').value);
+  if (!raw) { toast('Ingresa al menos un candidato'); return; }
+  if (!jobId) { toast('Selecciona un puesto'); return; }
+  const job = jobs.find(j => j.id === jobId);
+  const candidateUrl = window.location.origin + '/candidato.html';
+  const lines = raw.split('\n').filter(l => l.trim());
+  const candidatos = lines.map(l => {
+    const parts = l.split(',').map(p => p.trim());
+    return { nombre: parts[0]||'', email: parts[1]||'', tel: parts[2]||'' };
+  });
+  const panel = document.getElementById('mensajesPanel');
+  let html = `<div style="font-size:13px;font-weight:500;margin-bottom:4px;">${candidatos.length} mensaje${candidatos.length!==1?'s':''} generado${candidatos.length!==1?'s':''}</div>`;
+  candidatos.forEach(c => {
+    const msgWA = encodeURIComponent(`Hola ${c.nombre}, te contactamos de parte de nuestro equipo de Reclutamiento.\n\nTe invitamos a completar tu entrevista virtual para el puesto de *${job.titulo}*. El proceso toma aproximadamente 10 minutos y puedes hacerlo desde tu celular.\n\n🔗 Ingresa aquí: ${candidateUrl}\n\nCualquier consulta estamos a tu disposición. ¡Mucho éxito!`);
+    const msgEmail = `Estimado/a ${c.nombre},\n\nTe contactamos para invitarte a completar tu entrevista virtual para el puesto de ${job.titulo}.\n\nEl proceso es sencillo, toma aproximadamente 10 minutos y puedes realizarlo desde cualquier dispositivo.\n\nAccede aquí: ${candidateUrl}\n\nQuedamos atentos a cualquier consulta.\n\nSaludos,\nEquipo de Reclutamiento`;
+    const waLink = c.tel ? `https://wa.me/51${c.tel.replace(/\D/g,'')}?text=${msgWA}` : '';
+    const emailLink = c.email ? `mailto:${c.email}?subject=${encodeURIComponent('Invitación a entrevista — '+job.titulo)}&body=${encodeURIComponent(msgEmail)}` : '';
+    html += `<div class="card" style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:500;">${c.nombre}</div>
+        <div style="display:flex;gap:6px;">
+          ${waLink ? `<a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;border:none;text-decoration:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;">WhatsApp</a>` : ''}
+          ${emailLink ? `<a href="${emailLink}" class="btn btn-sm" style="background:#1a73e8;color:white;border:none;text-decoration:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;">Email</a>` : ''}
+        </div>
+      </div>
+      ${c.tel ? `<div style="font-size:11px;color:var(--muted);">Tel: ${c.tel}</div>` : ''}
+      ${c.email ? `<div style="font-size:11px;color:var(--muted);">Email: ${c.email}</div>` : ''}
+    </div>`;
+  });
+  panel.innerHTML = html;
 }
 
 function toast(msg) {

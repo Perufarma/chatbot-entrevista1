@@ -180,8 +180,9 @@ INFORMACIÓN DEL PUESTO:
 ${job.desc}
 ${job.exp?'Experiencia requerida: '+job.exp:''}
 ${job.skills?'Habilidades clave: '+job.skills:''}
+${job.instrucciones?'\nINSTRUCCIONES ESPECÍFICAS DEL RECLUTADOR (síguelas con prioridad):\n'+job.instrucciones:''}
 
-INSTRUCCIONES:
+REGLAS DE CONDUCCIÓN:
 - Haz exactamente ${TOTAL_Q} preguntas en total, UNA por turno.
 - Genera preguntas específicas para este puesto. NO hagas preguntas genéricas.
 - Mezcla: técnicas, comportamentales, situacionales y de motivación.
