@@ -191,10 +191,34 @@ function updateKeyStatus() {
   el.style.color = apiKey ? '#2d7a4f' : '#c0392b';
 }
 
+let editingJobId = null;
+
 function toggleForm() {
+  editingJobId = null;
   const f = document.getElementById('addJobForm');
   f.classList.toggle('open');
-  if (f.classList.contains('open')) ['f_titulo','f_area','f_desc','f_exp','f_skills','f_instrucciones'].forEach(id => document.getElementById(id).value = '');
+  if (f.classList.contains('open')) {
+    ['f_titulo','f_area','f_desc','f_exp','f_skills','f_instrucciones'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('formTitle').textContent = 'Nuevo puesto';
+    document.getElementById('saveJobBtn').textContent = 'Guardar puesto';
+  }
+}
+
+function editJob(id) {
+  const job = jobs.find(j => j.id === id);
+  if (!job) return;
+  editingJobId = id;
+  const f = document.getElementById('addJobForm');
+  f.classList.add('open');
+  document.getElementById('f_titulo').value = job.titulo || '';
+  document.getElementById('f_area').value = job.area || '';
+  document.getElementById('f_desc').value = job.desc || '';
+  document.getElementById('f_exp').value = job.exp || '';
+  document.getElementById('f_skills').value = job.skills || '';
+  document.getElementById('f_instrucciones').value = job.instrucciones || '';
+  document.getElementById('formTitle').textContent = 'Editar puesto';
+  document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
+  f.scrollIntoView({behavior: 'smooth'});
 }
 
 function saveJob() {
