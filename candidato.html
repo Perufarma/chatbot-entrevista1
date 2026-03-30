@@ -120,8 +120,7 @@ function formatText(text) {
 }
 
 async function loadJobs() {
-  var list = document.getElementById('jobList');
-  list.innerHTML = '<div class="no-jobs">Cargando puestos...</div>';
+  var sel = document.getElementById('jobSelect');
   try {
     var res = await fetch('/api/jobs');
     var data = await res.json();
@@ -129,7 +128,6 @@ async function loadJobs() {
   } catch(e) {
     jobs = [];
   }
-  var sel = document.getElementById('jobSelect');
   if (!jobs.length) {
     sel.innerHTML = '<option value="">No hay puestos disponibles. Contacta al reclutador.</option>';
     return;
