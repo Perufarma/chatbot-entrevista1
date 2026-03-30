@@ -147,12 +147,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script>
 // ── State ──
 let jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
-let apiKey = localStorage.getItem('rapikey') || '';
 
 // ── Init ──
 const candidateUrl = window.location.origin + '/candidato.html';
 document.getElementById('shareUrl').textContent = candidateUrl;
-if (apiKey) { document.getElementById('apiKeyInput').value = apiKey; updateKeyStatus(); }
 renderJobs();
 
 // Load from server and sync
@@ -179,17 +177,7 @@ function showTab(id, btn) {
   btn.classList.add('active');
 }
 
-function saveKey() {
-  apiKey = document.getElementById('apiKeyInput').value.trim();
-  localStorage.setItem('rapikey', apiKey);
-  updateKeyStatus();
-  toast('API key guardada');
-}
-function updateKeyStatus() {
-  const el = document.getElementById('keyStatus');
-  el.textContent = apiKey ? '✓ API key configurada' : 'Sin configurar';
-  el.style.color = apiKey ? '#2d7a4f' : '#c0392b';
-}
+
 
 let editingJobId = null;
 
