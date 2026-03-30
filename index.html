@@ -303,11 +303,43 @@ async function renderResultados() {
 function exportCSV() {
   const results = getResults();
   if (!results.length) { toast('No hay resultados'); return; }
-  const h = ['Fecha','Hora','Candidato','Puesto','Área','Puntaje','Nivel','Recomendación','Comunicación','Técnico','Experiencia','Motivación','Fortalezas','Áreas de mejora','Resumen'];
-  const rows = results.map(r => [r.fecha,r.hora,r.candidato,r.puesto,r.area||'',r.puntaje,r.nivel,r.recomendacion,r.comunicacion,r.conocimiento,r.experiencia,r.motivacion,`"${(r.fortalezas||'').replace(/"/g,'""')}"`,`"${(r.areas_mejora||'').replace(/"/g,'""')}"`,`"${(r.resumen||'').replace(/"/g,'""')}"`].join(','));
-  const csv = [h.join(','),...rows].join('\n');
+
+  function esc(val) {
+    const s = (val === null || val === undefined) ? '' : String(val);
+    return '"' + s.replace(/"/g, '""').replace(/
+/g, ' ').replace(/
+/g, '') + '"';
+  }
+
+  const headers = [
+    'Fecha', 'Hora', 'Candidato', 'Puesto', 'Área',
+    'Puntaje General', 'Nivel', 'Recomendación',
+    'Comunicación', 'Conocimiento Técnico', 'Experiencia Relevante', 'Motivación y Fit',
+    'Fortalezas', 'Áreas de Mejora', 'Resumen'
+  ];
+
+  const rows = results.map(r => [
+    esc(r.fecha),
+    esc(r.hora),
+    esc(r.candidato),
+    esc(r.puesto),
+    esc(r.area),
+    esc(r.puntaje),
+    esc(r.nivel),
+    esc(r.recomendacion),
+    esc(r.comunicacion),
+    esc(r.conocimiento),
+    esc(r.experiencia),
+    esc(r.motivacion),
+    esc(r.fortalezas),
+    esc(r.areas_mejora),
+    esc(r.resumen)
+  ].join(';'));
+
+  const csv = [headers.map(h => esc(h)).join(';'), ...rows].join('
+');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'}));
   a.download = 'resultados-'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
   toast('Descargando...');
