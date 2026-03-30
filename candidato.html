@@ -31,7 +31,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .job-dept{font-size:12px;color:var(--muted);margin-top:1px;}
 .btn-start{padding:12px 24px;background:var(--accent2);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;border:none;border-radius:10px;cursor:pointer;width:100%;transition:opacity 0.15s;}
 .btn-start:hover{opacity:0.88;}
-/* Chat */
 .chat{display:none;flex-direction:column;}
 .chat-header{padding:14px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
 .chat-h-name{font-size:13px;font-weight:500;}
@@ -46,14 +45,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .msg.user{align-self:flex-end;}
 .bubble{padding:10px 14px;font-size:13px;line-height:1.6;border-radius:14px;}
 .msg.bot .bubble{background:var(--surface);border:0.5px solid var(--border);border-radius:4px 14px 14px 14px;}
+.msg.bot .bubble p{margin:0 0 6px 0;}
+.msg.bot .bubble p:last-child{margin-bottom:0;}
+.msg.bot .bubble strong{font-weight:500;}
 .msg.user .bubble{background:var(--accent2);color:white;border-radius:14px 14px 4px 14px;}
 .msg-time{font-size:10px;color:var(--muted);padding:0 2px;}
 .msg.user .msg-time{text-align:right;}
-.msg.bot .bubble p{margin:0 0 6px 0;}
-.msg.bot .bubble p:last-child{margin-bottom:0;}
-.msg.bot .bubble strong{font-weight:500;color:var(--text);}
-.msg.bot .bubble em{font-style:italic;color:var(--muted);}
-.msg.bot .bubble br{display:block;margin:2px 0;}
 .typing{display:flex;align-items:center;gap:4px;padding:10px 14px;background:var(--surface);border:0.5px solid var(--border);border-radius:4px 14px 14px 14px;align-self:flex-start;}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite;}
 .dot:nth-child(2){animation-delay:.2s;}
@@ -67,7 +64,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #sendBtn:disabled{opacity:.35;cursor:not-allowed;}
 .btn-finish{font-size:12px;padding:5px 12px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
 .btn-finish:hover{border-color:var(--accent2);color:var(--accent2);}
-/* Report */
 .report{display:none;padding:24px;flex-direction:column;gap:16px;}
 .score-row{display:flex;align-items:center;gap:14px;}
 .score-ring{width:60px;height:60px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;flex-shrink:0;}
@@ -88,8 +84,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </head>
 <body>
 <div class="card">
-
-  <!-- Setup -->
   <div class="setup" id="setupPanel">
     <div class="brand">
       <div class="brand-logo">
@@ -105,8 +99,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <button class="btn-start" onclick="startInterview()">Comenzar entrevista →</button>
   </div>
-
-  <!-- Chat -->
   <div class="chat" id="chatPanel">
     <div class="chat-header">
       <div><div class="chat-h-name" id="chatName">Entrevista</div><div class="chat-h-sub" id="chatSub">Pregunta 1 de 6</div></div>
@@ -119,42 +111,47 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button id="sendBtn" onclick="sendMsg()">Enviar</button>
     </div>
   </div>
-
-  <!-- Report -->
   <div class="report" id="reportPanel"></div>
-
 </div>
-
 <script>
 const TOTAL_Q = 6;
 let jobs = [], selectedJobId = null, chatHistory = [], candName = '', qNum = 0, busy = false;
-// API key is handled server-side via /api/chat
 
-// Load jobs from recruiter's localStorage via shared origin
+function formatText(text) {
+  var t = text;
+  t = t.split('**').map(function(s, i) { return i % 2 === 1 ? '<strong>' + s + '</strong>' : s; }).join('');
+  t = t.split('*').map(function(s, i) { return i % 2 === 1 ? '<em>' + s + '</em>' : s; }).join('');
+  t = t.replace(/\n\n/g, '</p><p>');
+  t = t.replace(/\n/g, '<br>');
+  return '<p>' + t + '</p>';
+}
+
 async function loadJobs() {
-  const list = document.getElementById('jobList');
+  var list = document.getElementById('jobList');
   list.innerHTML = '<div class="no-jobs">Cargando puestos...</div>';
   try {
-    const res = await fetch('/api/jobs');
-    const data = await res.json();
+    var res = await fetch('/api/jobs');
+    var data = await res.json();
     jobs = (data.jobs && data.jobs.length) ? data.jobs : [];
-  } catch {
+  } catch(e) {
     jobs = [];
   }
   if (!jobs.length) {
-    list.innerHTML = '<div class="no-jobs">No hay puestos disponibles en este momento. Contacta al reclutador.</div>';
+    list.innerHTML = '<div class="no-jobs">No hay puestos disponibles. Contacta al reclutador.</div>';
     return;
   }
-  list.innerHTML = jobs.map(j => `
-    <div class="job-option" id="jo_${j.id}" onclick="selectJob(${j.id})">
-      <div class="job-check"><svg viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polyline points="1,5 4,8 9,2"/></svg></div>
-      <div><div class="job-title">${j.titulo}</div><div class="job-dept">${j.area||''}</div></div>
-    </div>`).join('');
+  list.innerHTML = jobs.map(function(j) {
+    return '<div class="job-option" id="jo_' + j.id + '" onclick="selectJob(' + j.id + ')">' +
+      '<div class="job-check"><svg viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polyline points="1,5 4,8 9,2"/></svg></div>' +
+      '<div><div class="job-title">' + j.titulo + '</div><div class="job-dept">' + (j.area||'') + '</div></div>' +
+      '</div>';
+  }).join('');
 }
 
 function selectJob(id) {
-  document.querySelectorAll('.job-option').forEach(el => el.classList.remove('selected'));
-  document.getElementById('jo_'+id)?.classList.add('selected');
+  document.querySelectorAll('.job-option').forEach(function(el) { el.classList.remove('selected'); });
+  var el = document.getElementById('jo_' + id);
+  if (el) el.classList.add('selected');
   selectedJobId = id;
 }
 
@@ -162,10 +159,9 @@ async function startInterview() {
   candName = document.getElementById('candNombre').value.trim();
   if (!candName) { alert('Por favor ingresa tu nombre'); return; }
   if (!selectedJobId) { alert('Selecciona el puesto al que aplicas'); return; }
-
-  const job = jobs.find(j => j.id === selectedJobId);
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
   document.getElementById('setupPanel').style.display = 'none';
-  const cp = document.getElementById('chatPanel');
+  var cp = document.getElementById('chatPanel');
   cp.style.display = 'flex'; cp.style.flexDirection = 'column';
   document.getElementById('chatName').textContent = candName + ' · ' + job.titulo;
   chatHistory = []; qNum = 0; updateProgress();
@@ -173,161 +169,152 @@ async function startInterview() {
 }
 
 function buildSystem(job) {
-  return `Eres un entrevistador profesional y empático. Estás entrevistando a ${candName} para el puesto de ${job.titulo}${job.area?' ('+job.area+')':''}.
-
-INFORMACIÓN DEL PUESTO:
-${job.desc}
-${job.exp?'Experiencia requerida: '+job.exp:''}
-${job.skills?'Habilidades clave: '+job.skills:''}
-${job.instrucciones?'\nINSTRUCCIONES ESPECÍFICAS DEL RECLUTADOR (síguelas con prioridad):\n'+job.instrucciones:''}
-
-REGLAS DE CONDUCCIÓN:
-- Haz exactamente ${TOTAL_Q} preguntas en total, UNA por turno.
-- Genera preguntas específicas para este puesto. NO hagas preguntas genéricas.
-- Mezcla: técnicas, comportamentales, situacionales y de motivación.
-- Si la respuesta es vaga, pide un ejemplo concreto.
-- Haz un breve comentario sobre cada respuesta antes de la siguiente pregunta.
-- Sé cálido, profesional y conciso. Máximo 3-4 oraciones por turno.
-- Responde SIEMPRE en español.
-- Tras las ${TOTAL_Q} preguntas, agradece al candidato y menciona que recibirá retroalimentación.`;
+  return 'Eres un entrevistador profesional y empático. Estás entrevistando a ' + candName + ' para el puesto de ' + job.titulo + (job.area ? ' (' + job.area + ')' : '') + '.\n\n' +
+    'INFORMACIÓN DEL PUESTO:\n' + job.desc + '\n' +
+    (job.exp ? 'Experiencia requerida: ' + job.exp + '\n' : '') +
+    (job.skills ? 'Habilidades clave: ' + job.skills + '\n' : '') +
+    (job.instrucciones ? '\nINSTRUCCIONES DEL RECLUTADOR (prioridad alta):\n' + job.instrucciones + '\n' : '') +
+    '\nREGLAS:\n' +
+    '- Haz exactamente ' + TOTAL_Q + ' preguntas en total, UNA por turno.\n' +
+    '- Preguntas específicas para este puesto, NO genéricas.\n' +
+    '- Mezcla: técnicas, comportamentales, situacionales y motivación.\n' +
+    '- Si la respuesta es vaga, pide un ejemplo concreto.\n' +
+    '- Breve comentario sobre cada respuesta antes de la siguiente pregunta.\n' +
+    '- Cálido, profesional y conciso. Máximo 3-4 oraciones por turno.\n' +
+    '- Responde SIEMPRE en español.\n' +
+    '- Tras las ' + TOTAL_Q + ' preguntas, agradece y menciona que recibirá retroalimentación.';
 }
 
 async function callClaude(job, msgs) {
   try {
-    const res = await fetch('/api/chat', {
+    var res = await fetch('/api/chat', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:800, system:buildSystem(job), messages:msgs})
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({model: 'claude-sonnet-4-20250514', max_tokens: 800, system: buildSystem(job), messages: msgs})
     });
-    const d = await res.json();
-    return d.content?.find(b=>b.type==='text')?.text || 'Error al conectar.';
-  } catch { return 'Error de conexión. Intenta de nuevo.'; }
-}
-
-function parseMarkdown(text) {
-  let t = text;
-  t = t.replace(/[*][*](.+?)[*][*]/g, '<strong>$1</strong>');
-  t = t.replace(/[*](.+?)[*]/g, '<em>$1</em>');
-  t = t.replace(/
-
-/g, '</p><p>');
-  t = t.replace(/
-/g, '<br>');
-  t = '<p>' + t + '</p>';
-  t = t.replace(/<p><\/p>/g, '');
-  return t;
+    var d = await res.json();
+    var block = d.content && d.content.find(function(b) { return b.type === 'text'; });
+    return block ? block.text : 'Error al conectar.';
+  } catch(e) { return 'Error de conexión. Intenta de nuevo.'; }
 }
 
 function addMsg(role, text) {
-  const box = document.getElementById('messages');
-  const t = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
-  const d = document.createElement('div');
-  d.className = 'msg '+role;
-  const content = role === 'bot' ? parseMarkdown(text) : text;
-  d.innerHTML = `<div class="bubble">${content}</div><div class="msg-time">${t}</div>`;
+  var box = document.getElementById('messages');
+  var t = new Date().toLocaleTimeString('es', {hour: '2-digit', minute: '2-digit'});
+  var d = document.createElement('div');
+  d.className = 'msg ' + role;
+  var content = role === 'bot' ? formatText(text) : text;
+  d.innerHTML = '<div class="bubble">' + content + '</div><div class="msg-time">' + t + '</div>';
   box.appendChild(d); box.scrollTop = box.scrollHeight;
 }
+
 function showTyping() {
-  const box = document.getElementById('messages');
-  const t = document.createElement('div');
-  t.id='typing'; t.className='typing';
-  t.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-  box.appendChild(t); box.scrollTop=box.scrollHeight;
+  var box = document.getElementById('messages');
+  var t = document.createElement('div');
+  t.id = 'typing'; t.className = 'typing';
+  t.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  box.appendChild(t); box.scrollTop = box.scrollHeight;
 }
-function hideTyping() { document.getElementById('typing')?.remove(); }
+function hideTyping() { var t = document.getElementById('typing'); if (t) t.remove(); }
 
 function updateProgress() {
-  document.getElementById('progressFill').style.width = Math.min((qNum/TOTAL_Q)*100,100)+'%';
-  document.getElementById('chatSub').textContent = qNum<TOTAL_Q ? `Pregunta ${qNum+1} de ${TOTAL_Q}` : 'Entrevista completada';
+  document.getElementById('progressFill').style.width = Math.min((qNum / TOTAL_Q) * 100, 100) + '%';
+  document.getElementById('chatSub').textContent = qNum < TOTAL_Q ? 'Pregunta ' + (qNum + 1) + ' de ' + TOTAL_Q : 'Entrevista completada';
 }
 
 async function firstMessage(job) {
   showTyping();
-  const init = `Inicia la entrevista. Saluda brevemente a ${candName}, menciona el puesto de ${job.titulo} y haz la primera pregunta.`;
-  chatHistory.push({role:'user',content:init});
-  const resp = await callClaude(job, chatHistory);
+  var init = 'Inicia la entrevista. Saluda brevemente a ' + candName + ', menciona el puesto de ' + job.titulo + ' y haz la primera pregunta.';
+  chatHistory.push({role: 'user', content: init});
+  var resp = await callClaude(job, chatHistory);
   hideTyping();
-  chatHistory.push({role:'assistant',content:resp});
+  chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
-  qNum=1; updateProgress();
+  qNum = 1; updateProgress();
 }
 
 async function sendMsg() {
   if (busy) return;
-  const inp = document.getElementById('userInput');
-  const txt = inp.value.trim();
+  var inp = document.getElementById('userInput');
+  var txt = inp.value.trim();
   if (!txt) return;
-  inp.value='';
+  inp.value = '';
   addMsg('user', txt);
-  chatHistory.push({role:'user',content:txt});
-  busy=true; document.getElementById('sendBtn').disabled=true;
+  chatHistory.push({role: 'user', content: txt});
+  busy = true; document.getElementById('sendBtn').disabled = true;
   showTyping();
-  const job = jobs.find(j=>j.id===selectedJobId);
-  const resp = await callClaude(job, chatHistory);
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  var resp = await callClaude(job, chatHistory);
   hideTyping();
-  chatHistory.push({role:'assistant',content:resp});
+  chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
-  qNum = Math.min(qNum+1, TOTAL_Q);
+  qNum = Math.min(qNum + 1, TOTAL_Q);
   updateProgress();
-  busy=false; document.getElementById('sendBtn').disabled=false;
+  busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum >= TOTAL_Q) {
-    inp.disabled=true; document.getElementById('sendBtn').disabled=true;
-    setTimeout(() => finishInterview(), 2000);
+    inp.disabled = true; document.getElementById('sendBtn').disabled = true;
+    setTimeout(function() { finishInterview(); }, 2000);
   }
 }
 
 async function finishInterview() {
-  document.getElementById('chatPanel').style.display='none';
-  const rp = document.getElementById('reportPanel');
-  rp.style.display='flex'; rp.style.flexDirection='column';
-  rp.innerHTML='<p style="font-size:13px;color:var(--muted);padding:8px 0;">Generando tu reporte de evaluación...</p>';
-  const job = jobs.find(j=>j.id===selectedJobId);
-  const transcript = chatHistory.filter((_,i)=>i>0).map(m=>`${m.role==='assistant'?'Entrevistador':candName}: ${m.content}`).join('\n\n');
-  const prompt = `Analiza esta entrevista para el puesto de ${job.titulo} y evalúa al candidato ${candName}.
-PUESTO: ${job.titulo} — ${job.desc}
-${job.skills?'HABILIDADES CLAVE: '+job.skills:''}
-TRANSCRIPCIÓN:\n${transcript}
-Responde ÚNICAMENTE con JSON válido:
-{"puntaje_general":número,"nivel":"Excelente"|"Bueno"|"Regular"|"Bajo","recomendacion":"Avanzar"|"Considerar"|"No avanzar","dimensiones":[{"nombre":"Comunicación","puntaje":número},{"nombre":"Conocimiento técnico","puntaje":número},{"nombre":"Experiencia relevante","puntaje":número},{"nombre":"Motivación y fit","puntaje":número}],"fortalezas":"texto","areas_mejora":"texto","resumen":"texto"}`;
+  document.getElementById('chatPanel').style.display = 'none';
+  var rp = document.getElementById('reportPanel');
+  rp.style.display = 'flex'; rp.style.flexDirection = 'column';
+  rp.innerHTML = '<p style="font-size:13px;color:var(--muted);padding:8px 0;">Generando tu reporte de evaluación...</p>';
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  var transcript = chatHistory.filter(function(m, i) { return i > 0; }).map(function(m) {
+    return (m.role === 'assistant' ? 'Entrevistador' : candName) + ': ' + m.content;
+  }).join('\n\n');
+  var prompt = 'Analiza esta entrevista para el puesto de ' + job.titulo + ' y evalúa al candidato ' + candName + '.\nPUESTO: ' + job.titulo + '\n' + job.desc + '\n' +
+    (job.skills ? 'HABILIDADES: ' + job.skills + '\n' : '') +
+    'TRANSCRIPCIÓN:\n' + transcript + '\n' +
+    'Responde ÚNICAMENTE con JSON válido:\n{"puntaje_general":número,"nivel":"Excelente"|"Bueno"|"Regular"|"Bajo","recomendacion":"Avanzar"|"Considerar"|"No avanzar","dimensiones":[{"nombre":"Comunicación","puntaje":número},{"nombre":"Conocimiento técnico","puntaje":número},{"nombre":"Experiencia relevante","puntaje":número},{"nombre":"Motivación y fit","puntaje":número}],"fortalezas":"texto","areas_mejora":"texto","resumen":"texto"}';
   try {
-    const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
-    const d = await res.json();
-    const r = JSON.parse(d.content?.find(b=>b.type==='text')?.text.replace(/```json|```/g,'').trim());
+    var res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{role: 'user', content: prompt}]})});
+    var d = await res.json();
+    var block = d.content && d.content.find(function(b) { return b.type === 'text'; });
+    var r = JSON.parse(block.text.replace(/```json|```/g, '').trim());
     saveResult(r, job);
     renderReport(r, job);
-  } catch { rp.innerHTML='<p style="color:#c0392b;font-size:13px;">Error al generar reporte. Intenta finalizar de nuevo.</p><button onclick="finishInterview()" style="margin-top:8px;padding:8px 16px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Reintentar</button>'; }
+  } catch(e) {
+    rp.innerHTML = '<p style="color:#c0392b;font-size:13px;">Error al generar reporte.</p><button onclick="finishInterview()" style="margin-top:8px;padding:8px 16px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Reintentar</button>';
+  }
 }
 
 function saveResult(r, job) {
-  const results = JSON.parse(localStorage.getItem('rresults')||'[]');
+  var results = JSON.parse(localStorage.getItem('rresults') || '[]');
   results.push({
-    fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
-    candidato:candName, puesto:job.titulo, area:job.area||'', puntaje:r.puntaje_general, nivel:r.nivel, recomendacion:r.recomendacion,
-    comunicacion:r.dimensiones.find(d=>d.nombre==='Comunicación')?.puntaje||'',
-    conocimiento:r.dimensiones.find(d=>d.nombre==='Conocimiento técnico')?.puntaje||'',
-    experiencia:r.dimensiones.find(d=>d.nombre==='Experiencia relevante')?.puntaje||'',
-    motivacion:r.dimensiones.find(d=>d.nombre==='Motivación y fit')?.puntaje||'',
-    fortalezas:r.fortalezas, areas_mejora:r.areas_mejora, resumen:r.resumen
+    fecha: new Date().toLocaleDateString('es-PE'),
+    hora: new Date().toLocaleTimeString('es-PE', {hour: '2-digit', minute: '2-digit'}),
+    candidato: candName, puesto: job.titulo, area: job.area || '',
+    puntaje: r.puntaje_general, nivel: r.nivel, recomendacion: r.recomendacion,
+    comunicacion: (r.dimensiones.find(function(d) { return d.nombre === 'Comunicación'; }) || {}).puntaje || '',
+    conocimiento: (r.dimensiones.find(function(d) { return d.nombre === 'Conocimiento técnico'; }) || {}).puntaje || '',
+    experiencia: (r.dimensiones.find(function(d) { return d.nombre === 'Experiencia relevante'; }) || {}).puntaje || '',
+    motivacion: (r.dimensiones.find(function(d) { return d.nombre === 'Motivación y fit'; }) || {}).puntaje || '',
+    fortalezas: r.fortalezas, areas_mejora: r.areas_mejora, resumen: r.resumen
   });
   localStorage.setItem('rresults', JSON.stringify(results));
 }
 
-function sCol(s){return s>=80?{b:'#2d7a4f',bg:'#edf7f1',bar:'#2d7a4f'}:s>=60?{b:'#b8760a',bg:'#fef8ee',bar:'#e09112'}:{b:'#c0392b',bg:'#fbeaea',bar:'#c0392b'};}
-function rCol(r){return r==='Avanzar'?{bg:'#edf7f1',t:'#1e5c38'}:r==='Considerar'?{bg:'#fef8ee',t:'#7a5000'}:{bg:'#fbeaea',t:'#8b1f1f'};}
+function sCol(s) { return s >= 80 ? {b:'#2d7a4f',bg:'#edf7f1',bar:'#2d7a4f'} : s >= 60 ? {b:'#b8760a',bg:'#fef8ee',bar:'#e09112'} : {b:'#c0392b',bg:'#fbeaea',bar:'#c0392b'}; }
+function rCol(r) { return r === 'Avanzar' ? {bg:'#edf7f1',t:'#1e5c38'} : r === 'Considerar' ? {bg:'#fef8ee',t:'#7a5000'} : {bg:'#fbeaea',t:'#8b1f1f'}; }
 
 function renderReport(r, job) {
-  const c=sCol(r.puntaje_general), rc=rCol(r.recomendacion);
-  const dims=r.dimensiones.map(d=>{const dc=sCol(d.puntaje);return`<div class="dim-row"><span class="dim-label">${d.nombre}</span><div class="dim-track"><div class="dim-fill" style="width:${d.puntaje}%;background:${dc.bar}"></div></div><span class="dim-num">${d.puntaje}</span></div>`;}).join('');
-  document.getElementById('reportPanel').innerHTML=`
-    <div class="score-row">
-      <div class="score-ring" style="border-color:${c.b};color:${c.b};background:${c.bg}">${r.puntaje_general}</div>
-      <div><div class="rep-name">${candName}</div><div class="rep-meta">${job.titulo} · ${r.nivel}<span class="rec-badge" style="background:${rc.bg};color:${rc.t}">${r.recomendacion}</span></div></div>
-    </div>
-    <div class="dim-list">${dims}</div>
-    <div class="rep-block"><div class="rep-label">Resumen</div><div class="rep-text">${r.resumen}</div></div>
-    <div class="rep-block"><div class="rep-label">Fortalezas</div><div class="rep-text">${r.fortalezas}</div></div>
-    <div class="rep-block"><div class="rep-label">Áreas de mejora</div><div class="rep-text">${r.areas_mejora}</div></div>
-    <p style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">Gracias por completar la entrevista. El equipo de reclutamiento se pondrá en contacto contigo pronto.</p>`;
+  var c = sCol(r.puntaje_general), rc = rCol(r.recomendacion);
+  var dims = r.dimensiones.map(function(d) {
+    var dc = sCol(d.puntaje);
+    return '<div class="dim-row"><span class="dim-label">' + d.nombre + '</span><div class="dim-track"><div class="dim-fill" style="width:' + d.puntaje + '%;background:' + dc.bar + '"></div></div><span class="dim-num">' + d.puntaje + '</span></div>';
+  }).join('');
+  document.getElementById('reportPanel').innerHTML =
+    '<div class="score-row"><div class="score-ring" style="border-color:' + c.b + ';color:' + c.b + ';background:' + c.bg + '">' + r.puntaje_general + '</div>' +
+    '<div><div class="rep-name">' + candName + '</div><div class="rep-meta">' + job.titulo + ' · ' + r.nivel + '<span class="rec-badge" style="background:' + rc.bg + ';color:' + rc.t + '">' + r.recomendacion + '</span></div></div></div>' +
+    '<div class="dim-list">' + dims + '</div>' +
+    '<div class="rep-block"><div class="rep-label">Resumen</div><div class="rep-text">' + r.resumen + '</div></div>' +
+    '<div class="rep-block"><div class="rep-label">Fortalezas</div><div class="rep-text">' + r.fortalezas + '</div></div>' +
+    '<div class="rep-block"><div class="rep-label">Áreas de mejora</div><div class="rep-text">' + r.areas_mejora + '</div></div>' +
+    '<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">Gracias por completar la entrevista. El equipo se pondrá en contacto contigo pronto.</p>';
 }
 
 loadJobs();
