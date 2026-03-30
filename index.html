@@ -341,8 +341,8 @@ function exportCSV() {
     esc(r.resumen)
   ].join(';'));
 
-  const csv = [headers.map(h => esc(h)).join(';'), ...rows].join('
-');
+  const csv = [headers.map(h => esc(h)).join(';'), ...rows].join('\r\n');
+
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'}));
   a.download = 'resultados-'+new Date().toISOString().slice(0,10)+'.csv';
