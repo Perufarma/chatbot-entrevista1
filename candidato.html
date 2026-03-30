@@ -135,17 +135,11 @@ async function loadJobs() {
   const list = document.getElementById('jobList');
   list.innerHTML = '<div class="no-jobs">Cargando puestos...</div>';
   try {
-    // Try server first
     const res = await fetch('/api/jobs');
     const data = await res.json();
-    if (data.jobs && data.jobs.length) {
-      jobs = data.jobs;
-    } else {
-      // Fallback to localStorage (same device)
-      jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
-    }
+    jobs = (data.jobs && data.jobs.length) ? data.jobs : [];
   } catch {
-    jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
+    jobs = [];
   }
   if (!jobs.length) {
     list.innerHTML = '<div class="no-jobs">No hay puestos disponibles en este momento. Contacta al reclutador.</div>';
