@@ -167,7 +167,7 @@ async function startInterview() {
 }
 
 function buildSystem(job) {
-  return 'Eres un entrevistador profesional y empático. Estás entrevistando a ' + candName + ' para el puesto de ' + job.titulo + (job.area ? ' (' + job.area + ')' : '') + '.\n\n' +
+  return 'Eres Estephanie, entrevistadora profesional y empática de Perufarma. Estás entrevistando a ' + candName + ' para el puesto de ' + job.titulo + (job.area ? ' (' + job.area + ')' : '') + '.\n\n' +
     'INFORMACIÓN DEL PUESTO:\n' + job.desc + '\n' +
     (job.exp ? 'Experiencia requerida: ' + job.exp + '\n' : '') +
     (job.skills ? 'Habilidades clave: ' + job.skills + '\n' : '') +
@@ -274,16 +274,15 @@ async function finishInterview() {
     var d = await res.json();
     var block = d.content && d.content.find(function(b) { return b.type === 'text'; });
     var r = JSON.parse(block.text.replace(/```json|```/g, '').trim());
-    saveResult(r, job);
+    await saveResult(r, job);
     renderReport(r, job);
   } catch(e) {
     rp.innerHTML = '<p style="color:#c0392b;font-size:13px;">Error al generar reporte.</p><button onclick="finishInterview()" style="margin-top:8px;padding:8px 16px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Reintentar</button>';
   }
 }
 
-function saveResult(r, job) {
-  var results = JSON.parse(localStorage.getItem('rresults') || '[]');
-  results.push({
+async function saveResult(r, job) {
+  var entry = {
     fecha: new Date().toLocaleDateString('es-PE'),
     hora: new Date().toLocaleTimeString('es-PE', {hour: '2-digit', minute: '2-digit'}),
     candidato: candName, puesto: job.titulo, area: job.area || '',
@@ -293,8 +292,22 @@ function saveResult(r, job) {
     experiencia: (r.dimensiones.find(function(d) { return d.nombre === 'Experiencia relevante'; }) || {}).puntaje || '',
     motivacion: (r.dimensiones.find(function(d) { return d.nombre === 'Motivación y fit'; }) || {}).puntaje || '',
     fortalezas: r.fortalezas, areas_mejora: r.areas_mejora, resumen: r.resumen
-  });
-  localStorage.setItem('rresults', JSON.stringify(results));
+  };
+  try {
+    var existing = await fetch('/api/jobs?type=results');
+    var data = await existing.json();
+    var results = data.results || [];
+    results.push(entry);
+    await fetch('/api/jobs?type=results', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ results: results })
+    });
+  } catch(e) {
+    var local = JSON.parse(localStorage.getItem('rresults') || '[]');
+    local.push(entry);
+    localStorage.setItem('rresults', JSON.stringify(local));
+  }
 }
 
 function sCol(s) { return s >= 80 ? {b:'#2d7a4f',bg:'#edf7f1',bar:'#2d7a4f'} : s >= 60 ? {b:'#b8760a',bg:'#fef8ee',bar:'#e09112'} : {b:'#c0392b',bg:'#fbeaea',bar:'#c0392b'}; }

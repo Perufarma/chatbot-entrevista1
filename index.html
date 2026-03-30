@@ -257,7 +257,14 @@ function renderJobs() {
 // ── Resultados ──
 function getResults() { return JSON.parse(localStorage.getItem('rresults') || '[]'); }
 
-function renderResultados() {
+async function renderResultados() {
+  try {
+    const res = await fetch('/api/jobs?type=results');
+    const data = await res.json();
+    if (data.results && data.results.length) {
+      localStorage.setItem('rresults', JSON.stringify(data.results));
+    }
+  } catch(e) {}
   const results = getResults();
   const panel = document.getElementById('resultsPanel');
   if (!results.length) {
@@ -302,9 +309,16 @@ function exportCSV() {
   toast('Descargando...');
 }
 
-function clearResults() {
+async function clearResults() {
   if (!confirm('¿Eliminar todos los resultados?')) return;
   localStorage.removeItem('rresults');
+  try {
+    await fetch('/api/jobs?type=results', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ results: [] })
+    });
+  } catch(e) {}
   renderResultados();
   toast('Resultados eliminados');
 }
