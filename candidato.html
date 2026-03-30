@@ -73,6 +73,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .rep-text{font-size:13px;line-height:1.6;color:var(--muted);}
 .no-jobs{font-size:13px;color:var(--muted);padding:8px 0;line-height:1.5;}
 .bot-name{font-size:10px;font-weight:500;color:var(--accent2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:3px;padding-left:2px;}
+.timer-wrap{padding:6px 12px;background:var(--surface);border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;}
+.timer-bar-bg{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.timer-bar-fill{height:4px;border-radius:2px;transition:width 1s linear,background 1s linear;}
+.timer-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);min-width:36px;text-align:right;}
 </style>
 </head>
 <body>
@@ -88,7 +92,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <select id="jobSelect" onchange="selectJobFromDropdown(this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%;cursor:pointer;">
         <option value="">-- Selecciona un puesto --</option>
       </select>
-      <div id="jobDesc" style="font-size:12px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:10px 12px;line-height:1.5;display:none;margin-top:4px;"></div>
+      <div id="jobDesc" style="display:none;margin-top:8px;background:var(--surface2);border-radius:10px;padding:14px 16px;display:none;">
+        <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:10px;">¿Cómo funciona la entrevista?</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Estephanie, nuestra entrevistadora virtual, te hará <strong style="color:var(--text);">6 preguntas</strong> una por una relacionadas al puesto.</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Tendrás <strong style="color:var(--text);">2 minutos</strong> para responder cada pregunta. Una barra de tiempo te indicará cuánto te queda.</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Algunas preguntas incluirán <strong style="color:var(--text);">escenarios con números</strong> para evaluar tu capacidad de análisis. Sé específico en tus respuestas.</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Al terminar recibirás un mensaje de confirmación. El equipo de Perufarma revisará tu entrevista y se contactará contigo.</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:8px 10px;background:var(--orange-bg);border-radius:8px;font-size:11px;color:var(--orange-text);line-height:1.5;">
+          Busca un lugar tranquilo y sin interrupciones. La entrevista dura aproximadamente <strong>15 minutos</strong>.
+        </div>
+      </div>
     </div>
     <button class="btn-start" onclick="startInterview()">Comenzar entrevista →</button>
   </div>
@@ -99,7 +126,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     <div class="messages" id="messages"></div>
-    <div class="input-row">
+    <div class="timer-wrap" id="timerWrap" style="display:none;">
+  <div class="timer-bar-bg"><div class="timer-bar-fill" id="timerBar" style="width:100%;background:#2d7a4f;"></div></div>
+  <div class="timer-label" id="timerLabel">2:00</div>
+</div>
+<div class="input-row">
       <textarea id="userInput" placeholder="Escribe tu respuesta y presiona Enter..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
       <button id="sendBtn" onclick="sendMsg()">Enviar</button>
     </div>
@@ -142,11 +173,7 @@ function selectJobFromDropdown(val) {
   selectedJobId = val ? parseInt(val) : null;
   var desc = document.getElementById('jobDesc');
   if (selectedJobId) {
-    var job = jobs.find(function(j) { return j.id === selectedJobId; });
-    if (job && job.desc) {
-      desc.textContent = job.desc.substring(0, 150) + (job.desc.length > 150 ? '…' : '');
-      desc.style.display = 'block';
-    }
+    desc.style.display = 'block';
   } else {
     desc.style.display = 'none';
   }
@@ -175,9 +202,10 @@ function buildSystem(job) {
     '- Haz exactamente ' + TOTAL_Q + ' preguntas en total, UNA por turno.\n' +
     '- Preguntas específicas para este puesto, NO genéricas.\n' +
     '- Mezcla: técnicas, comportamentales, situacionales y motivación.\n' +
-    '- Si la respuesta es vaga, pide un ejemplo concreto.\n' +
+    '- PRESIÓN COGNITIVA: Al menos 3 de las 6 preguntas deben incluir datos numéricos reales o hipotéticos que obliguen al candidato a razonar. Ejemplos: "Si tienes 200 pedidos pendientes y solo 3 operarios disponibles por 4 horas, ¿cómo priorizas?", "Tu área tiene un error del 8% en despachos y la meta es bajar al 2% en 30 días, ¿qué harías?", "Si el presupuesto se reduce 40% pero los objetivos se mantienen, ¿cómo lo manejas?". Adapta los números al puesto específico.\n' +
+    '- Si la respuesta es vaga o solo teórica, presiona con un seguimiento: "¿Y en números concretos, cómo lo medirías?"\n' +
     '- Breve comentario sobre cada respuesta antes de la siguiente pregunta.\n' +
-    '- Cálido, profesional y conciso. Máximo 3-4 oraciones por turno.\n' +
+    '- Cálido pero directo y profesional. Máximo 3-4 oraciones por turno.\n' +
     '- Responde SIEMPRE en español.\n' +
     '- Tras las ' + TOTAL_Q + ' preguntas, agradece y menciona que recibirá retroalimentación.';
 }
@@ -229,6 +257,54 @@ async function firstMessage(job) {
   chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
   qNum = 1; updateProgress();
+  startTimer();
+}
+
+const TIMER_SECONDS = 120;
+let timerInterval = null;
+let timerRemaining = TIMER_SECONDS;
+
+function startTimer() {
+  timerRemaining = TIMER_SECONDS;
+  const wrap = document.getElementById('timerWrap');
+  const bar = document.getElementById('timerBar');
+  const label = document.getElementById('timerLabel');
+  wrap.style.display = 'flex';
+  bar.style.width = '100%';
+  bar.style.background = '#2d7a4f';
+  updateTimerDisplay();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(function() {
+    timerRemaining--;
+    updateTimerDisplay();
+    const pct = (timerRemaining / TIMER_SECONDS) * 100;
+    bar.style.width = pct + '%';
+    if (pct <= 30) bar.style.background = '#e09112';
+    if (pct <= 10) bar.style.background = '#c0392b';
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      autoSendOnTimeout();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  document.getElementById('timerWrap').style.display = 'none';
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerRemaining / 60);
+  const s = timerRemaining % 60;
+  document.getElementById('timerLabel').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function autoSendOnTimeout() {
+  const inp = document.getElementById('userInput');
+  if (!inp.value.trim()) {
+    inp.value = '[Sin respuesta — tiempo agotado]';
+  }
+  sendMsg();
 }
 
 async function sendMsg() {
@@ -237,6 +313,7 @@ async function sendMsg() {
   var txt = inp.value.trim();
   if (!txt) return;
   inp.value = '';
+  stopTimer();
   addMsg('user', txt);
   chatHistory.push({role: 'user', content: txt});
   busy = true; document.getElementById('sendBtn').disabled = true;
@@ -250,8 +327,11 @@ async function sendMsg() {
   updateProgress();
   busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum >= TOTAL_Q) {
+    stopTimer();
     inp.disabled = true; document.getElementById('sendBtn').disabled = true;
     setTimeout(function() { finishInterview(); }, 6000);
+  } else {
+    startTimer();
   }
 }
 
