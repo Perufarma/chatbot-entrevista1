@@ -152,7 +152,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="timer-bar-bg"><div class="timer-bar-fill" id="timerBar" style="width:100%;background:#2d7a4f;"></div></div>
   <div class="timer-label" id="timerLabel">2:00</div>
 </div>
-<div class="mic-hint" id="micHint" style="display:none;padding:4px 12px;"></div>
+<div id="finishBtnBottom" style="display:none;padding:12px 14px;background:var(--surface);border-top:0.5px solid var(--border);">
+      <button onclick="finishInterview()" style="width:100%;padding:12px;background:var(--accent2);color:white;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        Finalizar entrevista y enviar evaluación →
+      </button>
+    </div>
+    <div class="mic-hint" id="micHint" style="display:none;padding:4px 12px;"></div>
     <div class="input-row">
       <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Grabar respuesta por voz">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -169,7 +174,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="report" id="reportPanel"></div>
 </div>
 <script>
-const TOTAL_Q = 7;
+const TOTAL_Q = 6;
 let jobs = [], selectedJobId = null, chatHistory = [], candName = '', qNum = 0, busy = false;
 
 function formatText(text) {
@@ -241,23 +246,20 @@ function buildSystem(job) {
     'PREGUNTA 1 — HABILIDADES BLANDAS (TRABAJO EN EQUIPO):\n' +
     'Pide ejemplo real de colaboración bajo presión. Ejemplo: Cuéntame de una situación donde trabajaste con alguien difícil para cumplir un objetivo. ¿Qué hiciste? Evalúa si asume responsabilidad compartida.\n' +
     '\n' +
-    'PREGUNTA 2 — COMPETENCIA TÉCNICA CON PRESIÓN COGNITIVA:\n' +
-    'Incluye datos numéricos adaptados al puesto. Ejemplos: Si tienes 200 pedidos y 3 operarios por 4 horas ¿cómo priorizas? / Tu área tiene 8% de errores y la meta es 2% en 30 días ¿qué harías? Si responde vagamente presiona: ¿Y en números concretos cómo lo medirías?\n' +
-    '\n' +
-    'PREGUNTA 3 — HABILIDADES BLANDAS (MANEJO DE ERRORES Y RESPONSABILIDAD):\n' +
+    'PREGUNTA 2 — HABILIDADES BLANDAS (MANEJO DE ERRORES Y RESPONSABILIDAD):\n' +
     'Pide ejemplo real. Ejemplo: Cuéntame de un error importante que cometiste en un trabajo anterior. ¿Cómo lo manejaste y qué aprendiste? Evalúa si asume responsabilidad o culpa a otros.\n' +
     '\n' +
-    'PREGUNTA 4 — RESOLUCIÓN DE PROBLEMAS (PARTE 1 — OPERATIVA):\n' +
-    'Escenario situacional operativo específico al puesto con números y contexto real. Evalúa metodología y criterio. Si responde solo en teoría pide: Dame un ejemplo concreto de cuando aplicaste eso.\n' +
+    'PREGUNTA 3 — RESOLUCIÓN DE PROBLEMAS (PARTE 1 — OPERATIVA):\n' +
+    'Escenario situacional operativo específico al puesto con contexto real. Evalúa metodología y criterio. Si responde solo en teoría pide: Dame un ejemplo concreto de cuando aplicaste eso.\n' +
     '\n' +
-    'PREGUNTA 5 — RESOLUCIÓN DE PROBLEMAS (PARTE 2 — GESTIÓN):\n' +
-    'Segundo escenario diferente al anterior desde otro ángulo: comunicación con stakeholders gestión de recursos limitados o toma de decisiones bajo incertidumbre. Más complejo que el anterior. Sigue presionando si la respuesta es vaga o teórica.\n' +
+    'PREGUNTA 4 — RESOLUCIÓN DE PROBLEMAS (PARTE 2 — GESTIÓN):\n' +
+    'Segundo escenario diferente al anterior: comunicación con stakeholders gestión de recursos limitados o toma de decisiones bajo incertidumbre. Más complejo. Sigue presionando si la respuesta es vaga.\n' +
+    '\n' +
+    'PREGUNTA 5 — COMPETENCIA TÉCNICA CON PRESIÓN COGNITIVA:\n' +
+    'Incluye datos numéricos concretos adaptados al puesto. Si tienes 200 pedidos y 3 operarios por 4 horas ¿cómo priorizas? / Tu área tiene 8% de errores y la meta es 2% en 30 días ¿qué harías? Si responde vagamente presiona: ¿Y en números concretos cómo lo medirías?\n' +
     '\n' +
     'PREGUNTA 6 — PROYECCIÓN Y COMPROMISO:\n' +
-    'Evalúa visión de crecimiento real. Ejemplo: ¿Dónde te ves en 2 años dentro de Perufarma S.A.? ¿Qué estarías dispuesto a aprender o sacrificar para crecer en este puesto? Detecta si solo busca empleo temporal o tiene plan de carrera genuino.\n' +
-    '\n' +
-    'PREGUNTA 7 — MOTIVACIÓN E INTERÉS GENUINO (CIERRE):\n' +
-    'Evalúa si investigó sobre Perufarma S.A. y el puesto. Recuerda que muchos candidatos desconocen que Perufarma no es solo farma sino 4 unidades de negocio. Ejemplo: ¿Qué sabes sobre Perufarma S.A. y por qué te interesa este puesto en particular? Si responde vagamente presiona: ¿Sabías que Perufarma distribuye bebidas productos automotrices y Wella Professional además de farma? ¿Cómo encaja todo eso con tu perfil y tus expectativas?\n' +
+    'Evalúa visión de crecimiento real. ¿Dónde te ves en 2 años dentro de Perufarma S.A.? ¿Qué estarías dispuesto a aprender o sacrificar para crecer en este puesto? Detecta si solo busca empleo temporal o tiene plan de carrera genuino.\n' +
     '\n' +
     'REGLAS ADICIONALES:\n' +
     '- Si cualquier respuesta es vaga genérica o ensayada SIEMPRE presiona con un ejemplo concreto antes de continuar.\n' +
@@ -571,10 +573,16 @@ async function sendMsg() {
   busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum >= TOTAL_Q) {
     stopTimer();
-    inp.disabled = true; document.getElementById('sendBtn').disabled = true; document.getElementById('micBtn').disabled = true; stopMic();
+    inp.disabled = true;
+    document.getElementById('sendBtn').disabled = true;
+    document.getElementById('micBtn').disabled = true;
+    stopMic();
     window._startTimerAfterSpeak = false;
     speak(resp);
-    setTimeout(function() { finishInterview(); }, 6000);
+    setTimeout(function() {
+      var btn = document.getElementById('finishBtnBottom');
+      if (btn) { btn.style.display = 'block'; btn.scrollIntoView({behavior:'smooth'}); }
+    }, 2000);
   } else {
     window._startTimerAfterSpeak = true;
     speak(resp);
