@@ -279,9 +279,9 @@ async function firstMessage(job) {
   hideTyping();
   chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
+  window._startTimerAfterSpeak = true;
   speak(resp);
   qNum = 1; updateProgress();
-  startTimer();
 }
 
 // ── Text to Speech ──
@@ -330,19 +330,29 @@ loadVoices();
 function speak(text) {
   if (!speakEnabled) return;
   window.speechSynthesis.cancel();
+  window._startTimerAfterSpeak = false;
+  stopTimer();
   var clean = text.replace(/<[^>]*>/g, '').replace(/\*\*/g, '').replace(/\*/g, '');
   var utt = new SpeechSynthesisUtterance(clean);
   utt.lang = 'es-PE';
-  utt.rate = 0.92;
-  utt.pitch = 1.1;
+  utt.rate = 1.15;
+  utt.pitch = 1.05;
   utt.volume = 1;
   if (bestVoice) utt.voice = bestVoice;
+  utt.onend = function() {
+    if (window._startTimerAfterSpeak) {
+      window._startTimerAfterSpeak = false;
+      startTimer();
+    }
+  };
   window.speechSynthesis.speak(utt);
 }
 
 function toggleSpeak() {
   speakEnabled = !speakEnabled;
   window.speechSynthesis.cancel();
+  window._startTimerAfterSpeak = false;
+  stopTimer();
   var btn = document.getElementById('speakToggle');
   if (speakEnabled) {
     btn.classList.add('active');
@@ -494,6 +504,8 @@ async function sendMsg() {
   stopTimer();
   stopMic();
   window.speechSynthesis.cancel();
+  window._startTimerAfterSpeak = false;
+  stopTimer();
   addMsg('user', txt);
   chatHistory.push({role: 'user', content: txt});
   busy = true; document.getElementById('sendBtn').disabled = true;
@@ -503,16 +515,18 @@ async function sendMsg() {
   hideTyping();
   chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
-  speak(resp);
   qNum = Math.min(qNum + 1, TOTAL_Q);
   updateProgress();
   busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum >= TOTAL_Q) {
     stopTimer();
     inp.disabled = true; document.getElementById('sendBtn').disabled = true; document.getElementById('micBtn').disabled = true; stopMic();
+    window._startTimerAfterSpeak = false;
+    speak(resp);
     setTimeout(function() { finishInterview(); }, 6000);
   } else {
-    startTimer();
+    window._startTimerAfterSpeak = true;
+    speak(resp);
   }
 }
 
