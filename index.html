@@ -405,7 +405,7 @@ function generarMensajes() {
   var panel = document.getElementById('mensajesPanel');
   var html = '<div style="font-size:13px;font-weight:500;margin-bottom:4px;">' + candidatos.length + ' mensaje' + (candidatos.length!==1?'s':'') + ' generado' + (candidatos.length!==1?'s':'') + '</div>';
   candidatos.forEach(function(c) {
-    var msgWA = encodeURIComponent('Hola ' + c.nombre + ', te contactamos de parte del equipo de Reclutamiento de Perufarma S.A.\n\nTe invitamos a completar tu entrevista virtual para el puesto de *' + job.titulo + '*. El proceso toma aproximadamente 15 minutos y puedes hacerlo desde tu celular.\n\n Ingresa aquí: ' + candidateUrl + '\n\n¡Mucho éxito!');
+    var msgWA = encodeURIComponent('Hola ' + c.nombre + ', te contactamos de parte del equipo de Reclutamiento y Selección de *PERUFARMA*.\n\nTe invitamos a responder las siguientes preguntas de prefiltro para el puesto de *' + job.titulo + '*. El proceso toma aproximadamente 15 minutos y puedes hacerlo desde tu celular.\n\n Ingresa aquí: ' + candidateUrl + '\n\n¡Mucho éxito!');
     var waLink = c.tel ? 'https://wa.me/51' + c.tel.replace(/[^0-9]/g,'') + '?text=' + msgWA : '';
     html += '<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:14px 16px;">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;">' +
