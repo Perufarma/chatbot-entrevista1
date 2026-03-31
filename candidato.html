@@ -324,7 +324,7 @@ function hideTyping() { var t = document.getElementById('typing'); if (t) t.remo
 
 function updateProgress() {
   document.getElementById('progressFill').style.width = Math.min((qNum / TOTAL_Q) * 100, 100) + '%';
-  document.getElementById('chatSub').textContent = qNum <= TOTAL_Q ? 'Pregunta ' + (qNum + 1) + ' de ' + TOTAL_Q : 'Entrevista completada';
+  document.getElementById('chatSub').textContent = qNum < TOTAL_Q ? 'Pregunta ' + (qNum + 1) + ' de ' + TOTAL_Q : (qNum === TOTAL_Q ? 'Última pregunta' : 'Entrevista completada');
 }
 
 async function firstMessage(job) {
@@ -337,7 +337,7 @@ async function firstMessage(job) {
   addMsg('bot', resp);
   window._startTimerAfterSpeak = true;
   speak(resp);
-  qNum = 1; updateProgress();
+  qNum = 0; updateProgress();
 }
 
 // ── Text to Speech ──
