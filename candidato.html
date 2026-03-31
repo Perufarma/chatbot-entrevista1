@@ -152,11 +152,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="timer-bar-bg"><div class="timer-bar-fill" id="timerBar" style="width:100%;background:#2d7a4f;"></div></div>
   <div class="timer-label" id="timerLabel">2:00</div>
 </div>
-<div id="finishBtnBottom" style="display:none;padding:12px 14px;background:var(--surface);border-top:0.5px solid var(--border);">
-      <button onclick="finishInterview()" style="width:100%;padding:12px;background:var(--accent2);color:white;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">
-        Finalizar entrevista y enviar evaluación →
-      </button>
-    </div>
+<div id="finishBtnBottom" style="display:none;"></div>
     <div class="mic-hint" id="micHint" style="display:none;padding:4px 12px;"></div>
     <div class="input-row">
       <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Grabar respuesta por voz">
@@ -398,6 +394,11 @@ function speak(text) {
     if (window._startTimerAfterSpeak) {
       window._startTimerAfterSpeak = false;
       startTimer();
+    }
+    if (window._onSpeakDone) {
+      var cb = window._onSpeakDone;
+      window._onSpeakDone = null;
+      cb();
     }
   }
 
@@ -664,24 +665,36 @@ async function sendMsg() {
   updateProgress();
   busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum > TOTAL_Q) {
-    // This is Claude's closing message after all questions answered
+    // Closing message - auto finish after speech + 30s or when speech ends
     stopTimer();
     inp.disabled = true;
     document.getElementById('sendBtn').disabled = true;
     document.getElementById('micBtn').disabled = true;
     stopMic();
-    window._startTimerAfterSpeak = false;
+
+    var autoFinished = false;
+    function doAutoFinish() {
+      if (autoFinished) return;
+      autoFinished = true;
+      finishInterview();
+    }
+
+    // Override speak's onDone to trigger finish
+    window._onSpeakDone = function() {
+      // Wait 8 seconds after speech ends so candidate can read
+      setTimeout(doAutoFinish, 8000);
+    };
+
+    // Hard fallback: finish after 30 seconds regardless
+    setTimeout(doAutoFinish, 30000);
+
     speak(resp);
-    setTimeout(function() {
-      var btn = document.getElementById('finishBtnBottom');
-      if (btn) { btn.style.display = 'block'; btn.scrollIntoView({behavior:'smooth'}); }
-    }, 2000);
+
   } else if (qNum === TOTAL_Q) {
-    // Candidate just answered the last question - let Claude give closing message
+    // Candidate just answered last question - let Claude give closing message
     window._startTimerAfterSpeak = false;
     stopTimer();
     speak(resp);
-    // Don't disable input yet - wait for Claude's closing response
   } else {
     window._startTimerAfterSpeak = true;
     speak(resp);
