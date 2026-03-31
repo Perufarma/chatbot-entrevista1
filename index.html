@@ -317,7 +317,7 @@ function exportCSV() {
   }
 
   const headers = [
-    'Fecha', 'Hora', 'Candidato', 'Puesto', 'Área',
+    'Fecha', 'Hora', 'Candidato', 'DNI', 'Puesto', 'Área',
     'Puntaje General', 'Nivel', 'Recomendación',
     'Comunicación', 'Conocimiento Técnico', 'Experiencia Relevante', 'Motivación y Fit',
     'Fortalezas', 'Áreas de Mejora', 'Resumen', 'Transcripción Completa'
@@ -327,6 +327,7 @@ function exportCSV() {
     esc(r.fecha),
     esc(r.hora),
     esc(r.candidato),
+    esc(r.dni),
     esc(r.puesto),
     esc(r.area),
     esc(r.puntaje),
