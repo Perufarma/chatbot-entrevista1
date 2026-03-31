@@ -400,7 +400,7 @@ function generarMensajes() {
   var lines = raw.split('\n').filter(function(l) { return l.trim(); });
   var candidatos = lines.map(function(l) {
     var parts = l.split(',').map(function(p) { return p.trim(); });
-    return { nombre: parts[0]||'', email: parts[1]||'', tel: parts[2]||'' };
+    return { nombre: parts[0]||'', tel: parts[1]||'' };
   });
   var panel = document.getElementById('mensajesPanel');
   var html = '<div style="font-size:13px;font-weight:500;margin-bottom:4px;">' + candidatos.length + ' mensaje' + (candidatos.length!==1?'s':'') + ' generado' + (candidatos.length!==1?'s':'') + '</div>';
