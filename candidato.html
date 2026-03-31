@@ -77,6 +77,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .timer-bar-bg{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
 .timer-bar-fill{height:4px;border-radius:2px;transition:width 1s linear,background 1s linear;}
 .timer-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);min-width:36px;text-align:right;}
+.mic-btn{width:38px;height:38px;border-radius:50%;border:0.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.mic-btn:hover{background:var(--surface2);}
+.mic-btn.recording{background:#fbeaea;border-color:#c0392b;animation:pulse-mic 1s ease-in-out infinite;}
+@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.3)}50%{box-shadow:0 0 0 6px rgba(192,57,43,0)}}
+.mic-hint{font-size:11px;color:var(--muted);text-align:center;padding:3px 0;}
 </style>
 </head>
 <body>
@@ -130,8 +135,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="timer-bar-bg"><div class="timer-bar-fill" id="timerBar" style="width:100%;background:#2d7a4f;"></div></div>
   <div class="timer-label" id="timerLabel">2:00</div>
 </div>
-<div class="input-row">
-      <textarea id="userInput" placeholder="Escribe tu respuesta y presiona Enter..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
+<div class="mic-hint" id="micHint" style="display:none;padding:4px 12px;"></div>
+    <div class="input-row">
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Grabar respuesta por voz">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+      <textarea id="userInput" placeholder="Habla o escribe tu respuesta... (Shift+Enter para enviar)" onkeydown="if(event.key==='Enter'&&event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
       <button id="sendBtn" onclick="sendMsg()">Enviar</button>
     </div>
   </div>
@@ -260,6 +274,91 @@ async function firstMessage(job) {
   startTimer();
 }
 
+// ── Speech Recognition ──
+let recognition = null;
+let isRecording = false;
+
+function initSpeech() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return null;
+  var r = new SpeechRecognition();
+  r.lang = 'es-PE';
+  r.continuous = true;
+  r.interimResults = true;
+  r.maxAlternatives = 1;
+  return r;
+}
+
+function toggleMic() {
+  if (isRecording) {
+    stopMic();
+  } else {
+    startMic();
+  }
+}
+
+function startMic() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.');
+    return;
+  }
+  recognition = initSpeech();
+  var inp = document.getElementById('userInput');
+  var btn = document.getElementById('micBtn');
+  var hint = document.getElementById('micHint');
+  var baseText = inp.value;
+  var interim = '';
+
+  recognition.onstart = function() {
+    isRecording = true;
+    btn.classList.add('recording');
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="#c0392b" stroke="#c0392b" stroke-width="2" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+    hint.style.display = 'block';
+    hint.textContent = 'Escuchando... Habla con claridad';
+    hint.style.color = '#c0392b';
+  };
+
+  recognition.onresult = function(e) {
+    interim = '';
+    var final = baseText;
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        final += e.results[i][0].transcript + ' ';
+        baseText = final;
+      } else {
+        interim = e.results[i][0].transcript;
+      }
+    }
+    inp.value = final + interim;
+  };
+
+  recognition.onerror = function(e) {
+    stopMic();
+    if (e.error === 'not-allowed') {
+      hint.style.display = 'block';
+      hint.textContent = 'Permiso de micrófono denegado. Actívalo en tu navegador.';
+      hint.style.color = '#c0392b';
+    }
+  };
+
+  recognition.onend = function() {
+    if (isRecording) recognition.start();
+  };
+
+  recognition.start();
+}
+
+function stopMic() {
+  isRecording = false;
+  if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+  var btn = document.getElementById('micBtn');
+  var hint = document.getElementById('micHint');
+  btn.classList.remove('recording');
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+  hint.style.display = 'none';
+}
+
 const TIMER_SECONDS = 120;
 let timerInterval = null;
 let timerRemaining = TIMER_SECONDS;
@@ -314,6 +413,7 @@ async function sendMsg() {
   if (!txt) return;
   inp.value = '';
   stopTimer();
+  stopMic();
   addMsg('user', txt);
   chatHistory.push({role: 'user', content: txt});
   busy = true; document.getElementById('sendBtn').disabled = true;
@@ -328,7 +428,7 @@ async function sendMsg() {
   busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum >= TOTAL_Q) {
     stopTimer();
-    inp.disabled = true; document.getElementById('sendBtn').disabled = true;
+    inp.disabled = true; document.getElementById('sendBtn').disabled = true; document.getElementById('micBtn').disabled = true; stopMic();
     setTimeout(function() { finishInterview(); }, 6000);
   } else {
     startTimer();
@@ -361,6 +461,11 @@ async function finishInterview() {
 }
 
 async function saveResult(r, job) {
+  var transcript = chatHistory
+    .filter(function(m, i) { return i > 0; })
+    .map(function(m) { return (m.role === 'assistant' ? 'Estephanie' : candName) + ': ' + m.content; })
+    .join(' | ');
+
   var entry = {
     fecha: new Date().toLocaleDateString('es-PE'),
     hora: new Date().toLocaleTimeString('es-PE', {hour: '2-digit', minute: '2-digit'}),
@@ -370,7 +475,8 @@ async function saveResult(r, job) {
     conocimiento: (r.dimensiones.find(function(d) { return d.nombre === 'Conocimiento técnico'; }) || {}).puntaje || '',
     experiencia: (r.dimensiones.find(function(d) { return d.nombre === 'Experiencia relevante'; }) || {}).puntaje || '',
     motivacion: (r.dimensiones.find(function(d) { return d.nombre === 'Motivación y fit'; }) || {}).puntaje || '',
-    fortalezas: r.fortalezas, areas_mejora: r.areas_mejora, resumen: r.resumen
+    fortalezas: r.fortalezas, areas_mejora: r.areas_mejora, resumen: r.resumen,
+    transcripcion: transcript
   };
   try {
     var existing = await fetch('/api/jobs?type=results');
