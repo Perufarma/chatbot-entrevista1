@@ -269,7 +269,20 @@ function buildSystem(job) {
     '- Cálido pero directo y profesional. Máximo 4 oraciones por turno.\n' +
     '- Responde SIEMPRE en español.\n' +
     '- IMPORTANTE: Lleva conteo estricto de preguntas. Cuando hayas hecho exactamente ' + TOTAL_Q + ' preguntas, tu siguiente mensaje debe ser SOLO un cierre: comenta brevemente la última respuesta y agradece al candidato. NO hagas ninguna pregunta adicional después de la pregunta número ' + TOTAL_Q + '. Ningún signo de interrogación en el mensaje de cierre.\n' +
-    '- Mensaje de cierre debe incluir: (1) comentario breve sobre la última respuesta, (2) agradecimiento cálido por su tiempo y participación, (3) indicarle EXACTAMENTE esto en negrita: **Muchas gracias por completar el proceso. Para finalizar y enviar tu evaluación, haz clic en el botón FINALIZAR ubicado en la parte superior derecha de la pantalla.**\n' + job.desc + '\n' +
+    '- Mensaje de cierre debe incluir: (1) comentario breve sobre la última respuesta, (2) agradecimiento cálido por su tiempo y participación, (3) indicarle EXACTAMENTE esto en negrita: **Muchas gracias por completar el proceso. Para finalizar y enviar tu evaluación, haz clic en el botón FINALIZAR ubicado en la parte superior derecha de la pantalla.**\n' +
+    '- Tras las ' + TOTAL_Q + ' preguntas NO hagas más preguntas. Sin signos de interrogación en el cierre.';
+}
+
+async function finishInterview() {
+  document.getElementById('chatPanel').style.display = 'none';
+  var rp = document.getElementById('reportPanel');
+  rp.style.display = 'flex'; rp.style.flexDirection = 'column';
+  rp.innerHTML = '<p style="font-size:13px;color:var(--muted);padding:8px 0;">Generando tu reporte de evaluación...</p>';
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  var transcript = chatHistory.filter(function(m, i) { return i > 0; }).map(function(m) {
+    return (m.role === 'assistant' ? 'Estephanie' : candName) + ': ' + m.content;
+  }).join('\n\n');
+  var prompt = 'Analiza esta entrevista para el puesto de ' + job.titulo + ' y evalúa al candidato ' + candName + '.\nPUESTO: ' + job.titulo + '\n' + job.desc + '\n' +
     (job.skills ? 'HABILIDADES: ' + job.skills + '\n' : '') +
     'TRANSCRIPCIÓN:\n' + transcript + '\n' +
     'Responde ÚNICAMENTE con JSON válido:\n{"puntaje_general":número,"nivel":"Excelente"|"Bueno"|"Regular"|"Bajo","recomendacion":"Avanzar"|"Considerar"|"No avanzar","dimensiones":[{"nombre":"Comunicación","puntaje":número},{"nombre":"Conocimiento técnico","puntaje":número},{"nombre":"Experiencia relevante","puntaje":número},{"nombre":"Motivación y fit","puntaje":número}],"fortalezas":"texto","areas_mejora":"texto","resumen":"texto"}';
