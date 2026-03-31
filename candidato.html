@@ -306,7 +306,7 @@ function hideTyping() { var t = document.getElementById('typing'); if (t) t.remo
 
 function updateProgress() {
   document.getElementById('progressFill').style.width = Math.min((qNum / TOTAL_Q) * 100, 100) + '%';
-  document.getElementById('chatSub').textContent = qNum < TOTAL_Q ? 'Pregunta ' + (qNum + 1) + ' de ' + TOTAL_Q : 'Entrevista completada';
+  document.getElementById('chatSub').textContent = qNum <= TOTAL_Q ? 'Pregunta ' + (qNum + 1) + ' de ' + TOTAL_Q : 'Entrevista completada';
 }
 
 async function firstMessage(job) {
@@ -569,10 +569,11 @@ async function sendMsg() {
   hideTyping();
   chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
-  qNum = Math.min(qNum + 1, TOTAL_Q);
+  qNum = Math.min(qNum + 1, TOTAL_Q + 1);
   updateProgress();
   busy = false; document.getElementById('sendBtn').disabled = false;
-  if (qNum >= TOTAL_Q) {
+  if (qNum > TOTAL_Q) {
+    // This is Claude's closing message after all questions answered
     stopTimer();
     inp.disabled = true;
     document.getElementById('sendBtn').disabled = true;
@@ -584,6 +585,12 @@ async function sendMsg() {
       var btn = document.getElementById('finishBtnBottom');
       if (btn) { btn.style.display = 'block'; btn.scrollIntoView({behavior:'smooth'}); }
     }, 2000);
+  } else if (qNum === TOTAL_Q) {
+    // Candidate just answered the last question - let Claude give closing message
+    window._startTimerAfterSpeak = false;
+    stopTimer();
+    speak(resp);
+    // Don't disable input yet - wait for Claude's closing response
   } else {
     window._startTimerAfterSpeak = true;
     speak(resp);
