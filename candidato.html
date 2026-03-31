@@ -78,6 +78,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .timer-bar-fill{height:4px;border-radius:2px;transition:width 1s linear,background 1s linear;}
 .timer-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);min-width:36px;text-align:right;}
 .mic-btn{width:38px;height:38px;border-radius:50%;border:0.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.speak-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;font-family:'DM Sans',sans-serif;transition:all 0.15s;white-space:nowrap;}
+.speak-toggle:hover{background:var(--surface2);}
+.speak-toggle.active{color:var(--accent2);border-color:var(--accent2);background:var(--orange-bg);}
 .mic-btn:hover{background:var(--surface2);}
 .mic-btn.recording{background:#fbeaea;border-color:#c0392b;animation:pulse-mic 1s ease-in-out infinite;}
 @keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.3)}50%{box-shadow:0 0 0 6px rgba(192,57,43,0)}}
@@ -127,7 +130,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="chat" id="chatPanel">
     <div class="chat-header">
       <div><div class="chat-h-name" id="chatName">Entrevista</div><div class="chat-h-sub" id="chatSub">Pregunta 1 de 6</div></div>
-      <button class="btn-finish" onclick="finishInterview()">Finalizar</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="speak-toggle active" id="speakToggle" onclick="toggleSpeak()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          Voz activada
+        </button>
+        <button class="btn-finish" onclick="finishInterview()">Finalizar</button>
+      </div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     <div class="messages" id="messages"></div>
@@ -270,8 +279,78 @@ async function firstMessage(job) {
   hideTyping();
   chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
+  speak(resp);
   qNum = 1; updateProgress();
   startTimer();
+}
+
+// ── Text to Speech ──
+let speakEnabled = true;
+let bestVoice = null;
+
+function loadVoices() {
+  var voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+  var preferred = [
+    'Paulina', 'Monica', 'Conchita', 'Lucia',
+    'Microsoft Sabina', 'Microsoft Laura', 'Microsoft Helena',
+    'Google español', 'es-MX', 'es-ES', 'es-US', 'es'
+  ];
+  for (var p = 0; p < preferred.length; p++) {
+    for (var v = 0; v < voices.length; v++) {
+      if (voices[v].name.includes(preferred[p]) || voices[v].lang.startsWith('es')) {
+        if (voices[v].name.toLowerCase().includes(preferred[p].toLowerCase()) ||
+            (voices[v].lang.startsWith('es') && voices[v].name !== bestVoice?.name)) {
+          if (!bestVoice) bestVoice = voices[v];
+        }
+      }
+    }
+  }
+  // Prefer female-sounding voices
+  for (var v = 0; v < voices.length; v++) {
+    var n = voices[v].name.toLowerCase();
+    if (voices[v].lang.startsWith('es') &&
+        (n.includes('paulina') || n.includes('monica') || n.includes('conchita') ||
+         n.includes('lucia') || n.includes('sabina') || n.includes('laura') ||
+         n.includes('helena') || n.includes('female') || n.includes('mujer'))) {
+      bestVoice = voices[v];
+      break;
+    }
+  }
+  if (!bestVoice) {
+    for (var v = 0; v < voices.length; v++) {
+      if (voices[v].lang.startsWith('es')) { bestVoice = voices[v]; break; }
+    }
+  }
+}
+
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function speak(text) {
+  if (!speakEnabled) return;
+  window.speechSynthesis.cancel();
+  var clean = text.replace(/<[^>]*>/g, '').replace(/\*\*/g, '').replace(/\*/g, '');
+  var utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'es-PE';
+  utt.rate = 0.92;
+  utt.pitch = 1.1;
+  utt.volume = 1;
+  if (bestVoice) utt.voice = bestVoice;
+  window.speechSynthesis.speak(utt);
+}
+
+function toggleSpeak() {
+  speakEnabled = !speakEnabled;
+  window.speechSynthesis.cancel();
+  var btn = document.getElementById('speakToggle');
+  if (speakEnabled) {
+    btn.classList.add('active');
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Voz activada';
+  } else {
+    btn.classList.remove('active');
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Voz desactivada';
+  }
 }
 
 // ── Speech Recognition ──
@@ -414,6 +493,7 @@ async function sendMsg() {
   inp.value = '';
   stopTimer();
   stopMic();
+  window.speechSynthesis.cancel();
   addMsg('user', txt);
   chatHistory.push({role: 'user', content: txt});
   busy = true; document.getElementById('sendBtn').disabled = true;
@@ -423,6 +503,7 @@ async function sendMsg() {
   hideTyping();
   chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
+  speak(resp);
   qNum = Math.min(qNum + 1, TOTAL_Q);
   updateProgress();
   busy = false; document.getElementById('sendBtn').disabled = false;
