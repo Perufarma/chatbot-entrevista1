@@ -267,7 +267,8 @@ function buildSystem(job) {
     '- Breve comentario empático sobre cada respuesta antes de la siguiente pregunta.\n' +
     '- Cálido pero directo y profesional. Máximo 4 oraciones por turno.\n' +
     '- Responde SIEMPRE en español.\n' +
-    '- Tras las ' + TOTAL_Q + ' preguntas agradece calurosamente y menciona que el equipo de Perufarma S.A. se contactará pronto.';
+    '- IMPORTANTE: Lleva conteo estricto de preguntas. Cuando hayas hecho exactamente ' + TOTAL_Q + ' preguntas, tu siguiente mensaje debe ser SOLO un cierre: comenta brevemente la última respuesta y agradece al candidato. NO hagas ninguna pregunta adicional después de la pregunta número ' + TOTAL_Q + '. Ningún signo de interrogación en el mensaje de cierre.\n' +
+    '- Mensaje de cierre debe incluir: (1) comentario breve sobre la última respuesta, (2) agradecimiento por el tiempo, (3) mención de que Perufarma S.A. se contactará pronto. Sin preguntas.';
 }
 
 async function callClaude(job, msgs) {
