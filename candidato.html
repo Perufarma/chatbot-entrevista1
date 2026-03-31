@@ -395,11 +395,7 @@ function speak(text) {
       window._startTimerAfterSpeak = false;
       startTimer();
     }
-    if (window._onSpeakDone) {
-      var cb = window._onSpeakDone;
-      window._onSpeakDone = null;
-      cb();
-    }
+
   }
 
   if (!speakEnabled) { onDone(); return; }
@@ -665,30 +661,15 @@ async function sendMsg() {
   updateProgress();
   busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum > TOTAL_Q) {
-    // Closing message - auto finish after speech + 30s or when speech ends
+    // Closing message - disable input and auto-finish after 20 seconds
     stopTimer();
     inp.disabled = true;
     document.getElementById('sendBtn').disabled = true;
     document.getElementById('micBtn').disabled = true;
     stopMic();
-
-    var autoFinished = false;
-    function doAutoFinish() {
-      if (autoFinished) return;
-      autoFinished = true;
-      finishInterview();
-    }
-
-    // Override speak's onDone to trigger finish
-    window._onSpeakDone = function() {
-      // Wait 8 seconds after speech ends so candidate can read
-      setTimeout(doAutoFinish, 8000);
-    };
-
-    // Hard fallback: finish after 30 seconds regardless
-    setTimeout(doAutoFinish, 30000);
-
+    window._startTimerAfterSpeak = false;
     speak(resp);
+    setTimeout(function() { finishInterview(); }, 20000);
 
   } else if (qNum === TOTAL_Q) {
     // Candidate just answered last question - let Claude give closing message
