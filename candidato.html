@@ -186,7 +186,7 @@ function formatText(text) {
   return '<p>' + t + '</p>';
 }
 
-async function loadJobs() {
+async function loadJobs() { // returns promise
   var sel = document.getElementById('jobSelect');
   try {
     var res = await fetch('/api/jobs');
@@ -225,6 +225,7 @@ async function startInterview() {
   if (!selectedJobId) { alert('Selecciona el puesto al que aplicas'); return; }
   candName = candName + ' (DNI: ' + dni + ')';
   var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  clearBackup();
   document.getElementById('setupPanel').style.display = 'none';
   var cp = document.getElementById('chatPanel');
   cp.style.display = 'flex'; cp.style.flexDirection = 'column';
@@ -271,17 +272,34 @@ function buildSystem(job) {
     '- Mensaje de cierre debe incluir: (1) comentario breve sobre la última respuesta, (2) agradecimiento por el tiempo, (3) mención de que Perufarma S.A. se contactará pronto. Sin preguntas.';
 }
 
-async function callClaude(job, msgs) {
+async function callClaude(job, msgs, retries) {
+  retries = retries || 0;
   try {
+    // Trim messages to avoid token limits - keep system + last 12 messages max
+    var trimmed = msgs.length > 12 ? msgs.slice(msgs.length - 12) : msgs;
     var res = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({model: 'claude-sonnet-4-20250514', max_tokens: 800, system: buildSystem(job), messages: msgs})
+      body: JSON.stringify({model: 'claude-sonnet-4-20250514', max_tokens: 800, system: buildSystem(job), messages: trimmed})
     });
+    if (!res.ok && retries < 2) {
+      await new Promise(function(r) { setTimeout(r, 1500); });
+      return callClaude(job, msgs, retries + 1);
+    }
     var d = await res.json();
+    if (d.error && retries < 2) {
+      await new Promise(function(r) { setTimeout(r, 1500); });
+      return callClaude(job, msgs, retries + 1);
+    }
     var block = d.content && d.content.find(function(b) { return b.type === 'text'; });
-    return block ? block.text : 'Error al conectar.';
-  } catch(e) { return 'Error de conexión. Intenta de nuevo.'; }
+    return block ? block.text : 'Lo siento, hubo un problema. Por favor haz clic en Enviar para reintentar.';
+  } catch(e) {
+    if (retries < 2) {
+      await new Promise(function(r) { setTimeout(r, 1500); });
+      return callClaude(job, msgs, retries + 1);
+    }
+    return 'Error de conexión. Por favor haz clic en Enviar para reintentar tu respuesta.';
+  }
 }
 
 function addMsg(role, text) {
@@ -502,6 +520,67 @@ function stopMic() {
   hint.style.display = 'none';
 }
 
+// ── Backup local ──
+function saveBackup() {
+  try {
+    localStorage.setItem('interview_backup', JSON.stringify({
+      candName: candName,
+      selectedJobId: selectedJobId,
+      qNum: qNum,
+      chatHistory: chatHistory,
+      timestamp: new Date().toISOString()
+    }));
+  } catch(e) {}
+}
+
+function loadBackup() {
+  try {
+    var b = localStorage.getItem('interview_backup');
+    if (!b) return null;
+    var data = JSON.parse(b);
+    // Only valid if less than 2 hours old
+    var age = (new Date() - new Date(data.timestamp)) / 1000 / 60;
+    if (age > 120) { clearBackup(); return null; }
+    return data;
+  } catch(e) { return null; }
+}
+
+function clearBackup() {
+  try { localStorage.removeItem('interview_backup'); } catch(e) {}
+}
+
+function restoreFromBackup(backup) {
+  candName = backup.candName;
+  selectedJobId = backup.selectedJobId;
+  chatHistory = backup.chatHistory;
+  qNum = backup.qNum;
+
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  if (!job) return false;
+
+  document.getElementById('setupPanel').style.display = 'none';
+  var cp = document.getElementById('chatPanel');
+  cp.style.display = 'flex'; cp.style.flexDirection = 'column';
+  document.getElementById('chatName').textContent = candName + ' · ' + job.titulo;
+  updateProgress();
+
+  // Restore messages
+  chatHistory.forEach(function(m, i) {
+    if (i === 0) return; // Skip init message
+    if (m.role === 'user') addMsg('user', m.content);
+    else addMsg('bot', m.content);
+  });
+
+  if (qNum > TOTAL_Q) {
+    document.getElementById('userInput').disabled = true;
+    document.getElementById('sendBtn').disabled = true;
+    document.getElementById('micBtn').disabled = true;
+    var btn = document.getElementById('finishBtnBottom');
+    if (btn) btn.style.display = 'block';
+  }
+  return true;
+}
+
 const TIMER_SECONDS = 120;
 let timerInterval = null;
 let timerRemaining = TIMER_SECONDS;
@@ -554,6 +633,7 @@ async function sendMsg() {
   var inp = document.getElementById('userInput');
   var txt = inp.value.trim();
   if (!txt) return;
+  var savedTxt = txt;
   inp.value = '';
   stopTimer();
   stopMic();
@@ -562,14 +642,25 @@ async function sendMsg() {
   stopTimer();
   addMsg('user', txt);
   chatHistory.push({role: 'user', content: txt});
+  saveBackup();
   busy = true; document.getElementById('sendBtn').disabled = true;
   showTyping();
   var job = jobs.find(function(j) { return j.id === selectedJobId; });
   var resp = await callClaude(job, chatHistory);
   hideTyping();
+  // If error, restore user's text so they can retry
+  if (resp.indexOf('Error') === 0 || resp.indexOf('Lo siento') === 0) {
+    chatHistory.pop(); // Remove the failed user message
+    inp.value = savedTxt;
+    inp.disabled = false;
+    document.getElementById('sendBtn').disabled = false;
+    busy = false;
+    return;
+  }
   chatHistory.push({role: 'assistant', content: resp});
   addMsg('bot', resp);
   qNum = Math.min(qNum + 1, TOTAL_Q + 1);
+  saveBackup();
   updateProgress();
   busy = false; document.getElementById('sendBtn').disabled = false;
   if (qNum > TOTAL_Q) {
@@ -623,6 +714,7 @@ async function finishInterview() {
 }
 
 async function saveResult(r, job) {
+  clearBackup();
   var transcript = chatHistory
     .filter(function(m, i) { return i > 0; })
     .map(function(m) { return (m.role === 'assistant' ? 'Estephanie' : candName) + ': ' + m.content; })
@@ -679,7 +771,18 @@ function renderReport(r, job) {
     '</div>';
 }
 
-loadJobs();
+loadJobs().then(function() {
+  var backup = loadBackup();
+  if (backup && backup.chatHistory && backup.chatHistory.length > 2) {
+    var age = Math.round((new Date() - new Date(backup.timestamp)) / 1000 / 60);
+    var restore = confirm('Tienes una entrevista en progreso de hace ' + age + ' minuto(s). ¿Deseas continuar donde la dejaste?');
+    if (restore) {
+      restoreFromBackup(backup);
+    } else {
+      clearBackup();
+    }
+  }
+});
 </script>
 </body>
 </html>
