@@ -320,7 +320,7 @@ function exportCSV() {
     'Fecha', 'Hora', 'Candidato', 'Puesto', 'Área',
     'Puntaje General', 'Nivel', 'Recomendación',
     'Comunicación', 'Conocimiento Técnico', 'Experiencia Relevante', 'Motivación y Fit',
-    'Fortalezas', 'Áreas de Mejora', 'Resumen'
+    'Fortalezas', 'Áreas de Mejora', 'Resumen', 'Transcripción Completa'
   ];
 
   const rows = results.map(r => [
@@ -338,7 +338,8 @@ function exportCSV() {
     esc(r.motivacion),
     esc(r.fortalezas),
     esc(r.areas_mejora),
-    esc(r.resumen)
+    esc(r.resumen),
+    esc(r.transcripcion)
   ].join(';'));
 
   const csv = [headers.map(h => esc(h)).join(';'), ...rows].join('\r\n');
