@@ -973,14 +973,24 @@ function toggleCandManualForm() {
   var f = document.getElementById('candManualForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) {
-    var sel = document.getElementById('cm_puesto');
-    sel.innerHTML = '<option value="">Selecciona un puesto...</option>' + jobs.map(function(j){
-      return '<option value="'+j.titulo+'">'+j.titulo+(j.area?' — '+j.area:'')+'</option>';
-    }).join('');
+    poblarSelectPuestos('cm_puesto');
     ['cm_nombre','cm_dni','cm_comentarios','cm_puntaje'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
     document.getElementById('cm_recomendacion').value='';
     f.scrollIntoView({behavior:'smooth'});
   }
+}
+
+// Helper: pobla cualquier select con la lista de puestos actualizada
+function poblarSelectPuestos(selId) {
+  var sel = document.getElementById(selId);
+  if (!sel) return;
+  if (!jobs.length) {
+    sel.innerHTML = '<option value="">No hay puestos configurados aún</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Selecciona un puesto...</option>' + jobs.map(function(j){
+    return '<option value="'+j.titulo+'">'+j.titulo+(j.area?' — '+j.area:'')+'</option>';
+  }).join('');
 }
 
 async function saveCandidatoManual() {
@@ -1139,8 +1149,8 @@ function renderFeedbackPanel() {
         '<div class="form-group"><label>Comentarios de la entrevista presencial</label>'+
           '<textarea id="fb_'+key+'" style="height:65px;" placeholder="Observaciones...">'+( fb?fb.comentario||'':'')+'</textarea></div>'+
         '<div style="display:flex;gap:8px;">'+
-          '<button class="btn btn-primary btn-sm" onclick="saveFeedback('+JSON.stringify(c.candidato)+','+JSON.stringify(c.puesto)+','+JSON.stringify(key)+')">Guardar feedback</button>'+
-          (fb?'<button class="btn btn-secondary btn-sm" onclick="deleteFeedback('+JSON.stringify(c.candidato)+','+JSON.stringify(c.puesto)+')">Borrar</button>':'')+
+          '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="saveFeedbackBtn(this)">Guardar feedback</button>'+
+          (fb?'<button class="btn btn-secondary btn-sm" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="deleteFeedbackBtn(this)">Borrar</button>':'')+
         '</div>'+
       '</div>';
     }).join('');
@@ -1153,6 +1163,20 @@ function setFbStar(el){
   fbTemp[key][campo]=n;
   var card=document.getElementById('fbcard_'+key);
   if(card) card.querySelectorAll('[data-key="'+key+'"][data-campo="'+campo+'"]').forEach(function(s){ s.style.color=parseInt(s.dataset.n)<=n?'#e8623a':'#e0ddd8'; });
+}
+
+// Wrappers seguros que usan data-attributes para evitar problemas con caracteres especiales
+function saveFeedbackBtn(el) {
+  var candidato = decodeURIComponent(el.dataset.cand);
+  var puesto = decodeURIComponent(el.dataset.puesto);
+  var key = el.dataset.key;
+  saveFeedback(candidato, puesto, key);
+}
+
+function deleteFeedbackBtn(el) {
+  var candidato = decodeURIComponent(el.dataset.cand);
+  var puesto = decodeURIComponent(el.dataset.puesto);
+  deleteFeedback(candidato, puesto);
 }
 
 function saveFeedback(candidato,puesto,key){
