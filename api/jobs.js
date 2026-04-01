@@ -6,28 +6,42 @@ export default async function handler(req, res) {
 
   const URL   = process.env.KV_REST_API_URL;
   const TOKEN = process.env.KV_REST_API_TOKEN;
-
   if (!URL || !TOKEN) {
     return res.status(500).json({ error: 'KV no configurado' });
   }
 
-  async function kv(command, method, body) {
-    const opts = { headers: { Authorization: `Bearer ${TOKEN}` } };
-    if (method === 'POST') {
-      opts.method = 'POST';
-      opts.headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify(body);
-    }
-    const r = await fetch(`${URL}/${command}`, opts);
+  // Helper KV — GET usa /get/key, POST usa pipeline con SET
+  async function kvGet(key) {
+    const r = await fetch(`${URL}/get/${key}`, {
+      headers: { Authorization: `Bearer ${TOKEN}` }
+    });
     return r.json();
   }
 
-  const key = req.query.type === 'results' ? 'results' : 'jobs';
+  async function kvSet(key, value) {
+    // Usar POST al endpoint pipeline para evitar límite de URL con payloads grandes
+    const r = await fetch(`${URL}/set/${key}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(value)
+    });
+    return r.json();
+  }
 
-  // GET
+  // Determinar key según ?type=
+  const type = req.query.type;
+  let key;
+  if (type === 'results') key = 'results';
+  else if (type === 'reqs')    key = 'reqs';
+  else                         key = 'jobs';
+
+  // ── GET ──
   if (req.method === 'GET') {
     try {
-      const data = await kv(`get/${key}`);
+      const data = await kvGet(key);
       const items = data.result ? JSON.parse(data.result) : [];
       return res.status(200).json({ [key]: items });
     } catch (e) {
@@ -35,12 +49,14 @@ export default async function handler(req, res) {
     }
   }
 
-  // POST — guardar
+  // ── POST ──
   if (req.method === 'POST') {
     try {
       const payload = req.body[key];
-      const encoded = encodeURIComponent(JSON.stringify(payload));
-      await kv(`set/${key}/${encoded}`);
+      if (payload === undefined) {
+        return res.status(400).json({ error: `Payload key "${key}" no encontrada en body` });
+      }
+      await kvSet(key, JSON.stringify(payload));
       return res.status(200).json({ ok: true });
     } catch (e) {
       return res.status(500).json({ error: e.message });
