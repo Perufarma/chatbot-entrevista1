@@ -6,348 +6,333 @@
 <title>RecruitAI — Panel Reclutador</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
-:root {
-  --bg:#f7f5f0;--surface:#fff;--surface2:#f0ede7;--border:rgba(0,0,0,0.08);
-  --border2:rgba(0,0,0,0.13);--text:#1a1814;--muted:#7a7570;--accent2:#e8623a;
-  --success:#2d7a4f;--danger:#c0392b;
-}
+:root{--bg:#f7f5f0;--surface:#fff;--surface2:#f0ede7;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.13);--text:#1a1814;--muted:#7a7570;--accent2:#e8623a;--success:#2d7a4f;--danger:#c0392b;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* NAV */
 .nav{background:var(--surface);border-bottom:0.5px solid var(--border2);padding:0 28px;display:flex;align-items:center;height:52px;position:sticky;top:0;z-index:100;}
 .nav-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;letter-spacing:-0.02em;margin-right:32px;display:flex;align-items:center;gap:10px;}
 .nav-logo span{color:var(--accent2);}
-.nav-tab{padding:0 16px;height:52px;display:flex;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;background:none;border-left:none;border-right:none;border-top:none;font-family:'DM Sans',sans-serif;}
+.nav-tab{padding:0 16px;height:52px;display:flex;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;background:none;border-left:none;border-right:none;border-top:none;font-family:'DM Sans',sans-serif;white-space:nowrap;}
 .nav-tab:hover{color:var(--text);}
 .nav-tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--accent2);}
+
+/* PANELS */
 .panel{display:none;padding:28px;max-width:960px;margin:0 auto;}
 .panel.active{display:block;}
+
+/* BUTTONS */
 .btn{padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;border-radius:8px;font-family:'DM Sans',sans-serif;transition:all 0.15s;border:none;}
-.btn-primary{background:var(--text);color:var(--bg);}
-.btn-primary:hover{opacity:0.85;}
-.btn-secondary{background:var(--surface);color:var(--text);border:0.5px solid var(--border2);}
-.btn-secondary:hover{background:var(--surface2);}
+.btn-primary{background:var(--text);color:var(--bg);}.btn-primary:hover{opacity:0.85;}
+.btn-secondary{background:var(--surface);color:var(--text);border:0.5px solid var(--border2);}.btn-secondary:hover{background:var(--surface2);}
 .btn-danger{background:#fbeaea;color:var(--danger);border:0.5px solid rgba(192,57,43,0.2);}
-.btn-accent{background:var(--accent2);color:white;}
-.btn-accent:hover{opacity:0.88;}
-.btn-success{background:#edf7f1;color:#1e5c38;border:0.5px solid #9FE1CB;}
+.btn-accent{background:var(--accent2);color:white;}.btn-accent:hover{opacity:0.88;}
 .btn-sm{padding:5px 12px;font-size:12px;border-radius:6px;}
+
+/* TYPOGRAPHY */
 .section-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:600;letter-spacing:-0.03em;}
 .section-sub{font-size:13px;color:var(--muted);margin-top:4px;}
 .section-head{font-size:16px;font-weight:500;letter-spacing:-0.01em;}
+
+/* CARDS & FORMS */
 .card{background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:16px 20px;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
 .form-group label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;}
 .form-group input,.form-group textarea,.form-group select{background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.15s;width:100%;}
 .form-group textarea{height:90px;resize:vertical;line-height:1.5;}
-.form-group input:focus,.form-group textarea:focus{border-color:var(--accent2);}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent2);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.jobs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
-.job-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;}
-.job-card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;}
-.job-card-dept{font-size:11px;color:var(--muted);margin-top:2px;}
-.job-card-body{font-size:12px;color:var(--muted);line-height:1.5;}
-.job-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface2);color:var(--muted);}
-.active-dot{width:7px;height:7px;border-radius:50%;background:#2d7a4f;flex-shrink:0;margin-top:4px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 .add-job-form{background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;display:none;flex-direction:column;gap:14px;margin-bottom:20px;}
 .add-job-form.open{display:flex;}
+
+/* MISC */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;line-height:1.6;}
 .share-box{background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:20px;}
 .share-url{flex:1;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.job-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface2);color:var(--muted);}
+.rec-pill{font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;font-family:'DM Mono',monospace;}
 .results-table{width:100%;border-collapse:collapse;font-size:12px;}
 .results-table th{padding:10px 12px;text-align:left;font-weight:500;white-space:nowrap;background:var(--surface2);}
 .results-table td{padding:9px 12px;border-top:0.5px solid var(--border);}
-.rec-pill{font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;font-family:'DM Mono',monospace;}
 .toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9999;}
 .toast.show{opacity:1;}
-.alert-banner{background:#fef8ee;border:0.5px solid #f0d090;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:none;}
 .divider{height:0.5px;background:var(--border2);margin:28px 0;}
-/* Líder login */
-.lider-login{display:flex;align-items:center;justify-content:center;min-height:60vh;}
+.alert-banner{background:#fef8ee;border:0.5px solid #f0d090;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:none;}
+.tip-box{font-size:11px;color:#7a5000;background:#fef8ee;border:0.5px solid #f0d090;border-radius:6px;padding:8px 10px;margin-top:4px;line-height:1.5;}
+
+/* PUESTOS LIST */
+.puesto-item{background:var(--surface);border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:8px;}
+.puesto-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:12px;transition:background .15s;}
+.puesto-header:hover{background:var(--surface2);}
+.puesto-body{padding:0 16px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s;}
+.puesto-body.open{max-height:600px;padding:12px 16px 16px;}
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-bar select,.filter-bar input{background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent2);}
+
+/* LÍDER */
+.lider-full{display:none;min-height:100vh;background:var(--bg);}
+.lider-nav{background:var(--surface);border-bottom:0.5px solid var(--border2);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;}
+.lider-nav-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px;}
+.lider-nav-logo span{color:var(--accent2);}
+.lider-content{max-width:960px;margin:0 auto;padding:28px;}
+.lider-login-wrap{display:flex;align-items:center;justify-content:center;min-height:70vh;}
 .lider-login-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:16px;padding:36px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:20px;text-align:center;}
 </style>
 </head>
 <body>
 
-<!-- NAV RECLUTADOR (oculto en vista líder) -->
-<nav class="nav" id="navReclutador">
-  <div class="nav-logo">
-    <img src="data:image/png;base64,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" alt="Perufarma" style="height:32px;width:auto;object-fit:contain;">
-    Recruit<span>AI</span>
-  </div>
-  <button class="nav-tab active" id="tab-btn-puestos" onclick="showTab('puestos',this)">Puestos</button>
-  <button class="nav-tab" id="tab-btn-resultados" onclick="showTab('resultados',this);renderResultados()">Resultados</button>
-  <button class="nav-tab" id="tab-btn-candidatos" onclick="showTab('candidatos',this);renderCandidatosPorPuesto()">Candidatos</button>
-  <button class="nav-tab" id="tab-btn-lider" onclick="mostrarLoginLider()">Líder</button>
-</nav>
+<!-- ═══════════════ RECLUTADOR ═══════════════ -->
+<div id="reclutadorApp">
+  <nav class="nav">
+    <div class="nav-logo">
+      <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/wAARCADIAMgDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAUGAgQHAwEI/8QAOhAAAgEEAQQAAwUDCwUAAAAAAAECAwQFEQYHEiExEyJBFDJRYXEII4EVFjc4UnN1obGyszZydJK0/8QAGQEBAAMBAQAAAAAAAAAAAAAAAAIDBAEF/8QAJBEBAAICAgEDBQEAAAAAAAAAAAECAxEEEiEiQWEFMVFxscH/2gAMAwEAAhEDEQA/AP2WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAk9Rb/ACAA5xwjL8r5NeZG4r5S2x0LW4dBWitlNprz8zbT/Lw/On6LgrjLWa3eW9O8pr3VtU1LX4um23r9JN/kQ9zxqtY8mueU2dWpXqui+6xpxUFXmo6i3JvW9bW2vqSGO5XhLqyncVb6lZSpPtr0buapToy/CSk1r/R/TZg49b1jpefVv393o8y9Lz3xxHXUeIjWp/s/tK2d5bXtD4ttWjUim4vT8xa9pr2mvqn5NkrcqmJy9ed3gMzZPJQS/eUK0aikl6jUjF/NH/Nb8NG7x/LrJU61GpS+z31pP4V1bt7dOXtNP6xa8p/VP8do1d5rbrfww9YtXvSdxCYABagAADhHSvjef5dwOGdfUDldtkpVakaaeQnOgnF6XdB+Wn9fP8DKPUbkuX4BgsbZV4UOS5XJTxk7pRWoKDj3VUktJ6nDbS8fM1rxrT6M43qDkOnFKhx/O4rGY2rWqx+JKjKdzBt6k09a3+Hpr8V7Mec8RlxrP9OeN8fyMrW5jWr9l9UoqbVWUqbc3B+H59J+kkvIE7yShybpc8fyKXL8rnsXO7hQyVvftz1CW/ng232609JfVpeVtHzqjnuY2/WHD4Tit7JTvMe+yhOf7lTbqp1ZLyn2pd3p/dXh+je5N0453yTFTxea6jUrqzlJSlT/AJHpQ8p7T3Fp+H+Zq5ei7b9pPiNu5dzpYacO71vVOut6/gBrdQqXKeDcNxcZcxyORvrzO03WuZScGoOk06STb1Dcd6Wl59F0655LIYjphlMhi7uraXdJ0OytSlqUd1oJ6f5ptfxK9+01/wBN8f8A8co/7Jkv+0X/AEQZj/uof88AKnz/ACfI7rJdPcRjeRXuMll7SKua1KW3KTjD5mtrb8v6/UtmG49yTiCvs5kuYZbktK3sqrhj5UHuc0k1rUm3LxpePqUHqJTyVbOdLKeHr0bfISsoK3q1o90IT7aem1p7X8Dp2KvOQ8X4xlMtzzLWV7G2XxYSs6XZqCWu3TS229JfqvIFLxPFuonJePy5Pf8ANMvicvcRnWtcdRbpUKS89kJw2vel7TaTW9vZJ8U5lk+RdCstn61V0spaWN3TlXpfK/iQpNxmtenpxfjxv1r0amEsuc9SbWOYymbueM8fuPmtbLHPtr1qb9SlU9pNfjtP3pJ+YTpH/Vu5X/d3/wD86A2+mFrz/m+FxOXyPKLvF4y0qL4caTbq37jPcpVJJp9r8wS21pPx9X78eqcw5TznmmEpcpusdjLO+7XUprurQW5qMKTfiCem2158JL2y39B/6JcB/cz/AOWZBdHP6Seo/wDiUP8AdVAhOLfz6nzbO9O6fL68rSyUK8snXj8S7hSaT7INt+X3pNtvWm1reiS4TdZ3jPWC44Tf8hv85YXFh9qo1LybnVpzXn223rxJaXjyvBs8N/rFc0/8K3/2Ujwuv60tr/gz/wBJgbvKo8v5Z1Brcaxt/kuPYKwoRqXF9QpyhO5qNJqMJ+PC3rw9eG3vwjT4hkOQ8V6rR4Jl85c5uwvrN3NlXunutBpNtOTbb8Qmnt/RNa8p7nKOU8l5BzK44VwadG0nZpPJZStBTVDevlgntN+deVtvetabKpjuP1+O/tF8ctbrN5DM3Fawq1qtzeT7pOTp11qK86iklpbetvyB3nxs1Kl1uo6NrD49SL1L5tRh+Un50/ySb8rxryRWZykqufteN2dV07itSdxcVI/epUE0vH4Sk3pP6Lb9pE3b0aVCjGjRgoQitKKXhEpjX3VxbtMxHs1aljK483l1Wmv7FGTpRX/q+5/o21+RD5zg/G8rQUKmMt7epCXfCtQpxjNS/F+NS/NSTTLMc26pdU+P8Zs7iwt6v8pZWUXFULeq4qm/o5zi9x0/onv9N7ORinN6dbctyK8aJvM6cp6y9Ns9icvaZbjVk60oUp1atxjrb7O6fZpqUlBqKlpv7iTettb99L6Q2PM7nJ0+T8lhCjG8xtKEkmlKq9RcZOK9PW296e2/CXhUnplxbqFkM5Yc3z1/fRtYXkPhWVzVqVJVKVR9kmozk3GCUm1vbaTfry/0UlpeFolysNZrSkzvr5UfTc9oyZc0V1GSNa/2PwyABBsAABQOgmGyeB6d2+Oy9nUs7qNxVm6c9bSctp+G/Zn1d4xls3Z4rLcedN5vC3cbq1hOSUavld0G3pedL20nprxsvgA5DnJ9Q+f29tgavG6vFLF1oVL+9neKc3GL3200knva3+qW2l7lMpxfLvrjx7P2tjKWGscZK3qV/ix+WXbVSTTfc/vR8pP3+p0oAc/658YyvJ+I0KeEhGrf2N5C7pUpSS+J2qSaTelv5t+1vWit85pdSOfcKusauLUsJTShOpRq3MKla8nGSahDelCKa223t6SX132QAcj5BxnPVuWdNrmljas6OKowjfTjJaoNKCab358p+t+i9dRcDV5PwnKYOhVjSrXVHVOUvSmmpRT19G0k/wAmWIAcm4zk+qFHj9nxanw2hZXlrQjbLKXF5F28IRSip9iTcnpLwm0351raXn074hyLE9FORccv8dKlk7qN3G3o/Fg1U76KjHUk2ltrXlrX10ddNPLwrzxV3C17vtEqM1S7Jdr72nrT2tPevO0BAdJcVkMH07xGKylu7e8t6c41afcpdrc5NeU2n4a9MiOmvHsxiOb81yORs3QtcnfQq2c++EviwTm29Jtr2vaXsn3b5h6k43UlGUHTgqyXhTqvU33p7UHTTe3tpNqSTM/sWVhdWk4Va3woXNeVeMqzk3CVVdmty1pRXpp6W9JPQFd41x/MWnWfk/ILizdPG3trSp29fvg++UYwTWk9rTT9pejzuON5qXXy35MrJvEwxroO4+JDSnqXjt33fVedaJ6wo5+lVc68bmpFU6G18ZNtpUe9Lc9b2qu/C358va17wo5jutHL4+1Kn3v4y0kvg93ct+fCqr0/L39UwKDDH8w4Jz/kGVw3G5chxWdqq4apXCp1KNTbbT2m9blL6a015TTRjjOP88v+s2F5hnsTa29nC2q03Tt68ZfZIuFRRhNtpzk3JNtJrz9NaV9o2ubdS2cp14xhWUqqlW25L913a1LWm1UentJbSSbWvTF0cpThiftMLqVSnCSuu+snHbS8v5229+l5Xt6j4ApfUbA8rtOYQ5ZxiLrz+CqdSnDTkteGnF/eTWvC87/RMjo846pSXwqXD4ur/alZVlH+O5Jf5nZNAvjNGoiaxOmG3DntNqXmNuLVuN9W+Xr4eazFPDWU/vUoSUX2v6dtPy/0lJFo4P0n4txmpC7nQeTv4eVcXK2oP8Yw9L9fL/M6CgctnvMajxHwlj4WOtu1t2n5fdIAFLYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//2Q==" alt="Perufarma" style="height:32px;width:auto;object-fit:contain;">
+      Recruit<span>AI</span>
+    </div>
+    <button class="nav-tab active" id="btn-puestos" onclick="showTab('puestos',this)">Puestos</button>
+    <button class="nav-tab" id="btn-envio" onclick="showTab('envio',this)">Env&iacute;o masivo</button>
+    <button class="nav-tab" id="btn-candidatos" onclick="showTab('candidatos',this);renderCandidatosPorPuesto()">Candidatos</button>
+    <button class="nav-tab" id="btn-lider" onclick="mostrarLider()">L&iacute;der</button>
+  </nav>
 
-<!-- NAV LÍDER (separado) -->
-<nav class="nav" id="navLider" style="display:none;justify-content:space-between;">
-  <div class="nav-logo">
-    <img src="data:image/png;base64,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" alt="Perufarma" style="height:32px;width:auto;object-fit:contain;">
-    Portal <span>Líder</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <div id="liderNombreNav" style="font-size:13px;color:var(--muted);"></div>
-    <button class="btn btn-secondary btn-sm" onclick="cerrarSesionLider()">Salir</button>
-  </div>
-</nav>
+  <!-- PUESTOS -->
+  <div class="panel active" id="tab-puestos">
+    <div class="alert-banner" id="alertaVencimiento"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;">
+      <div><div class="section-title">Puestos y solicitudes</div><div class="section-sub">Cada puesto incluye su solicitud de personal y notificación al líder</div></div>
+      <button class="btn btn-accent" onclick="toggleForm()">+ Nuevo puesto</button>
+    </div>
 
-<!-- ═══════════════════════════════════════ -->
-<!-- PANEL PUESTOS -->
-<!-- ═══════════════════════════════════════ -->
-<div class="panel active" id="tab-puestos">
-  <!-- Alerta vencimiento -->
-  <div class="alert-banner" id="alertaVencimiento"></div>
+    <!-- Formulario de puesto -->
+    <div class="add-job-form" id="addJobForm">
+      <div id="formTitle" style="font-size:14px;font-weight:500;">Nuevo puesto</div>
 
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;">
-    <div><div class="section-title">Puestos activos</div><div class="section-sub">Gestiona puestos, solicitudes y candidatos manuales</div></div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-secondary" onclick="toggleReqForm()">+ Nueva solicitud</button>
-      <button class="btn btn-accent" onclick="toggleForm()">+ Agregar puesto</button>
-    </div>
-  </div>
-
-  <div class="share-box">
-    <div style="flex:1;">
-      <div style="font-size:13px;font-weight:500;">Link para candidatos</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px;">Comparte esta URL — los candidatos solo verán la entrevista</div>
-    </div>
-    <div class="share-url" id="shareUrl">cargando...</div>
-    <button class="btn btn-secondary btn-sm" onclick="copyLink()">Copiar</button>
-  </div>
-
-  <!-- Form nuevo puesto -->
-  <div class="add-job-form" id="addJobForm">
-    <div id="formTitle" style="font-size:14px;font-weight:500;">Nuevo puesto</div>
-    <div class="form-row">
-      <div class="form-group"><label>Nombre del puesto *</label><input type="text" id="f_titulo" placeholder="Ej: Auxiliar de Almacén"></div>
-      <div class="form-group"><label>Área *</label><input type="text" id="f_area" placeholder="Ej: Operaciones"></div>
-    </div>
-    <div class="form-group"><label>Descripción y requisitos *</label><textarea id="f_desc" placeholder="Describe el puesto, responsabilidades y requisitos clave..."></textarea></div>
-    <div class="form-row">
-      <div class="form-group"><label>Experiencia requerida</label><input type="text" id="f_exp" placeholder="Ej: 1+ año en almacén"></div>
-      <div class="form-group"><label>Habilidades clave (separadas por coma)</label><input type="text" id="f_skills" placeholder="Ej: picking, inventario, Excel"></div>
-    </div>
-    <div class="form-group">
-      <label>Email del líder responsable *</label>
-      <input type="email" id="f_emailLider" placeholder="Ej: lider@perufarma.com">
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Se usará para notificar al líder cuando se cree una solicitud de este puesto.</div>
-    </div>
-    <div class="form-group">
-      <label>DNI del líder responsable *</label>
-      <input type="text" id="f_dniLider" placeholder="Ej: 12345678" maxlength="8" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;">El líder usará este DNI para acceder a su portal.</div>
-    </div>
-    <div class="form-group">
-      <label>Instrucciones para el entrevistador IA</label>
-      <textarea id="f_instrucciones" style="height:80px;" placeholder="Ej: Enfócate en experiencia práctica..."></textarea>
-      <div style="font-size:11px;color:#7a5000;background:#fef8ee;border:0.5px solid #f0d090;border-radius:6px;padding:8px 10px;margin-top:4px;line-height:1.5;"><strong>Tip:</strong> Claude seguirá estas instrucciones al generar las preguntas de entrevista.</div>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button id="saveJobBtn" class="btn btn-primary" onclick="saveJob()">Guardar puesto</button>
-      <button class="btn btn-secondary" onclick="toggleForm()">Cancelar</button>
-    </div>
-  </div>
-
-  <!-- Form nueva solicitud -->
-  <div class="add-job-form" id="reqForm">
-    <div style="font-size:14px;font-weight:500;">Nueva solicitud de perfil</div>
-    <div class="form-row">
-      <div class="form-group"><label>Puesto solicitado *</label><input type="text" id="req_puesto" placeholder="Ej: Supervisor de Distribución"></div>
-      <div class="form-group"><label>Área *</label><input type="text" id="req_area" placeholder="Ej: Operaciones, Comercial..."></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Sede *</label>
-        <select id="req_sede" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          <option value="">Selecciona...</option>
-          <option>Lima</option><option>Arequipa</option><option>Chiclayo</option>
-        </select>
+      <!-- Sección 1: Datos del puesto -->
+      <div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:4px;border-bottom:0.5px solid var(--border2);">Datos del puesto</div>
+      <div class="form-row">
+        <div class="form-group"><label>Nombre del puesto *</label><input type="text" id="f_titulo" placeholder="Ej: Supervisor de Distribución"></div>
+        <div class="form-group"><label>&Aacute;rea *</label><input type="text" id="f_area" placeholder="Ej: Operaciones"></div>
       </div>
-      <div class="form-group"><label>Horario *</label><input type="text" id="req_horario" placeholder="Ej: Lunes a sábado 8am-6pm"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Nivel del puesto *</label>
-        <select id="req_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          <option value="">Selecciona el nivel...</option>
-          <option value="60">Gerente / Sub Gerente (60 días)</option>
-          <option value="35">Jefe / Supervisor / Especialista (35 días)</option>
-          <option value="30">Analista / Ejecutivo (30 días)</option>
-          <option value="30">Técnico / Asistente (30 días)</option>
-          <option value="25">Practicante / Auxiliar (25 días)</option>
-        </select>
+      <div class="form-group"><label>Descripción y responsabilidades *</label><textarea id="f_desc" placeholder="Describe el puesto, responsabilidades y requisitos clave..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Experiencia requerida</label><input type="text" id="f_exp" placeholder="Ej: 1+ año en almacén"></div>
+        <div class="form-group"><label>Habilidades clave (separadas por coma)</label><input type="text" id="f_skills" placeholder="Ej: picking, inventario, Excel"></div>
       </div>
       <div class="form-group">
-        <label>Motivo *</label>
-        <select id="req_motivo" onchange="toggleReemplazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          <option value="">Selecciona...</option>
-          <option value="reemplazo">Reemplazo</option>
-          <option value="nuevo">Nuevo puesto</option>
-        </select>
+        <label>Instrucciones para el entrevistador IA</label>
+        <textarea id="f_instrucciones" style="height:70px;" placeholder="Ej: Enfócate en experiencia práctica..."></textarea>
+        <div class="tip-box"><strong>Tip:</strong> Claude seguirá estas instrucciones al generar las preguntas de entrevista.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email del l&iacute;der *</label>
+          <input type="email" id="f_emailLider" placeholder="Ej: lider@perufarma.com">
+        </div>
+        <div class="form-group">
+          <label>DNI del l&iacute;der *</label>
+          <input type="text" id="f_dniLider" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">El líder usa este DNI para acceder a su portal.</div>
+        </div>
+      </div>
+
+      <!-- Botones de puesto -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="saveJobBtn" class="btn btn-primary" onclick="saveJobOnly()">Guardar cambios</button>
+        <button class="btn btn-secondary" onclick="toggleForm()">Cancelar</button>
+      </div>
+
+      <!-- Sección 2: Nueva solicitud (solo visible al crear o al expandir) -->
+      <div id="reqSection">
+        <div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:4px;border-bottom:0.5px solid var(--border2);margin-top:8px;">Nueva solicitud de personal</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Completa esta sección para abrir un proceso de reclutamiento. Se guardar&aacute; un <strong style="color:var(--text);">snapshot del perfil actual</strong> y se notificar&aacute; al l&iacute;der por correo.</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Sede *</label>
+              <select id="f_sede" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+                <option value="">Selecciona...</option>
+                <option>Lima</option><option>Arequipa</option><option>Chiclayo</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Horario *</label><input type="text" id="f_horario" placeholder="Ej: Lunes a sábado 8am-6pm"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nivel del puesto *</label>
+              <select id="f_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+                <option value="">Selecciona el nivel...</option>
+                <option value="60">Gerente / Sub Gerente (60 días)</option>
+                <option value="35">Jefe / Supervisor / Especialista (35 días)</option>
+                <option value="30">Analista / Ejecutivo (30 días)</option>
+                <option value="30">Técnico / Asistente (30 días)</option>
+                <option value="25">Practicante / Auxiliar (25 días)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Motivo *</label>
+              <select id="f_motivo" onchange="toggleReemplazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+                <option value="">Selecciona...</option>
+                <option value="reemplazo">Reemplazo</option>
+                <option value="nuevo">Nuevo puesto</option>
+              </select>
+            </div>
+          </div>
+          <div id="plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#085041;line-height:1.5;"></div>
+          <div class="form-group" id="reemplazoField" style="display:none;">
+            <label>¿Cuándo cesó o cesará el colaborador?</label>
+            <input type="date" id="f_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Requisitos mínimos *</label>
+            <textarea id="f_minimos" placeholder="Experiencia mínima, formación requerida, habilidades indispensables..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Fecha de inicio del proceso *</label>
+            <input type="date" id="f_fechaInicio" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          </div>
+          <div>
+            <button class="btn btn-accent" onclick="saveJobAndCreateReq()">Crear solicitud y notificar l&iacute;der &rarr;</button>
+          </div>
+        </div>
       </div>
     </div>
-    <div id="plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#085041;line-height:1.5;"></div>
-    <div class="form-group" id="reemplazoField" style="display:none;">
-      <label>¿Cuándo cesó o cesará el colaborador?</label>
-      <input type="date" id="req_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+
+    <!-- Filtros -->
+    <div class="filter-bar" id="filterBar" style="display:none;">
+      <input type="text" id="filtroTexto" placeholder="&#128269; Buscar puesto..." oninput="renderJobsList()" style="flex:1;min-width:180px;">
+      <select id="filtroArea" onchange="renderJobsList()" style="min-width:140px;"><option value="">Todas las áreas</option></select>
+      <select id="filtroLider" onchange="renderJobsList()" style="min-width:160px;"><option value="">Todos los líderes</option></select>
     </div>
-    <div class="form-group">
-      <label>Fecha de inicio del proceso *</label>
-      <input type="date" id="req_fechaInicio" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+
+    <div id="jobsList"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">No hay puestos configurados. Haz clic en <strong>+ Nuevo puesto</strong> para comenzar.</div>
+  </div>
+
+  <!-- ENVÍO MASIVO -->
+  <div class="panel" id="tab-envio">
+    <div style="margin-bottom:24px;"><div class="section-title">Envío masivo</div><div class="section-sub">Genera mensajes de WhatsApp para invitar candidatos al chatbot de entrevista</div></div>
+    <div class="share-box">
+      <div style="flex:1;"><div style="font-size:13px;font-weight:500;">Link de entrevista</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">Comparte esta URL — los candidatos solo verán el chatbot</div></div>
+      <div class="share-url" id="shareUrl">cargando...</div>
+      <button class="btn btn-secondary btn-sm" onclick="copyLink()">Copiar</button>
     </div>
-    <div class="form-group">
-      <label>Requisitos mínimos *</label>
-      <textarea id="req_minimos" placeholder="Experiencia mínima, formación requerida, habilidades indispensables..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>Email del líder a notificar *</label>
-      <input type="email" id="req_emailLider" placeholder="Ej: lider@perufarma.com">
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Se abrirá tu cliente de correo con el mensaje pre-redactado para este líder.</div>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-primary" onclick="saveRequisicion()">Guardar y notificar líder →</button>
-      <button class="btn btn-secondary" onclick="toggleReqForm()">Cancelar</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+      <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:13px;font-weight:500;">Lista de candidatos</div>
+        <div style="font-size:12px;color:var(--muted);">Un candidato por línea: Nombre, teléfono</div>
+        <textarea id="candidatosList" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);resize:vertical;height:180px;width:100%;outline:none;line-height:1.6;" placeholder="Juan Pérez, 999888777&#10;María Torres, 988777666&#10;Carlos Silva, 977555444"></textarea>
+        <div style="font-size:11px;color:var(--muted);">Formato: Nombre, teléfono (uno por línea)</div>
+        <div class="form-group">
+          <label>Puesto al que aplican</label>
+          <select id="envioJobSelect" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;"></select>
+        </div>
+        <button class="btn btn-accent" onclick="generarMensajes()">Generar mensajes &rarr;</button>
+      </div>
+      <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
   </div>
 
-  <!-- Grid puestos -->
-  <div class="jobs-grid" id="jobsGrid"></div>
-  <div class="empty-state" id="emptyState" style="display:none;">No hay puestos configurados. Haz clic en <strong>+ Agregar puesto</strong> para comenzar.</div>
-
-  <div class="divider"></div>
-
-  <!-- Solicitudes activas -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-    <div><div class="section-head">Solicitudes activas</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Seguimiento de requerimientos de personal</div></div>
-  </div>
-  <div id="reqList"></div>
-
-  <!-- Form candidato manual -->
-  <div class="add-job-form" id="candManualForm">
-    <div style="font-size:14px;font-weight:500;">Agregar candidato manualmente</div>
-    <div class="form-row">
-      <div class="form-group"><label>Nombre completo *</label><input type="text" id="cm_nombre" placeholder="Ej: Juan Pérez"></div>
-      <div class="form-group"><label>DNI *</label><input type="text" id="cm_dni" placeholder="Ej: 12345678" maxlength="8" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+  <!-- CANDIDATOS -->
+  <div class="panel" id="tab-candidatos">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;">
+      <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="renderCandidatosPorPuesto()">Actualizar</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Descargar Excel (.csv)</button>
+        <button class="btn btn-danger btn-sm" onclick="clearResults()">Limpiar todo</button>
+        <button class="btn btn-accent btn-sm" onclick="toggleCandManualForm()">+ Candidato manual</button>
+      </div>
     </div>
-    <div class="form-group">
-      <label>Puesto al que aplica *</label>
-      <select id="cm_puesto" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;"></select>
-    </div>
-    <div class="form-group">
-      <label>Comentarios del reclutador *</label>
-      <textarea id="cm_comentarios" style="height:100px;" placeholder="Describe las impresiones de la entrevista: fortalezas, debilidades, habilidades observadas, recomendación..."></textarea>
-    </div>
-    <div class="form-row">
+
+    <!-- Form candidato manual -->
+    <div class="add-job-form" id="candManualForm">
+      <div style="font-size:14px;font-weight:500;">Agregar candidato manualmente</div>
+      <div class="form-row">
+        <div class="form-group"><label>Nombre completo *</label><input type="text" id="cm_nombre" placeholder="Ej: Juan Pérez"></div>
+        <div class="form-group"><label>DNI *</label><input type="text" id="cm_dni" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+      </div>
       <div class="form-group">
-        <label>Puntaje estimado (0-100) *</label>
-        <input type="number" id="cm_puntaje" min="0" max="100" placeholder="Ej: 75">
+        <label>Puesto al que aplica *</label>
+        <select id="cm_puesto" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;"></select>
       </div>
-      <div class="form-group">
-        <label>Recomendación *</label>
-        <select id="cm_recomendacion" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          <option value="">Selecciona...</option>
-          <option value="Avanzar">Avanzar</option>
-          <option value="Considerar">Considerar</option>
-          <option value="No avanzar">No avanzar</option>
-        </select>
+      <div class="form-group"><label>Comentarios del reclutador *</label><textarea id="cm_comentarios" style="height:100px;" placeholder="Fortalezas, debilidades, habilidades observadas, recomendación..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Puntaje estimado (0-100) *</label><input type="number" id="cm_puntaje" min="0" max="100" placeholder="Ej: 75"></div>
+        <div class="form-group">
+          <label>Recomendación *</label>
+          <select id="cm_recomendacion" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <option value="">Selecciona...</option>
+            <option value="Avanzar">Avanzar</option>
+            <option value="Considerar">Considerar</option>
+            <option value="No avanzar">No avanzar</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="saveCandidatoManual()">Guardar candidato</button>
+        <button class="btn btn-secondary" onclick="toggleCandManualForm()">Cancelar</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-primary" onclick="saveCandidatoManual()">Guardar candidato</button>
-      <button class="btn btn-secondary" onclick="toggleCandManualForm()">Cancelar</button>
-    </div>
+
+    <div id="candidatosPorPuesto"></div>
   </div>
-</div>
+</div><!-- /reclutadorApp -->
 
-<!-- ═══════════════════════════════════════ -->
-<!-- PANEL RESULTADOS -->
-<!-- ═══════════════════════════════════════ -->
-<div class="panel" id="tab-resultados">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;">
-    <div><div class="section-title">Resultados de candidatos</div><div class="section-sub">Historial de entrevistas completadas</div></div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Descargar Excel (.csv)</button>
-      <button class="btn btn-danger btn-sm" onclick="clearResults()">Limpiar todo</button>
+<!-- ═══════════════ LÍDER ═══════════════ -->
+<div id="liderApp" style="display:none;min-height:100vh;">
+  <nav class="lider-nav">
+    <div class="lider-nav-logo">
+      <img src="data:image/png;base64,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" alt="Perufarma" style="height:32px;width:auto;object-fit:contain;">
+      Portal <span>L&iacute;der</span>
     </div>
-  </div>
-  <div id="resultsPanel"></div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- PANEL CANDIDATOS — tabla por puesto -->
-<!-- ═══════════════════════════════════════ -->
-<div class="panel" id="tab-candidatos">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;">
-    <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real</div></div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-secondary btn-sm" onclick="renderCandidatosPorPuesto()">Actualizar</button>
-      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Descargar Excel (.csv)</button>
-      <button class="btn btn-accent btn-sm" onclick="toggleCandManualForm()">+ Candidato manual</button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div id="liderNombreNav" style="font-size:13px;color:var(--muted);"></div>
+      <button class="btn btn-secondary btn-sm" onclick="cerrarSesionLider()">Salir</button>
     </div>
-  </div>
-  <div id="candidatosPorPuesto"></div>
-</div>
+  </nav>
 
-<!-- ═══════════════════════════════════════ -->
-<!-- PANEL LÍDER — login -->
-<!-- ═══════════════════════════════════════ -->
-<div class="panel" id="tab-lider">
-  <div class="lider-login" id="liderLoginView">
-    <div class="lider-login-card">
-      <div>
-        <div class="section-title" style="font-size:20px;">Portal del Líder</div>
-        <div class="section-sub" style="margin-top:6px;">Ingresa tu DNI para acceder a tus procesos</div>
+  <div class="lider-content">
+    <!-- Login -->
+    <div id="liderLoginView" class="lider-login-wrap">
+      <div class="lider-login-card">
+        <div>
+          <div class="section-title" style="font-size:20px;">Portal del L&iacute;der</div>
+          <div class="section-sub" style="margin-top:6px;">Ingresa tu DNI para acceder a tus procesos</div>
+        </div>
+        <div class="form-group">
+          <label>Tu DNI</label>
+          <input type="text" id="liderDniInput" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')accederLider()">
+        </div>
+        <button class="btn btn-accent" onclick="accederLider()">Ingresar &rarr;</button>
       </div>
-      <div class="form-group">
-        <label>Tu DNI</label>
-        <input type="text" id="liderDniInput" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')accederLider()">
-      </div>
-      <button class="btn btn-accent" onclick="accederLider()">Ingresar →</button>
-    </div>
-  </div>
-
-  <!-- Vista del líder autenticado -->
-  <div id="liderDashboard" style="display:none;">
-    <!-- Mis procesos -->
-    <div style="margin-bottom:28px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div><div class="section-head">Mis procesos activos</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Estado de tus solicitudes de personal</div></div>
-      </div>
-      <div id="liderProcesos"></div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- Candidatos de mis puestos -->
-    <div style="margin-bottom:28px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div><div class="section-head">Candidatos de mis puestos</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Prefiltro IA de candidatos que aplicaron</div></div>
-        <button class="btn btn-secondary btn-sm" onclick="renderLiderCandidatos()">Actualizar</button>
+    <!-- Dashboard -->
+    <div id="liderDashboard" style="display:none;">
+      <div style="margin-bottom:28px;">
+        <div style="margin-bottom:16px;"><div class="section-head">Mis procesos activos</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Estado y fechas de tus solicitudes</div></div>
+        <div id="liderProcesos"></div>
       </div>
-      <div id="liderCandidatos"></div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Feedback presencial -->
-    <div style="margin-bottom:28px;">
-      <div style="margin-bottom:16px;">
-        <div class="section-head">Feedback de entrevistas presenciales</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:2px;">Califica candidatos que ya entrevistaste en persona</div>
+      <div class="divider"></div>
+      <div style="margin-bottom:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div><div class="section-head">Candidatos de mis puestos</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Prefiltro IA</div></div>
+          <button class="btn btn-secondary btn-sm" onclick="renderLiderCandidatos()">Actualizar</button>
+        </div>
+        <div id="liderCandidatos"></div>
       </div>
-      <div id="feedbackPanel"></div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Perfiles pendientes de completar -->
-    <div style="margin-bottom:28px;">
-      <div style="margin-bottom:16px;">
-        <div class="section-head">Perfiles pendientes de completar</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:2px;">Agrega requisitos deseables a las solicitudes que te enviaron</div>
+      <div class="divider"></div>
+      <div style="margin-bottom:28px;">
+        <div style="margin-bottom:16px;"><div class="section-head">Feedback de entrevistas presenciales</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Califica candidatos que ya entrevistaste en persona</div></div>
+        <div id="feedbackPanel"></div>
       </div>
-      <div id="liderPerfilesPendientes"></div>
+      <div class="divider"></div>
+      <div style="margin-bottom:28px;">
+        <div style="margin-bottom:16px;"><div class="section-head">Perfiles pendientes de completar</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Agrega requisitos deseables a tus solicitudes</div></div>
+        <div id="liderPerfilesPendientes"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -355,9 +340,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 // STATE
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 var jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
 var requisiciones = JSON.parse(localStorage.getItem('rreqs') || '[]');
 var feedbacks = JSON.parse(localStorage.getItem('rfeedbacks') || '[]');
@@ -365,141 +350,132 @@ var fbTemp = {};
 var liderDni = null;
 
 const PLAZOS = {
-  '60': { label: 'Gerente / Sub Gerente', dias: 60 },
-  '35': { label: 'Jefe / Supervisor / Especialista', dias: 35 },
-  '30': { label: 'Analista / Ejecutivo / Técnico / Asistente', dias: 30 },
-  '25': { label: 'Practicante / Auxiliar', dias: 25 }
+  '60':{label:'Gerente / Sub Gerente',dias:60},
+  '35':{label:'Jefe / Supervisor / Especialista',dias:35},
+  '30':{label:'Analista / Ejecutivo / Técnico / Asistente',dias:30},
+  '25':{label:'Practicante / Auxiliar',dias:25}
 };
 
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 // SAFE FETCH
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 async function safeFetch(url, options) {
   try {
     var res = await fetch(url, options);
     var ct = res.headers.get('content-type') || '';
     if (!ct.includes('application/json')) return null;
     return await res.json();
-  } catch(e) {
-    return null;
-  }
+  } catch(e) { return null; }
 }
 
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 // INIT
-// ══════════════════════════════════════════════════════
-const candidateUrl = window.location.origin + '/candidato.html';
+// ══════════════════════════════════
+var candidateUrl = window.location.origin + '/candidato.html';
 document.getElementById('shareUrl').textContent = candidateUrl;
-renderJobs();
+renderJobsList();
 verificarAlertas();
 
 (async function() {
-  var data = await safeFetch('/api/jobs');
-  if (data && data.jobs && data.jobs.length) {
-    jobs = data.jobs;
-    localStorage.setItem('rjobs', JSON.stringify(jobs));
-    renderJobs();
+  var d = await safeFetch('/api/jobs');
+  if (d && d.jobs && d.jobs.length) {
+    jobs = d.jobs; localStorage.setItem('rjobs', JSON.stringify(jobs));
+    renderJobsList(); renderEnvioSelect();
   }
-  var dreqs = await safeFetch('/api/jobs?type=reqs');
-  if (dreqs && dreqs.reqs && dreqs.reqs.length) {
-    requisiciones = dreqs.reqs;
-    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  var dr = await safeFetch('/api/jobs?type=reqs');
+  if (dr && dr.reqs && dr.reqs.length) {
+    requisiciones = dr.reqs; localStorage.setItem('rreqs', JSON.stringify(requisiciones));
   }
-  renderReqCards();
   verificarAlertas();
 })();
 
-// ══════════════════════════════════════════════════════
-// NAV
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
+// NAV RECLUTADOR
+// ══════════════════════════════════
 function showTab(id, btn) {
-  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('#reclutadorApp .panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('#reclutadorApp .nav-tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-'+id).classList.add('active');
   if (btn) btn.classList.add('active');
+  if (id === 'envio') renderEnvioSelect();
 }
 
-function mostrarLoginLider() {
-  document.getElementById('navReclutador').style.display = 'none';
-  document.getElementById('navLider').style.display = 'flex';
-  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
-  document.getElementById('tab-lider').classList.add('active');
+// ══════════════════════════════════
+// LÍDER — navegación
+// ══════════════════════════════════
+function mostrarLider() {
+  document.getElementById('reclutadorApp').style.display = 'none';
+  document.getElementById('liderApp').style.display = 'block';
   document.getElementById('liderLoginView').style.display = 'flex';
   document.getElementById('liderDashboard').style.display = 'none';
+  document.getElementById('liderNombreNav').textContent = '';
   liderDni = null;
-  setTimeout(function() {
+  setTimeout(function(){
     var inp = document.getElementById('liderDniInput');
     if (inp) { inp.value = ''; inp.focus(); }
   }, 100);
 }
 
 function cerrarSesionLider() {
+  // Vuelve al login del líder, NO al panel reclutador
   liderDni = null;
-  document.getElementById('navReclutador').style.display = 'flex';
-  document.getElementById('navLider').style.display = 'none';
-  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
-  document.getElementById('tab-puestos').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('tab-btn-puestos').classList.add('active');
+  document.getElementById('liderLoginView').style.display = 'flex';
+  document.getElementById('liderDashboard').style.display = 'none';
+  document.getElementById('liderNombreNav').textContent = '';
+  var inp = document.getElementById('liderDniInput');
+  if (inp) { inp.value = ''; inp.focus(); }
 }
 
-// ══════════════════════════════════════════════════════
-// LÍDER — autenticación y dashboard
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
+// LÍDER — autenticación
+// ══════════════════════════════════
 function accederLider() {
   var dni = document.getElementById('liderDniInput').value.trim();
   if (dni.length !== 8) { toast('Ingresa un DNI válido de 8 dígitos'); return; }
-
-  // Buscar si el DNI coincide con algún puesto registrado
-  var misJobs = jobs.filter(function(j) { return j.dniLider === dni; });
-  var misReqs = requisiciones.filter(function(r) { return r.dniLider === dni; });
-
+  var misJobs = jobs.filter(function(j){ return j.dniLider === dni; });
+  var misReqs = requisiciones.filter(function(r){ return r.dniLider === dni; });
   if (!misJobs.length && !misReqs.length) {
-    toast('DNI no encontrado. Consulta con el reclutador.');
-    return;
+    toast('DNI no encontrado. Consulta con el reclutador.'); return;
   }
-
   liderDni = dni;
-  var primerJob = misJobs[0] || misReqs[0];
-  document.getElementById('liderNombreNav').textContent = 'Líder · ' + (primerJob.area || '');
+  var ref = misJobs[0] || misReqs[0];
+  document.getElementById('liderNombreNav').textContent = 'Líder · ' + (ref.area || '');
   document.getElementById('liderLoginView').style.display = 'none';
   document.getElementById('liderDashboard').style.display = 'block';
-
   renderLiderProcesos();
   renderLiderCandidatos();
   renderFeedbackPanel();
   renderLiderPerfilesPendientes();
 }
 
+// ══════════════════════════════════
+// LÍDER — dashboard
+// ══════════════════════════════════
 function renderLiderProcesos() {
   var panel = document.getElementById('liderProcesos');
   if (!panel) return;
-  var misReqs = requisiciones.filter(function(r) { return r.dniLider === liderDni; });
+  var misReqs = requisiciones.filter(function(r){ return r.dniLider === liderDni; });
   if (!misReqs.length) {
-    panel.innerHTML = '<div class="empty-state" style="padding:20px 0;">No tienes procesos activos asignados.</div>';
-    return;
+    panel.innerHTML = '<div class="empty-state" style="padding:20px 0;">No tienes procesos activos asignados.</div>'; return;
   }
-  var estadoColor = function(e) {
-    return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:{bg:'#EEEDFE',t:'#3C3489'};
-  };
+  var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:{bg:'#EEEDFE',t:'#3C3489'}; };
   panel.innerHTML = misReqs.slice().reverse().map(function(r) {
-    var ec = estadoColor(r.estado);
+    var c = ec(r.estado);
     var hoy = new Date();
-    var limite = new Date(r.fechaLimiteRaw || r.fechaLimite);
-    var diasRestantes = Math.ceil((limite - hoy) / (1000*60*60*24));
-    var alertStyle = diasRestantes <= 7 ? 'color:#c0392b;font-weight:600;' : diasRestantes <= 14 ? 'color:#b8760a;' : 'color:var(--muted);';
+    var limite = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
+    var dias = limite ? Math.ceil((limite-hoy)/(1000*60*60*24)) : null;
+    var diasStyle = dias !== null ? (dias<=7?'color:#c0392b;font-weight:600;':dias<=14?'color:#b8760a;':'color:var(--muted);') : '';
     var html = '<div class="card" style="margin-bottom:12px;">';
     html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
     html += '<div><div style="font-size:14px;font-weight:500;">' + r.puesto + '</div>';
     html += '<div style="font-size:12px;color:var(--muted);">' + r.area + ' &middot; ' + r.sede + '</div></div>';
-    html += '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + ec.bg + ';color:' + ec.t + ';">' + r.estado + '</span>';
-    html += '</div>';
+    html += '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + c.bg + ';color:' + c.t + ';">' + r.estado + '</span></div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;margin-top:8px;">';
     html += '<div style="color:var(--muted);">Inicio: <strong style="color:var(--text);">' + (r.fechaInicio||r.fecha) + '</strong></div>';
-    html += '<div style="color:var(--muted);">Fecha l&iacute;mite: <strong style="color:#c0392b;">' + r.fechaLimite + '</strong></div>';
-    html += '<div style="' + alertStyle + '">' + (diasRestantes > 0 ? diasRestantes + ' d&iacute;as restantes' : 'VENCIDO') + '</div>';
+    html += '<div style="color:var(--muted);">L&iacute;mite: <strong style="color:#c0392b;">' + r.fechaLimite + '</strong></div>';
+    if (dias !== null) html += '<div style="' + diasStyle + '">' + (dias>0 ? dias+' d&iacute;as restantes' : 'VENCIDO') + '</div>';
     html += '</div>';
-    if (r.minimos) html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px;"><strong style="color:var(--text);">Requisitos m&iacute;nimos:</strong> ' + r.minimos.substring(0,150) + (r.minimos.length>150?'&hellip;':'') + '</div>';
+    if (r.minimos) html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;"><strong style="color:var(--text);">M&iacute;nimos:</strong> ' + r.minimos.substring(0,150) + (r.minimos.length>150?'&hellip;':'') + '</div>';
     if (r.deseables) html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Deseables:</strong> ' + r.deseables + '</div>';
     html += '</div>';
     return html;
@@ -510,82 +486,31 @@ function renderLiderCandidatos() {
   var panel = document.getElementById('liderCandidatos');
   if (!panel) return;
   panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Cargando...</div>';
-
-  var misJobs = jobs.filter(function(j) { return j.dniLider === liderDni; });
-  var misPuestos = misJobs.map(function(j) { return j.titulo; });
-
+  var misPuestos = jobs.filter(function(j){ return j.dniLider===liderDni; }).map(function(j){ return j.titulo; });
   safeFetch('/api/jobs?type=results').then(function(d) {
-    var results = (d && d.results) ? d.results : JSON.parse(localStorage.getItem('rresults') || '[]');
-    var misCands = results.filter(function(r) { return misPuestos.indexOf(r.puesto) !== -1; });
-
-    if (!misCands.length) {
-      panel.innerHTML = '<div class="empty-state" style="padding:20px 0;">No hay candidatos evaluados para tus puestos a&uacute;n.</div>';
-      return;
-    }
-
-    var byPuesto = {};
-    misCands.forEach(function(r) {
-      if (!byPuesto[r.puesto]) byPuesto[r.puesto] = [];
-      byPuesto[r.puesto].push(r);
-    });
-
-    var rBg = function(r) { return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea'; };
-    var rTx = function(r) { return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f'; };
-    var sBg = function(s) { return s>=80?'#edf7f1':s>=60?'#fef8ee':'#fbeaea'; };
-    var sTx = function(s) { return s>=80?'#1e5c38':s>=60?'#7a5000':'#8b1f1f'; };
-
-    panel.innerHTML = Object.keys(byPuesto).map(function(puesto) {
-      var cands = byPuesto[puesto].slice().sort(function(a,b) { return b.puntaje - a.puntaje; });
-      var rows = cands.map(function(c, idx) {
-        var badge = idx===0 ? '<span style="font-size:10px;background:#fef8ee;color:#7a5000;border-radius:4px;padding:1px 5px;margin-left:5px;">&starf; Top</span>' : '';
-        return '<tr>' +
-          '<td style="padding:9px 12px;font-weight:500;">' + c.candidato + badge + '</td>' +
-          '<td style="padding:9px 12px;color:var(--muted);font-size:12px;">' + (c.fecha||'') + '</td>' +
-          '<td style="padding:9px 12px;text-align:center;"><span style="background:' + sBg(c.puntaje) + ';color:' + sTx(c.puntaje) + ';padding:2px 9px;border-radius:8px;font-size:12px;font-weight:600;">' + c.puntaje + '</span></td>' +
-          '<td style="padding:9px 12px;text-align:center;"><span style="background:' + rBg(c.recomendacion) + ';color:' + rTx(c.recomendacion) + ';padding:2px 8px;border-radius:8px;font-size:11px;font-weight:500;">' + c.recomendacion + '</span></td>' +
-          '<td style="padding:9px 12px;font-size:12px;color:var(--muted);">' + (c.resumen||'').substring(0,80) + '&hellip;</td>' +
-        '</tr>';
-      }).join('');
-      return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">' +
-        '<div style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;">' +
-          '<div style="font-size:13px;font-weight:500;">' + puesto + '</div>' +
-          '<span style="font-size:12px;color:var(--muted);">' + cands.length + ' candidato' + (cands.length!==1?'s':'') + '</span>' +
-        '</div>' +
-        '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-          '<thead><tr style="background:var(--bg);">' +
-            '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidato</th>' +
-            '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Fecha</th>' +
-            '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Puntaje</th>' +
-            '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Recomendaci&oacute;n</th>' +
-            '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Resumen IA</th>' +
-          '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '</div>';
-    }).join('');
+    var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    var misCands = results.filter(function(r){ return misPuestos.indexOf(r.puesto)!==-1; });
+    if (!misCands.length) { panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos evaluados para tus puestos a&uacute;n.</div>'; return; }
+    panel.innerHTML = renderTablaByPuesto(misCands);
   });
 }
 
 function renderLiderPerfilesPendientes() {
   var panel = document.getElementById('liderPerfilesPendientes');
   if (!panel) return;
-  var pendientes = requisiciones.filter(function(r) {
-    return r.dniLider === liderDni && !r.desiderablesCompletados;
-  });
+  var pendientes = requisiciones.filter(function(r){ return r.dniLider===liderDni && !r.desiderablesCompletados; });
   if (!pendientes.length) {
-    panel.innerHTML = '<div class="empty-state" style="padding:20px 0;">No tienes perfiles pendientes de completar. &iexcl;Todo al d&iacute;a!</div>';
-    return;
+    panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No tienes perfiles pendientes. &iexcl;Todo al d&iacute;a! &#10003;</div>'; return;
   }
   panel.innerHTML = pendientes.map(function(r) {
-    var txtId = 'lider_des_' + r.id;
     var html = '<div class="card" style="margin-bottom:12px;display:flex;flex-direction:column;gap:12px;">';
     html += '<div><div style="font-size:14px;font-weight:500;">' + r.puesto + '</div>';
     html += '<div style="font-size:12px;color:var(--muted);">' + r.area + ' &middot; ' + r.sede + ' &middot; ' + r.nivel + '</div></div>';
-    html += '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;">';
-    html += '<strong style="color:var(--text);">Requisitos m&iacute;nimos:</strong> ' + r.minimos + '</div>';
-    html += '<div style="font-size:12px;color:#085041;background:#edf7f1;border-radius:8px;padding:10px 12px;line-height:1.5;">';
-    html += 'Seg&uacute;n pol&iacute;tica Perufarma, el plazo para cubrir este puesto es de <strong>' + r.diasPlazo + ' d&iacute;as</strong>. Fecha l&iacute;mite: <strong>' + r.fechaLimite + '</strong></div>';
-    html += '<div class="form-group"><label>Requisitos deseables (completa este campo)</label>';
-    html += '<textarea id="' + txtId + '" style="height:80px;" placeholder="Certificaciones, experiencia adicional, habilidades valoradas...">' + (r.deseables||'') + '</textarea></div>';
-    html += '<button class="btn btn-primary btn-sm" data-req-id="' + r.id + '" onclick="guardarDesiderablesLider(this.dataset.reqId)">Guardar y completar perfil &rarr;</button>';
+    html += '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Requisitos m&iacute;nimos:</strong> ' + r.minimos + '</div>';
+    html += '<div style="font-size:12px;color:#085041;background:#edf7f1;border-radius:8px;padding:10px 12px;">Plazo pol&iacute;tica Perufarma: <strong>' + r.diasPlazo + ' d&iacute;as</strong> &mdash; Fecha l&iacute;mite: <strong>' + r.fechaLimite + '</strong></div>';
+    html += '<div class="form-group"><label>Requisitos deseables</label>';
+    html += '<textarea id="ldes_' + r.id + '" style="height:80px;" placeholder="Certificaciones, experiencia adicional, habilidades valoradas...">' + (r.deseables||'') + '</textarea></div>';
+    html += '<button class="btn btn-primary btn-sm" data-rid="' + r.id + '" onclick="guardarDesiderablesLider(this.dataset.rid)">Guardar y completar perfil &rarr;</button>';
     html += '</div>';
     return html;
   }).join('');
@@ -593,55 +518,45 @@ function renderLiderPerfilesPendientes() {
 
 function guardarDesiderablesLider(id) {
   var numId = parseInt(id);
-  var txtId = 'lider_des_' + id;
-  var deseables = document.getElementById(txtId) ? document.getElementById(txtId).value.trim() : '';
+  var deseables = document.getElementById('ldes_'+id) ? document.getElementById('ldes_'+id).value.trim() : '';
   if (!deseables) { toast('Ingresa los requisitos deseables'); return; }
-  var fechaCompletado = new Date().toLocaleDateString('es-PE');
-  requisiciones = requisiciones.map(function(r) {
-    if (r.id === numId) {
-      return Object.assign({}, r, { deseables: deseables, desiderablesCompletados: true, fechaCompletadoLider: fechaCompletado });
-    }
-    return r;
+  var fecha = new Date().toLocaleDateString('es-PE');
+  requisiciones = requisiciones.map(function(r){
+    return r.id===numId ? Object.assign({},r,{deseables:deseables,desiderablesCompletados:true,fechaCompletadoLider:fecha}) : r;
   });
   localStorage.setItem('rreqs', JSON.stringify(requisiciones));
   syncReqsToServer(requisiciones);
-  toast('Perfil completado el ' + fechaCompletado + ' \u2713');
+  toast('Perfil completado el '+fecha+' \u2713');
   renderLiderPerfilesPendientes();
   renderLiderProcesos();
 }
 
-// ══════════════════════════════════════════════════════
-// ALERTAS DE VENCIMIENTO
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
+// ALERTAS VENCIMIENTO
+// ══════════════════════════════════
 function verificarAlertas() {
   var banner = document.getElementById('alertaVencimiento');
   if (!banner) return;
   var hoy = new Date();
-  var proximas = requisiciones.filter(function(r) {
-    if (r.estado === 'Cubierto') return false;
-    var limite = new Date(r.fechaLimiteRaw || r.fechaLimite);
-    if (isNaN(limite)) return false;
-    var dias = Math.ceil((limite - hoy) / (1000*60*60*24));
-    return dias <= 7;
+  var proximas = requisiciones.filter(function(r){
+    if (r.estado==='Cubierto') return false;
+    var lim = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
+    if (!lim || isNaN(lim)) return false;
+    return Math.ceil((lim-hoy)/(1000*60*60*24)) <= 7;
   });
-  if (!proximas.length) { banner.style.display = 'none'; return; }
-  banner.style.display = 'block';
-  var items = proximas.map(function(r) {
-    var limite = new Date(r.fechaLimiteRaw || r.fechaLimite);
-    var dias = Math.ceil((limite - new Date()) / (1000*60*60*24));
-    var txt = dias <= 0 ? '<strong>' + r.puesto + '</strong> &mdash; <span style="color:#c0392b;font-weight:600;">VENCIDO</span>' :
-              '<strong>' + r.puesto + '</strong> &mdash; vence en <span style="color:#c0392b;font-weight:600;">' + dias + ' d&iacute;a' + (dias!==1?'s':'') + '</span>';
-    return '<div style="font-size:13px;line-height:1.8;">&bull; ' + txt + ' (' + r.area + ')</div>';
+  if (!proximas.length) { banner.style.display='none'; return; }
+  banner.style.display='block';
+  var items = proximas.map(function(r){
+    var lim = new Date(r.fechaLimiteRaw);
+    var dias = Math.ceil((lim-new Date())/(1000*60*60*24));
+    return '<div style="font-size:13px;line-height:1.8;">&bull; <strong>'+r.puesto+'</strong> &mdash; '+(dias<=0?'<span style="color:#c0392b;font-weight:600;">VENCIDO</span>':'vence en <span style="color:#c0392b;font-weight:600;">'+dias+' d&iacute;a'+(dias!==1?'s':'')+'</span>')+' ('+r.area+')</div>';
   }).join('');
-  banner.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px;">' +
-    '<span style="font-size:18px;">&#9888;</span>' +
-    '<div><div style="font-size:13px;font-weight:500;margin-bottom:6px;color:#7a5000;">Procesos pr&oacute;ximos a vencer (7 d&iacute;as o menos)</div>' + items + '</div>' +
-    '</div>';
+  banner.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:18px;">&#9888;</span><div><div style="font-size:13px;font-weight:500;margin-bottom:6px;color:#7a5000;">Procesos pr&oacute;ximos a vencer</div>'+items+'</div></div>';
 }
 
-// ══════════════════════════════════════════════════════
-// PUESTOS
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
+// FORMULARIO ÚNICO (Puesto + Solicitud)
+// ══════════════════════════════════
 var editingJobId = null;
 
 function toggleForm() {
@@ -649,54 +564,65 @@ function toggleForm() {
   var f = document.getElementById('addJobForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) {
-    ['f_titulo','f_area','f_desc','f_exp','f_skills','f_instrucciones','f_emailLider','f_dniLider'].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.value = '';
+    ['f_titulo','f_area','f_desc','f_exp','f_skills','f_instrucciones','f_emailLider','f_dniLider','f_horario','f_minimos','f_cese'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
     });
+    ['f_sede','f_nivel','f_motivo'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('plazoInfo').style.display='none';
+    document.getElementById('reemplazoField').style.display='none';
+    document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
     document.getElementById('formTitle').textContent = 'Nuevo puesto';
-    document.getElementById('saveJobBtn').textContent = 'Guardar puesto';
-    document.getElementById('reqForm').classList.remove('open');
+    document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
+    // En modo nuevo puesto mostrar sección solicitud
+    document.getElementById('reqSection').style.display = 'block';
+    f.scrollIntoView({behavior:'smooth'});
   }
 }
 
 function editJob(id) {
-  var job = jobs.find(function(j) { return j.id === id; });
+  var job = jobs.find(function(j){ return j.id===id; });
   if (!job) return;
   editingJobId = id;
   var f = document.getElementById('addJobForm');
   f.classList.add('open');
-  document.getElementById('f_titulo').value = job.titulo || '';
-  document.getElementById('f_area').value = job.area || '';
-  document.getElementById('f_desc').value = job.desc || '';
-  document.getElementById('f_exp').value = job.exp || '';
-  document.getElementById('f_skills').value = job.skills || '';
-  document.getElementById('f_instrucciones').value = job.instrucciones || '';
-  document.getElementById('f_emailLider').value = job.emailLider || '';
-  document.getElementById('f_dniLider').value = job.dniLider || '';
+  // Solo poblar campos del puesto (no solicitud)
+  var campos = {f_titulo:'titulo',f_area:'area',f_desc:'desc',f_exp:'exp',f_skills:'skills',f_instrucciones:'instrucciones',f_emailLider:'emailLider',f_dniLider:'dniLider'};
+  Object.keys(campos).forEach(function(elId){
+    var el=document.getElementById(elId); if(el) el.value=job[campos[elId]]||'';
+  });
   document.getElementById('formTitle').textContent = 'Editar puesto';
   document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
+  // Al editar, limpiar campos de solicitud y mostrar sección
+  ['f_horario','f_minimos','f_cese'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['f_sede','f_nivel','f_motivo'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
+  document.getElementById('plazoInfo').style.display='none';
+  document.getElementById('reemplazoField').style.display='none';
+  document.getElementById('reqSection').style.display = 'block';
   f.scrollIntoView({behavior:'smooth'});
 }
 
-function saveJob() {
+// ── Guardar solo el puesto (sin solicitud) ──
+function saveJobOnly() {
   var titulo = document.getElementById('f_titulo').value.trim();
   var desc = document.getElementById('f_desc').value.trim();
   var emailLider = document.getElementById('f_emailLider').value.trim();
   var dniLider = document.getElementById('f_dniLider').value.trim();
-  if (!titulo || !desc) { toast('Completa nombre y descripción'); return; }
-  if (!emailLider) { toast('Agrega el email del líder responsable'); return; }
-  if (dniLider.length !== 8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
+  if (!titulo||!desc) { toast('Completa nombre y descripción'); return; }
+  if (!emailLider) { toast('Agrega el email del líder'); return; }
+  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
+
   var jobData = {
-    titulo: titulo,
-    area: document.getElementById('f_area').value.trim(),
-    desc: desc,
-    exp: document.getElementById('f_exp').value.trim(),
-    skills: document.getElementById('f_skills').value.trim(),
-    instrucciones: document.getElementById('f_instrucciones').value.trim(),
-    emailLider: emailLider,
-    dniLider: dniLider
+    titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
+    exp:document.getElementById('f_exp').value.trim(), skills:document.getElementById('f_skills').value.trim(),
+    instrucciones:document.getElementById('f_instrucciones').value.trim(),
+    emailLider:emailLider, dniLider:dniLider
   };
+
   if (editingJobId) {
-    jobs = jobs.map(function(j) { return j.id === editingJobId ? Object.assign({}, j, jobData) : j; });
+    jobs = jobs.map(function(j){ return j.id===editingJobId?Object.assign({},j,jobData):j; });
     toast('Puesto actualizado');
   } else {
     jobData.id = Date.now();
@@ -706,72 +632,353 @@ function saveJob() {
   editingJobId = null;
   localStorage.setItem('rjobs', JSON.stringify(jobs));
   syncJobsToServer(jobs);
-  renderJobs();
+  renderJobsList();
   document.getElementById('addJobForm').classList.remove('open');
 }
 
-function deleteJob(id) {
-  if (!confirm('¿Eliminar este puesto?')) return;
-  jobs = jobs.filter(function(j) { return j.id !== id; });
+// ── Crear solicitud con snapshot del perfil actual ──
+function saveJobAndCreateReq() {
+  var titulo = document.getElementById('f_titulo').value.trim();
+  var desc = document.getElementById('f_desc').value.trim();
+  var emailLider = document.getElementById('f_emailLider').value.trim();
+  var dniLider = document.getElementById('f_dniLider').value.trim();
+  var sede = document.getElementById('f_sede').value;
+  var nivel = document.getElementById('f_nivel').value;
+  var motivo = document.getElementById('f_motivo').value;
+  var minimos = document.getElementById('f_minimos').value.trim();
+  var horario = document.getElementById('f_horario').value.trim();
+  var fechaInicio = document.getElementById('f_fechaInicio').value;
+
+  if (!titulo||!desc) { toast('Completa nombre y descripción del puesto'); return; }
+  if (!emailLider) { toast('Agrega el email del líder'); return; }
+  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
+  if (!sede||!nivel||!motivo||!minimos||!horario||!fechaInicio) { toast('Completa todos los campos de la solicitud'); return; }
+
+  // Primero guardar/actualizar el puesto
+  var jobData = {
+    titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
+    exp:document.getElementById('f_exp').value.trim(), skills:document.getElementById('f_skills').value.trim(),
+    instrucciones:document.getElementById('f_instrucciones').value.trim(),
+    emailLider:emailLider, dniLider:dniLider
+  };
+  var jobId;
+  if (editingJobId) {
+    jobId = editingJobId;
+    jobs = jobs.map(function(j){ return j.id===jobId?Object.assign({},j,jobData):j; });
+  } else {
+    jobId = Date.now();
+    jobData.id = jobId;
+    jobs.push(jobData);
+  }
   localStorage.setItem('rjobs', JSON.stringify(jobs));
   syncJobsToServer(jobs);
-  renderJobs();
+
+  // Crear snapshot del perfil completo al momento de la solicitud
+  var diasPlazo = parseInt(nivel);
+  var fechaLimiteDate = new Date(fechaInicio);
+  fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
+
+  var snapshot = {
+    titulo:titulo, area:jobData.area, desc:desc,
+    exp:jobData.exp, skills:jobData.skills, instrucciones:jobData.instrucciones,
+    emailLider:emailLider, dniLider:dniLider,
+    fechaSnapshot:new Date().toLocaleDateString('es-PE')
+  };
+
+  var req = {
+    id: Date.now()+1,
+    jobId: jobId,
+    fecha: new Date().toLocaleDateString('es-PE'),
+    fechaInicio: new Date(fechaInicio).toLocaleDateString('es-PE'),
+    fechaInicioRaw: fechaInicio,
+    fechaLimite: fechaLimiteDate.toLocaleDateString('es-PE'),
+    fechaLimiteRaw: fechaLimiteDate.toISOString(),
+    puesto: titulo, area: jobData.area,
+    sede: sede, horario: horario,
+    nivelVal: nivel, nivel: PLAZOS[nivel]?PLAZOS[nivel].label:nivel,
+    diasPlazo: diasPlazo, motivo: motivo,
+    cese: motivo==='reemplazo'?document.getElementById('f_cese').value:'',
+    minimos: minimos, deseables: '',
+    emailLider: emailLider, dniLider: dniLider,
+    estado: 'En proceso', desiderablesCompletados: false,
+    perfilSnapshot: snapshot  // <-- perfil congelado al momento de la solicitud
+  };
+
+  requisiciones.push(req);
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+
+  // mailto al líder
+  var asunto = encodeURIComponent('Nueva solicitud de perfil: '+titulo+' — Perufarma S.A.');
+  var cuerpo = encodeURIComponent(
+    'Hola,\n\nSe ha creado una solicitud de perfil que requiere tu atención:\n\n'+
+    '• Puesto: '+titulo+'\n'+'• Área: '+jobData.area+'\n'+'• Sede: '+sede+'\n'+
+    '• Nivel: '+(PLAZOS[nivel]?PLAZOS[nivel].label:nivel)+'\n'+
+    '• Motivo: '+(motivo==='reemplazo'?'Reemplazo':'Nuevo puesto')+'\n'+
+    '• Fecha inicio: '+new Date(fechaInicio).toLocaleDateString('es-PE')+'\n'+
+    '• Fecha límite: '+fechaLimiteDate.toLocaleDateString('es-PE')+'\n\n'+
+    'Requisitos mínimos:\n'+minimos+'\n\n'+
+    'Ingresa a tu portal para completar los requisitos deseables:\n'+window.location.origin+'\n\n'+
+    'Saludos,\nEquipo de Reclutamiento y Selección — Perufarma S.A.'
+  );
+
+  editingJobId = null;
+  renderJobsList();
+  verificarAlertas();
+  document.getElementById('addJobForm').classList.remove('open');
+  window.location.href = 'mailto:'+emailLider+'?subject='+asunto+'&body='+cuerpo;
+  toast('Solicitud creada — abriendo correo al líder...');
+}
+
+// Renderiza historial de solicitudes de un puesto con su snapshot
+function renderHistorialSolicitudes(jobId) {
+  var reqs = requisiciones.filter(function(r){ return r.jobId === jobId; });
+  if (!reqs.length) return '';
+  var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:{bg:'#EEEDFE',t:'#3C3489'}; };
+  var html = '<div style="margin-top:14px;border-top:0.5px solid var(--border2);padding-top:12px;">';
+  html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Historial de solicitudes</div>';
+  html += reqs.slice().reverse().map(function(r) {
+    var c = ec(r.estado);
+    var snap = r.perfilSnapshot || {};
+    var snapId = 'snap_' + r.id;
+    var h = '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">';
+    h += '<div style="font-size:12px;font-weight:500;">Solicitud del '+r.fecha+' &mdash; Inicio: '+(r.fechaInicio||'—')+' &mdash; Límite: '+r.fechaLimite+'</div>';
+    h += '<div style="display:flex;align-items:center;gap:6px;">';
+    h += '<span style="font-size:11px;background:'+c.bg+';color:'+c.t+';padding:2px 8px;border-radius:6px;">'+r.estado+'</span>';
+    h += '<select data-req-id="'+r.id+'" onchange="cambiarEstadoReq(this.dataset.reqId,this.value)" style="font-size:11px;background:var(--surface);border:0.5px solid var(--border2);border-radius:5px;padding:3px 6px;color:var(--text);outline:none;">';
+    h += '<option'+(r.estado==='Pendiente'?' selected':'')+'>Pendiente</option>';
+    h += '<option'+(r.estado==='En proceso'?' selected':'')+'>En proceso</option>';
+    h += '<option'+(r.estado==='Cubierto'?' selected':'')+'>Cubierto</option>';
+    h += '</select>';
+    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;background:none;border:0.5px solid var(--border2);border-radius:5px;padding:3px 8px;cursor:pointer;color:var(--muted);">Ver perfil usado</button>';
+    h += '</div></div>';
+    // Snapshot colapsable
+    h += '<div id="'+snapId+'" style="display:none;margin-top:8px;padding:10px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border2);font-size:12px;color:var(--muted);line-height:1.6;">';
+    h += '<div style="font-size:11px;font-weight:500;color:var(--accent2);margin-bottom:6px;">&#128247; Perfil exacto usado en esta solicitud ('+( snap.fechaSnapshot||r.fecha)+')</div>';
+    if (snap.desc) h += '<div><strong style="color:var(--text);">Descripción:</strong> '+snap.desc+'</div>';
+    if (snap.exp) h += '<div><strong style="color:var(--text);">Experiencia:</strong> '+snap.exp+'</div>';
+    if (snap.skills) h += '<div><strong style="color:var(--text);">Habilidades:</strong> '+snap.skills+'</div>';
+    if (r.minimos) h += '<div><strong style="color:var(--text);">Requisitos mínimos:</strong> '+r.minimos+'</div>';
+    if (r.deseables) h += '<div><strong style="color:var(--text);">Deseables:</strong> '+r.deseables+'</div>';
+    if (snap.instrucciones) h += '<div><strong style="color:var(--text);">Instrucciones IA:</strong> '+snap.instrucciones+'</div>';
+    if (r.sede) h += '<div><strong style="color:var(--text);">Sede:</strong> '+r.sede+' &nbsp;|&nbsp; <strong style="color:var(--text);">Horario:</strong> '+(r.horario||'—')+'</div>';
+    h += '</div>';
+    h += '</div>';
+    return h;
+  }).join('');
+  html += '</div>';
+  return html;
+}
+
+function toggleSnap(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+function cambiarEstadoReq(id, estado) {
+  var numId = parseInt(id);
+  requisiciones = requisiciones.map(function(r){ return r.id===numId?Object.assign({},r,{estado:estado}):r; });
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  renderJobsList();
+  verificarAlertas();
+  toast('Estado actualizado');
+}
+
+// Abre el formulario de edición con la sección de solicitud lista para ese puesto
+function abrirNuevaSolicitud(id) {
+  editJob(id);
+  // Limpiar campos solicitud
+  ['f_horario','f_minimos','f_cese'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
+  ['f_sede','f_nivel','f_motivo'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
+  document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
+  document.getElementById('plazoInfo').style.display='none';
+  document.getElementById('reemplazoField').style.display='none';
+  document.getElementById('reqSection').style.display='block';
+  // Scroll a sección solicitud
+  setTimeout(function(){ var rs=document.getElementById('reqSection'); if(rs) rs.scrollIntoView({behavior:'smooth'}); }, 300);
+}
+
+function deleteJob(id) {
+  if (!confirm('¿Eliminar este puesto y su solicitud?')) return;
+  jobs = jobs.filter(function(j){ return j.id!==id; });
+  requisiciones = requisiciones.filter(function(r){ return r.jobId!==id && r.id!==id; });
+  localStorage.setItem('rjobs', JSON.stringify(jobs));
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncJobsToServer(jobs); syncReqsToServer(requisiciones);
+  renderJobsList(); verificarAlertas();
   toast('Puesto eliminado');
 }
 
-function renderJobs() {
-  var grid = document.getElementById('jobsGrid');
+function calcularPlazo() {
+  var nivel = document.getElementById('f_nivel').value;
+  var info = document.getElementById('plazoInfo');
+  if (!nivel) { info.style.display='none'; return; }
+  var p = PLAZOS[nivel];
+  var fi = document.getElementById('f_fechaInicio').value;
+  var base = fi ? new Date(fi) : new Date();
+  base.setDate(base.getDate()+p.dias);
+  info.style.display='block';
+  info.innerHTML='Plazo: <strong>'+p.dias+' días</strong>. Fecha límite estimada: <strong>'+base.toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})+'</strong>';
+}
+
+function toggleReemplazo() {
+  document.getElementById('reemplazoField').style.display = document.getElementById('f_motivo').value==='reemplazo'?'block':'none';
+}
+
+// ══════════════════════════════════
+// LISTA DE PUESTOS (desplegable + filtros)
+// ══════════════════════════════════
+function renderJobsList() {
+  var list = document.getElementById('jobsList');
   var empty = document.getElementById('emptyState');
-  if (!jobs.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-  grid.innerHTML = jobs.map(function(j) {
-    var html = '<div class="job-card">';
-    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
-    html += '<div><div class="job-card-title">' + j.titulo + '</div><div class="job-card-dept">' + (j.area||'Sin área') + '</div></div>';
-    html += '<div class="active-dot"></div></div>';
-    html += '<div class="job-card-body">' + j.desc.substring(0,100) + (j.desc.length>100?'&hellip;':'') + '</div>';
-    if (j.emailLider) html += '<div style="font-size:11px;color:var(--muted);background:var(--surface2);border-radius:5px;padding:3px 8px;">&#9993; ' + j.emailLider + '</div>';
-    if (j.instrucciones) html += '<div style="font-size:11px;color:#7a5000;background:#fef8ee;border-radius:5px;padding:4px 8px;line-height:1.4;">&#128203; ' + j.instrucciones.substring(0,60) + (j.instrucciones.length>60?'&hellip;':'') + '</div>';
-    html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-    if (j.skills) j.skills.split(',').slice(0,3).forEach(function(s) { html += '<span class="job-tag">' + s.trim() + '</span>'; });
-    if (j.exp) html += '<span class="job-tag">' + j.exp + '</span>';
-    html += '</div>';
-    html += '<div style="display:flex;gap:6px;">';
-    html += '<button class="btn btn-secondary btn-sm" data-job-id="' + j.id + '" onclick="editJob(this.dataset.jobId*1)" style="flex:1;">Editar</button>';
-    html += '<button class="btn btn-danger btn-sm" data-job-id="' + j.id + '" onclick="deleteJob(this.dataset.jobId*1)" style="flex:1;">Eliminar</button>';
-    html += '</div></div>';
-    return html;
+  var filterBar = document.getElementById('filterBar');
+  if (!jobs.length) { list.innerHTML=''; empty.style.display='block'; filterBar.style.display='none'; return; }
+  empty.style.display='none'; filterBar.style.display='flex';
+
+  // Poblar filtros
+  var areas = [...new Set(jobs.map(function(j){return j.area||'';}).filter(Boolean))];
+  var lideres = [...new Set(jobs.map(function(j){return j.emailLider||'';}).filter(Boolean))];
+  var selArea = document.getElementById('filtroArea');
+  var selLider = document.getElementById('filtroLider');
+  var curArea = selArea.value; var curLider = selLider.value;
+  selArea.innerHTML = '<option value="">Todas las áreas</option>'+areas.map(function(a){return '<option value="'+a+'"'+(a===curArea?' selected':'')+'>'+a+'</option>';}).join('');
+  selLider.innerHTML = '<option value="">Todos los líderes</option>'+lideres.map(function(l){return '<option value="'+l+'"'+(l===curLider?' selected':'')+'>'+l+'</option>';}).join('');
+
+  // Aplicar filtros
+  var texto = (document.getElementById('filtroTexto').value||'').toLowerCase();
+  var filtroArea = selArea.value;
+  var filtroLider = selLider.value;
+
+  var filtered = jobs.filter(function(j){
+    if (texto && !(j.titulo+' '+(j.area||'')+(j.emailLider||'')).toLowerCase().includes(texto)) return false;
+    if (filtroArea && j.area!==filtroArea) return false;
+    if (filtroLider && j.emailLider!==filtroLider) return false;
+    return true;
+  });
+
+  if (!filtered.length) { list.innerHTML='<div class="empty-state">No hay puestos que coincidan con el filtro.</div>'; return; }
+
+  // Agrupar por área
+  var byArea = {};
+  filtered.forEach(function(j){
+    var a = j.area||'Sin área';
+    if (!byArea[a]) byArea[a]=[];
+    byArea[a].push(j);
+  });
+
+  list.innerHTML = Object.keys(byArea).map(function(area){
+    var areaJobs = byArea[area];
+    return '<div style="margin-bottom:16px;">' +
+      '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:6px;">' + area + '</div>' +
+      areaJobs.map(function(j){
+        var estadoReq = j.estado||'Pendiente';
+        var sBg = estadoReq==='Cubierto'?'#EEEDFE':estadoReq==='En proceso'?'#edf7f1':'#fef8ee';
+        var sTx = estadoReq==='Cubierto'?'#3C3489':estadoReq==='En proceso'?'#1e5c38':'#7a5000';
+        var completado = j.desiderablesCompletados ? '<span style="font-size:10px;background:#edf7f1;color:#1e5c38;border-radius:4px;padding:1px 6px;margin-left:6px;">\u2713 Lider completó</span>' : '';
+        return '<div class="puesto-item">' +
+          '<div class="puesto-header" onclick="togglePuesto('+j.id+')">' +
+            '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">' +
+              '<span style="font-size:14px;font-weight:500;">' + j.titulo + '</span>' + completado +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
+              '<span style="font-size:11px;background:'+sBg+';color:'+sTx+';padding:2px 8px;border-radius:6px;font-weight:500;">'+estadoReq+'</span>' +
+              (j.emailLider?'<span style="font-size:11px;color:var(--muted);">'+j.emailLider+'</span>':'') +
+              '<span id="chevron-'+j.id+'" style="color:var(--muted);font-size:12px;">&#9660;</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="puesto-body" id="body-'+j.id+'">' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--muted);margin-bottom:10px;">' +
+              '<div>Sede: <strong style="color:var(--text);">'+(j.sede||'—')+'</strong></div>' +
+              '<div>Horario: <strong style="color:var(--text);">'+(j.horario||'—')+'</strong></div>' +
+              '<div>Nivel: <strong style="color:var(--text);">'+(j.nivel||'—')+'</strong></div>' +
+              '<div>Motivo: <strong style="color:var(--text);">'+(j.motivo==='reemplazo'?'Reemplazo':'Nuevo puesto')+'</strong></div>' +
+              '<div>Inicio: <strong style="color:var(--text);">'+(j.fechaInicio||'—')+'</strong></div>' +
+              '<div>L&iacute;mite: <strong style="color:#c0392b;">'+(j.fechaLimite||'—')+'</strong></div>' +
+            '</div>' +
+            '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;"><strong style="color:var(--text);">Descripci&oacute;n:</strong> '+j.desc.substring(0,200)+(j.desc.length>200?'&hellip;':'')+'</div>' +
+            (j.minimos?'<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;"><strong style="color:var(--text);">M&iacute;nimos:</strong> '+j.minimos.substring(0,150)+(j.minimos.length>150?'&hellip;':'')+'</div>':'') +
+            (j.deseables?'<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;"><strong style="color:var(--text);">Deseables:</strong> '+j.deseables+'</div>':'') +
+            (j.skills?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">'+j.skills.split(',').map(function(s){return '<span class="job-tag">'+s.trim()+'</span>';}).join('')+'</div>':'') +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+              '<button class="btn btn-secondary btn-sm" data-job-id="'+j.id+'" onclick="editJob(this.dataset.jobId*1)">Editar perfil</button>' +
+              '<button class="btn btn-accent btn-sm" data-job-id="'+j.id+'" onclick="abrirNuevaSolicitud(this.dataset.jobId*1)">+ Nueva solicitud</button>' +
+              '<button class="btn btn-danger btn-sm" data-job-id="'+j.id+'" onclick="deleteJob(this.dataset.jobId*1)">Eliminar</button>' +
+            '</div>' +
+            renderHistorialSolicitudes(j.id) +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }).join('');
+
+  renderEnvioSelect();
+}
+
+function togglePuesto(id) {
+  var body = document.getElementById('body-'+id);
+  var chev = document.getElementById('chevron-'+id);
+  if (!body) return;
+  body.classList.toggle('open');
+  if (chev) chev.innerHTML = body.classList.contains('open') ? '&#9650;' : '&#9660;';
+}
+
+// ══════════════════════════════════
+// ENVÍO MASIVO
+// ══════════════════════════════════
+function renderEnvioSelect() {
+  var sel = document.getElementById('envioJobSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona un puesto...</option>' + jobs.map(function(j){
+    return '<option value="'+j.id+'">'+j.titulo+(j.area?' — '+j.area:'')+'</option>';
   }).join('');
 }
 
-async function syncJobsToServer(j) {
-  await safeFetch('/api/jobs', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ jobs: j })
+function generarMensajes() {
+  var raw = document.getElementById('candidatosList').value.trim();
+  var jobId = parseInt(document.getElementById('envioJobSelect').value);
+  if (!raw) { toast('Ingresa al menos un candidato'); return; }
+  if (!jobId) { toast('Selecciona un puesto'); return; }
+  var job = jobs.find(function(j){ return j.id===jobId; });
+  var lines = raw.split('\n').filter(function(l){ return l.trim(); });
+  var candidatos = lines.map(function(l){
+    var parts = l.split(',').map(function(p){ return p.trim(); });
+    return {nombre:parts[0]||'',tel:parts[1]||''};
   });
+  var panel = document.getElementById('mensajesPanel');
+  var html = '<div style="font-size:13px;font-weight:500;margin-bottom:4px;">'+candidatos.length+' mensaje'+(candidatos.length!==1?'s':'')+' generado'+(candidatos.length!==1?'s':'')+'</div>';
+  candidatos.forEach(function(c){
+    var msg = encodeURIComponent('Hola '+c.nombre+', te contactamos de parte del equipo de Reclutamiento y Selección de *PERUFARMA*.\n\nTe invitamos a responder las preguntas de prefiltro para el puesto de *'+job.titulo+'*. El proceso toma aproximadamente 15 minutos y puedes hacerlo desde tu celular.\n\nIngresa aquí: '+candidateUrl+'\n\n¡Mucho éxito!');
+    var waLink = c.tel ? 'https://wa.me/51'+c.tel.replace(/[^0-9]/g,'')+'?text='+msg : '';
+    html += '<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:14px 16px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+      '<div style="font-size:13px;font-weight:500;">'+c.nombre+'</div>' +
+      (waLink?'<a href="'+waLink+'" target="_blank" style="background:#25D366;color:white;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.859L0 24l6.335-1.508A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.943 0-3.753-.535-5.295-1.462l-.379-.225-3.927.935.998-3.826-.247-.393A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.388 9.818 9.818 0 5.43-4.388 9.818-9.818 9.818z"/></svg>WhatsApp</a>':'<span style="font-size:11px;color:var(--muted);">Sin teléfono</span>') +
+      '</div>' +
+      (c.tel?'<div style="font-size:11px;color:var(--muted);">Tel: '+c.tel+'</div>':'') +
+      '</div>';
+  });
+  panel.innerHTML = html;
 }
 
 function copyLink() {
-  navigator.clipboard.writeText(candidateUrl).then(function() { toast('Link copiado'); });
+  navigator.clipboard.writeText(candidateUrl).then(function(){ toast('Link copiado'); });
 }
 
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 // CANDIDATO MANUAL
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 function toggleCandManualForm() {
   var f = document.getElementById('candManualForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) {
-    // Poblar select de puestos
     var sel = document.getElementById('cm_puesto');
-    sel.innerHTML = '<option value="">Selecciona un puesto...</option>' + jobs.map(function(j) {
-      return '<option value="' + j.titulo + '">' + j.titulo + (j.area?' — '+j.area:'') + '</option>';
+    sel.innerHTML = '<option value="">Selecciona un puesto...</option>' + jobs.map(function(j){
+      return '<option value="'+j.titulo+'">'+j.titulo+(j.area?' — '+j.area:'')+'</option>';
     }).join('');
-    ['cm_nombre','cm_dni','cm_comentarios','cm_puntaje'].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.value = '';
-    });
-    document.getElementById('cm_recomendacion').value = '';
+    ['cm_nombre','cm_dni','cm_comentarios','cm_puntaje'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('cm_recomendacion').value='';
     f.scrollIntoView({behavior:'smooth'});
   }
 }
@@ -783,111 +990,100 @@ async function saveCandidatoManual() {
   var comentarios = document.getElementById('cm_comentarios').value.trim();
   var puntaje = parseInt(document.getElementById('cm_puntaje').value);
   var recomendacion = document.getElementById('cm_recomendacion').value;
-
-  if (!nombre || !dni || !puesto || !comentarios || isNaN(puntaje) || !recomendacion) {
-    toast('Completa todos los campos'); return;
-  }
-  if (dni.length !== 8) { toast('DNI debe tener 8 dígitos'); return; }
-  if (puntaje < 0 || puntaje > 100) { toast('Puntaje debe ser entre 0 y 100'); return; }
-
-  var job = jobs.find(function(j) { return j.titulo === puesto; });
+  if (!nombre||!dni||!puesto||!comentarios||isNaN(puntaje)||!recomendacion) { toast('Completa todos los campos'); return; }
+  if (dni.length!==8) { toast('DNI debe tener 8 dígitos'); return; }
+  if (puntaje<0||puntaje>100) { toast('Puntaje entre 0 y 100'); return; }
+  var job = jobs.find(function(j){ return j.titulo===puesto; });
   var entry = {
-    fecha: new Date().toLocaleDateString('es-PE'),
-    hora: new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
-    candidato: nombre + ' (DNI: ' + dni + ')',
-    dni: dni,
-    puesto: puesto,
-    area: job ? (job.area||'') : '',
-    puntaje: puntaje,
-    nivel: puntaje>=80?'Excelente':puntaje>=60?'Bueno':puntaje>=40?'Regular':'Bajo',
-    recomendacion: recomendacion,
-    comunicacion: '',
-    conocimiento: '',
-    experiencia: '',
-    motivacion: '',
-    fortalezas: comentarios,
-    areas_mejora: '',
-    resumen: comentarios,
-    transcripcion: '[Entrevista presencial — evaluación manual del reclutador]',
-    fuente: 'manual'
+    fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+    candidato:nombre+' (DNI: '+dni+')', dni:dni, puesto:puesto, area:job?job.area||'':'',
+    puntaje:puntaje, nivel:puntaje>=80?'Excelente':puntaje>=60?'Bueno':puntaje>=40?'Regular':'Bajo',
+    recomendacion:recomendacion, comunicacion:'', conocimiento:'', experiencia:'', motivacion:'',
+    fortalezas:comentarios, areas_mejora:'', resumen:comentarios,
+    transcripcion:'[Evaluación manual del reclutador]', fuente:'manual'
   };
-
-  var data = await safeFetch('/api/jobs?type=results');
-  var results = (data && data.results) ? data.results : JSON.parse(localStorage.getItem('rresults') || '[]');
+  var d = await safeFetch('/api/jobs?type=results');
+  var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
   results.push(entry);
   localStorage.setItem('rresults', JSON.stringify(results));
-  await safeFetch('/api/jobs?type=results', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ results: results })
-  });
+  await safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:results})});
   toast('Candidato agregado correctamente');
   document.getElementById('candManualForm').classList.remove('open');
+  renderCandidatosPorPuesto();
 }
 
-// ══════════════════════════════════════════════════════
-// RESULTADOS
-// ══════════════════════════════════════════════════════
-function getResults() { return JSON.parse(localStorage.getItem('rresults') || '[]'); }
-
-async function renderResultados() {
-  var data = await safeFetch('/api/jobs?type=results');
-  if (data && data.results && data.results.length) {
-    localStorage.setItem('rresults', JSON.stringify(data.results));
-  }
-  var results = getResults();
-  var panel = document.getElementById('resultsPanel');
-  if (!results.length) {
-    panel.innerHTML = '<div class="empty-state">Aún no hay candidatos evaluados.</div>';
-    return;
-  }
-  var rBg = function(r) { return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea'; };
-  var rTx = function(r) { return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f'; };
-  var rows = results.slice().reverse().map(function(r) {
-    return '<tr>' +
-      '<td>' + (r.fecha||'') + ' ' + (r.hora||'') + '</td>' +
-      '<td style="font-weight:500;">' + r.candidato + '</td>' +
-      '<td>' + r.puesto + '</td>' +
-      '<td>' + (r.area||'') + '</td>' +
-      '<td style="text-align:center;font-weight:500;">' + r.puntaje + '</td>' +
-      '<td style="text-align:center;">' + (r.nivel||'') + '</td>' +
-      '<td style="text-align:center;"><span class="rec-pill" style="background:' + rBg(r.recomendacion) + ';color:' + rTx(r.recomendacion) + ';">' + r.recomendacion + '</span></td>' +
-      '<td style="text-align:center;">' + (r.comunicacion||'') + '</td>' +
-      '<td style="text-align:center;">' + (r.conocimiento||'') + '</td>' +
-      '<td style="text-align:center;">' + (r.experiencia||'') + '</td>' +
-      '<td style="text-align:center;">' + (r.motivacion||'') + '</td>' +
-    '</tr>';
+// ══════════════════════════════════
+// CANDIDATOS POR PUESTO
+// ══════════════════════════════════
+function renderTablaByPuesto(results) {
+  var byPuesto = {};
+  results.forEach(function(r){ if(!byPuesto[r.puesto])byPuesto[r.puesto]=[]; byPuesto[r.puesto].push(r); });
+  var rBg=function(r){return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea';};
+  var rTx=function(r){return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f';};
+  var sBg=function(s){return s>=80?'#edf7f1':s>=60?'#fef8ee':'#fbeaea';};
+  var sTx=function(s){return s>=80?'#1e5c38':s>=60?'#7a5000':'#8b1f1f';};
+  return Object.keys(byPuesto).map(function(puesto){
+    var cands = byPuesto[puesto].slice().sort(function(a,b){return b.puntaje-a.puntaje;});
+    var avanzar = cands.filter(function(c){return c.recomendacion==='Avanzar';}).length;
+    var avg = Math.round(cands.reduce(function(s,c){return s+c.puntaje;},0)/cands.length);
+    var rows = cands.map(function(c,idx){
+      var badge = idx===0?'<span style="font-size:10px;background:#fef8ee;color:#7a5000;border-radius:4px;padding:1px 5px;margin-left:4px;">\u2605 Top</span>':'';
+      var fuente = c.fuente==='manual'?'<span style="font-size:10px;background:#EEEDFE;color:#3C3489;border-radius:4px;padding:1px 5px;margin-left:4px;">Manual</span>':'';
+      return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+
+        '<td style="padding:9px 12px;font-weight:500;">'+c.candidato+badge+fuente+'</td>'+
+        '<td style="padding:9px 12px;color:var(--muted);font-size:12px;">'+(c.fecha||'')+(c.hora?' &middot; '+c.hora:'')+'</td>'+
+        '<td style="padding:9px 12px;text-align:center;"><span style="background:'+sBg(c.puntaje)+';color:'+sTx(c.puntaje)+';padding:3px 9px;border-radius:8px;font-size:12px;font-weight:600;">'+c.puntaje+'</span></td>'+
+        '<td style="padding:9px 12px;text-align:center;"><span style="background:'+rBg(c.recomendacion)+';color:'+rTx(c.recomendacion)+';padding:2px 9px;border-radius:8px;font-size:11px;font-weight:500;">'+c.recomendacion+'</span></td>'+
+        '<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:180px;">'+(c.resumen||'').substring(0,80)+'&hellip;</td>'+
+      '</tr>';
+    }).join('');
+    return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'+
+      '<div style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'+
+        '<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'+
+        '<div style="display:flex;gap:8px;">'+
+          '<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'+
+          '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' para avanzar</span>'+
+          '<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+avg+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'+
+        '<thead><tr style="background:var(--bg);">'+
+          '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidato</th>'+
+          '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Fecha</th>'+
+          '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Puntaje</th>'+
+          '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Recomendaci&oacute;n</th>'+
+          '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Resumen</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '</div>';
   }).join('');
-  panel.innerHTML = '<div style="overflow-x:auto;border:0.5px solid var(--border2);border-radius:10px;">' +
-    '<table class="results-table"><thead><tr>' +
-    '<th>Fecha</th><th>Candidato</th><th>Puesto</th><th>&Aacute;rea</th>' +
-    '<th>Puntaje</th><th>Nivel</th><th>Recomendaci&oacute;n</th>' +
-    '<th>Comunic.</th><th>T&eacute;cnico</th><th>Experiencia</th><th>Motivaci&oacute;n</th>' +
-    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
+
+function renderCandidatosPorPuesto() {
+  var panel = document.getElementById('candidatosPorPuesto');
+  if (!panel) return;
+  panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
+  safeFetch('/api/jobs?type=results').then(function(d){
+    var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    if (!results.length) { panel.innerHTML='<div class="empty-state">A&uacute;n no hay candidatos.<br>Usa <strong>+ Candidato manual</strong> para agregar uno o comparte el link de entrevista.</div>'; return; }
+    panel.innerHTML = renderTablaByPuesto(results);
+  }).catch(function(){ panel.innerHTML='<div style="font-size:13px;color:var(--muted);">Error al cargar.</div>'; });
+}
+
+// ══════════════════════════════════
+// EXPORTAR / LIMPIAR
+// ══════════════════════════════════
+function getResults(){ return JSON.parse(localStorage.getItem('rresults')||'[]'); }
 
 function exportCSV() {
   var results = getResults();
   if (!results.length) { toast('No hay resultados'); return; }
-  function esc(val) {
-    var s = (val===null||val===undefined)?'':String(val);
-    var r = '';
-    for (var i=0;i<s.length;i++) {
-      if (s[i]==='"') r += '""';
-      else if (s[i]==='\n'||s[i]==='\r') r += ' ';
-      else r += s[i];
-    }
-    return '"' + r + '"';
-  }
-  var headers = ['Fecha','Hora','Candidato','DNI','Puesto','Área','Puntaje General','Nivel','Recomendación','Comunicación','Conocimiento Técnico','Experiencia Relevante','Motivación y Fit','Fortalezas','Áreas de Mejora','Resumen','Fuente','Transcripción Completa'];
-  var rows = results.map(function(r) {
-    return [esc(r.fecha),esc(r.hora),esc(r.candidato),esc(r.dni),esc(r.puesto),esc(r.area),esc(r.puntaje),esc(r.nivel),esc(r.recomendacion),esc(r.comunicacion),esc(r.conocimiento),esc(r.experiencia),esc(r.motivacion),esc(r.fortalezas),esc(r.areas_mejora),esc(r.resumen),esc(r.fuente||'chatbot'),esc(r.transcripcion)].join(';');
-  });
-  var csv = [headers.map(esc).join(';')].concat(rows).join('\r\n');
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download = 'resultados-'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
+  function esc(v){ var s=v==null?'':String(v),r=''; for(var i=0;i<s.length;i++){if(s[i]==='"')r+='""';else if(s[i]==='\n'||s[i]==='\r')r+=' ';else r+=s[i];} return '"'+r+'"'; }
+  var hdr=['Fecha','Hora','Candidato','DNI','Puesto','Área','Puntaje','Nivel','Recomendación','Comunicación','Conocimiento','Experiencia','Motivación','Fortalezas','Áreas de Mejora','Resumen','Fuente','Transcripción'];
+  var rows=results.map(function(r){return [esc(r.fecha),esc(r.hora),esc(r.candidato),esc(r.dni),esc(r.puesto),esc(r.area),esc(r.puntaje),esc(r.nivel),esc(r.recomendacion),esc(r.comunicacion),esc(r.conocimiento),esc(r.experiencia),esc(r.motivacion),esc(r.fortalezas),esc(r.areas_mejora),esc(r.resumen),esc(r.fuente||'chatbot'),esc(r.transcripcion)].join(';');});
+  var csv=[hdr.map(esc).join(';')].concat(rows).join('\r\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='resultados-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
   toast('Descargando...');
 }
 
@@ -895,359 +1091,94 @@ async function clearResults() {
   if (!confirm('¿Eliminar todos los resultados?')) return;
   localStorage.removeItem('rresults');
   await safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:[]})});
-  renderResultados();
+  renderCandidatosPorPuesto();
   toast('Resultados eliminados');
 }
 
-// ══════════════════════════════════════════════════════
-// CANDIDATOS POR PUESTO (pestaña Candidatos)
-// ══════════════════════════════════════════════════════
-function renderCandidatosPorPuesto() {
-  var panel = document.getElementById('candidatosPorPuesto');
-  if (!panel) return;
-  panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
+// ══════════════════════════════════
+// SYNC
+// ══════════════════════════════════
+async function syncJobsToServer(j){ await safeFetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jobs:j})}); }
+async function syncReqsToServer(r){ await safeFetch('/api/jobs?type=reqs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reqs:r})}); }
 
-  safeFetch('/api/jobs?type=results').then(function(d) {
-    var results = (d && d.results) ? d.results : JSON.parse(localStorage.getItem('rresults') || '[]');
-    if (!results.length) {
-      panel.innerHTML = '<div class="empty-state">A&uacute;n no hay candidatos evaluados.<br>Haz clic en <strong>+ Candidato manual</strong> para agregar uno.</div>';
-      return;
-    }
-    var byPuesto = {};
-    results.forEach(function(r) {
-      if (!byPuesto[r.puesto]) byPuesto[r.puesto] = [];
-      byPuesto[r.puesto].push(r);
-    });
-    var rBg = function(r) { return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea'; };
-    var rTx = function(r) { return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f'; };
-    var sBg = function(s) { return s>=80?'#edf7f1':s>=60?'#fef8ee':'#fbeaea'; };
-    var sTx = function(s) { return s>=80?'#1e5c38':s>=60?'#7a5000':'#8b1f1f'; };
-
-    panel.innerHTML = Object.keys(byPuesto).map(function(puesto) {
-      var cands = byPuesto[puesto].slice().sort(function(a,b) { return b.puntaje - a.puntaje; });
-      var avanzarCount = cands.filter(function(c) { return c.recomendacion==='Avanzar'; }).length;
-      var avgPuntaje = Math.round(cands.reduce(function(s,c){ return s+c.puntaje; },0)/cands.length);
-      var rows = cands.map(function(c, idx) {
-        var badge = idx===0 ? '<span style="font-size:10px;background:#fef8ee;color:#7a5000;border-radius:4px;padding:1px 5px;margin-left:5px;">&starf; Top</span>' : '';
-        var fuente = c.fuente==='manual' ? '<span style="font-size:10px;background:#EEEDFE;color:#3C3489;border-radius:4px;padding:1px 5px;margin-left:4px;">Manual</span>' : '';
-        return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">' +
-          '<td style="padding:9px 12px;font-weight:500;">' + c.candidato + badge + fuente + '</td>' +
-          '<td style="padding:9px 12px;color:var(--muted);font-size:12px;">' + (c.fecha||'') + (c.hora?' &middot; '+c.hora:'') + '</td>' +
-          '<td style="padding:9px 12px;text-align:center;"><span style="background:' + sBg(c.puntaje) + ';color:' + sTx(c.puntaje) + ';padding:3px 9px;border-radius:8px;font-size:12px;font-weight:600;">' + c.puntaje + '</span></td>' +
-          '<td style="padding:9px 12px;text-align:center;"><span style="background:' + rBg(c.recomendacion) + ';color:' + rTx(c.recomendacion) + ';padding:2px 9px;border-radius:8px;font-size:11px;font-weight:500;">' + c.recomendacion + '</span></td>' +
-          '<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:180px;">' + (c.resumen||'').substring(0,80) + '&hellip;</td>' +
-        '</tr>';
-      }).join('');
-      return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">' +
-        '<div style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
-          '<div style="font-size:13px;font-weight:500;">' + puesto + '</div>' +
-          '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<span style="font-size:12px;color:var(--muted);">' + cands.length + ' candidato' + (cands.length!==1?'s':'') + '</span>' +
-            '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">&check; ' + avanzarCount + ' para avanzar</span>' +
-            '<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. ' + avgPuntaje + '</span>' +
-          '</div>' +
-        '</div>' +
-        '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-          '<thead><tr style="background:var(--bg);">' +
-            '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidato</th>' +
-            '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Fecha</th>' +
-            '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Puntaje</th>' +
-            '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Recomendaci&oacute;n</th>' +
-            '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Resumen</th>' +
-          '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '</div>';
-    }).join('');
-  }).catch(function() {
-    panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al cargar resultados.</div>';
-  });
-}
-
-// ══════════════════════════════════════════════════════
-// REQUISICIONES
-// ══════════════════════════════════════════════════════
-function calcularPlazo() {
-  var nivel = document.getElementById('req_nivel').value;
-  var info = document.getElementById('plazoInfo');
-  if (!nivel) { info.style.display = 'none'; return; }
-  var p = PLAZOS[nivel];
-  var fecha = new Date(); fecha.setDate(fecha.getDate() + p.dias);
-  var fechaStr = fecha.toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'});
-  info.style.display = 'block';
-  info.innerHTML = 'Seg&uacute;n pol&iacute;tica Perufarma, el plazo es de <strong>' + p.dias + ' d&iacute;as</strong>. Fecha l&iacute;mite estimada: <strong>' + fechaStr + '</strong>';
-}
-
-function toggleReemplazo() {
-  var motivo = document.getElementById('req_motivo').value;
-  document.getElementById('reemplazoField').style.display = motivo==='reemplazo'?'block':'none';
-}
-
-function toggleReqForm() {
-  var f = document.getElementById('reqForm');
-  f.classList.toggle('open');
-  if (f.classList.contains('open')) {
-    ['req_puesto','req_area','req_horario','req_minimos','req_emailLider','req_cese'].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.value = '';
-    });
-    ['req_sede','req_nivel','req_motivo'].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.value = ''; });
-    document.getElementById('plazoInfo').style.display = 'none';
-    document.getElementById('reemplazoField').style.display = 'none';
-    // Fecha inicio = hoy
-    var hoy = new Date().toISOString().slice(0,10);
-    document.getElementById('req_fechaInicio').value = hoy;
-    document.getElementById('addJobForm').classList.remove('open');
-    f.scrollIntoView({behavior:'smooth'});
-  }
-}
-
-function saveRequisicion() {
-  var puesto = document.getElementById('req_puesto').value.trim();
-  var area = document.getElementById('req_area').value.trim();
-  var sede = document.getElementById('req_sede').value;
-  var horario = document.getElementById('req_horario').value.trim();
-  var nivel = document.getElementById('req_nivel').value;
-  var motivo = document.getElementById('req_motivo').value;
-  var minimos = document.getElementById('req_minimos').value.trim();
-  var emailLider = document.getElementById('req_emailLider').value.trim();
-  var fechaInicio = document.getElementById('req_fechaInicio').value;
-
-  if (!puesto||!area||!sede||!horario||!nivel||!motivo||!minimos||!emailLider||!fechaInicio) {
-    toast('Completa todos los campos obligatorios'); return;
-  }
-
-  // Buscar el líder en jobs para obtener su DNI
-  var jobRef = jobs.find(function(j) { return j.emailLider === emailLider; });
-  var dniLider = jobRef ? jobRef.dniLider : '';
-
-  var diasPlazo = parseInt(nivel);
-  var fechaLimiteDate = new Date(fechaInicio);
-  fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
-
-  var req = {
-    id: Date.now(),
-    fecha: new Date().toLocaleDateString('es-PE'),
-    fechaInicio: new Date(fechaInicio).toLocaleDateString('es-PE'),
-    fechaLimite: fechaLimiteDate.toLocaleDateString('es-PE'),
-    fechaLimiteRaw: fechaLimiteDate.toISOString(),
-    puesto: puesto, area: area, sede: sede, horario: horario,
-    nivel: PLAZOS[nivel] ? PLAZOS[nivel].label : nivel,
-    diasPlazo: diasPlazo, motivo: motivo,
-    cese: motivo==='reemplazo' ? document.getElementById('req_cese').value : '',
-    minimos: minimos, deseables: '', emailLider: emailLider, dniLider: dniLider,
-    estado: 'En proceso', desiderablesCompletados: false
-  };
-
-  requisiciones.push(req);
-  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-  renderReqCards();
-  verificarAlertas();
-  toggleReqForm();
-
-  // Abrir mailto al líder
-  var asunto = encodeURIComponent('Nueva solicitud de perfil: ' + puesto + ' — Perufarma S.A.');
-  var cuerpo = encodeURIComponent(
-    'Hola,\n\nSe ha creado una nueva solicitud de perfil que requiere tu revisión:\n\n' +
-    '• Puesto: ' + puesto + '\n' +
-    '• Área: ' + area + '\n' +
-    '• Sede: ' + sede + '\n' +
-    '• Nivel: ' + (PLAZOS[nivel]?PLAZOS[nivel].label:nivel) + '\n' +
-    '• Motivo: ' + (motivo==='reemplazo'?'Reemplazo':'Nuevo puesto') + '\n' +
-    '• Fecha inicio: ' + new Date(fechaInicio).toLocaleDateString('es-PE') + '\n' +
-    '• Fecha límite (política Perufarma): ' + fechaLimiteDate.toLocaleDateString('es-PE') + '\n\n' +
-    'Requisitos mínimos:\n' + minimos + '\n\n' +
-    'Por favor ingresa a tu portal de líder para completar los requisitos deseables y revisar los candidatos:\n' +
-    window.location.origin + '\n\n' +
-    'Saludos,\nEquipo de Reclutamiento y Selección — Perufarma S.A.'
-  );
-  window.location.href = 'mailto:' + emailLider + '?subject=' + asunto + '&body=' + cuerpo;
-  toast('Solicitud creada — abriendo correo al líder...');
-}
-
-async function syncReqsToServer(reqs) {
-  await safeFetch('/api/jobs?type=reqs', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ reqs: reqs })
-  });
-}
-
-function deleteReq(id) {
-  if (!confirm('¿Eliminar esta solicitud?')) return;
-  var numId = parseInt(id);
-  requisiciones = requisiciones.filter(function(r) { return r.id !== numId; });
-  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-  renderReqCards();
-  verificarAlertas();
-  toast('Solicitud eliminada');
-}
-
-function cambiarEstado(id, estado) {
-  var numId = parseInt(id);
-  requisiciones = requisiciones.map(function(r) {
-    return r.id===numId ? Object.assign({},r,{estado:estado}) : r;
-  });
-  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-  renderReqCards();
-  verificarAlertas();
-  toast('Estado actualizado');
-}
-
-function renderReqCards() {
-  var list = document.getElementById('reqList');
-  if (!list) return;
-  if (!requisiciones.length) {
-    list.innerHTML = '<div class="empty-state" style="padding:24px 0;">No hay solicitudes. Haz clic en <strong>+ Nueva solicitud</strong> para comenzar.</div>';
-    return;
-  }
-  var estadoColor = function(e) {
-    return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:{bg:'#EEEDFE',t:'#3C3489'};
-  };
-  list.innerHTML = requisiciones.slice().reverse().map(function(r) {
-    var ec = estadoColor(r.estado);
-    var motivoLabel = r.motivo==='reemplazo' ? 'Reemplazo' + (r.cese?' — Cese: '+r.cese:'') : 'Nuevo puesto';
-    var completadoBadge = r.desiderablesCompletados ?
-      '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;margin-left:6px;">&#10003; L&iacute;der complet&oacute; ' + (r.fechaCompletadoLider||'') + '</span>' : '';
-    var html = '<div class="job-card" style="margin-bottom:12px;">';
-    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
-    html += '<div><div class="job-card-title">' + r.puesto + completadoBadge + '</div>';
-    html += '<div class="job-card-dept">' + r.area + ' &middot; ' + r.sede + '</div></div>';
-    html += '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + ec.bg + ';color:' + ec.t + ';white-space:nowrap;">' + r.estado + '</span>';
-    html += '</div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted);">';
-    html += '<div>Motivo: <strong style="color:var(--text);">' + motivoLabel + '</strong></div>';
-    html += '<div>Horario: <strong style="color:var(--text);">' + r.horario + '</strong></div>';
-    html += '<div>Nivel: <strong style="color:var(--text);">' + r.nivel + '</strong></div>';
-    html += '<div>Fecha inicio: <strong style="color:var(--text);">' + (r.fechaInicio||r.fecha) + '</strong></div>';
-    html += '<div style="grid-column:1/-1;">Fecha l&iacute;mite: <strong style="color:#c0392b;">' + r.fechaLimite + '</strong></div>';
-    html += '</div>';
-    html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Requisitos m&iacute;nimos:</strong> ' + r.minimos.substring(0,120) + (r.minimos.length>120?'&hellip;':'') + '</div>';
-    if (r.deseables) html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Deseables:</strong> ' + r.deseables.substring(0,100) + (r.deseables.length>100?'&hellip;':'') + '</div>';
-    if (r.emailLider) html += '<div style="font-size:11px;color:var(--muted);">&#9993; L&iacute;der: ' + r.emailLider + '</div>';
-    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<select data-req-id="' + r.id + '" onchange="cambiarEstado(this.dataset.reqId, this.value)" style="flex:1;background:var(--bg);border:0.5px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);outline:none;">';
-    html += '<option' + (r.estado==='Pendiente'?' selected':'') + '>Pendiente</option>';
-    html += '<option' + (r.estado==='En proceso'?' selected':'') + '>En proceso</option>';
-    html += '<option' + (r.estado==='Cubierto'?' selected':'') + '>Cubierto</option>';
-    html += '</select>';
-    if (r.emailLider) {
-      var asunto = encodeURIComponent('Recordatorio: Solicitud de perfil ' + r.puesto + ' — Perufarma');
-      var cuerpo = encodeURIComponent('Hola,\n\nTe recordamos que tienes una solicitud de perfil pendiente de completar para el puesto de ' + r.puesto + '.\n\nFecha límite: ' + r.fechaLimite + '\n\nIngresa a: ' + window.location.origin);
-      html += '<a href="mailto:' + r.emailLider + '?subject=' + asunto + '&body=' + cuerpo + '" class="btn btn-secondary btn-sm">&#9993; Recordar</a>';
-    }
-    html += '<button class="btn btn-danger btn-sm" data-del-id="' + r.id + '" onclick="deleteReq(this.dataset.delId)">Eliminar</button>';
-    html += '</div>';
-    html += '<div style="font-size:11px;color:var(--muted);">Creado el ' + r.fecha + ' &middot; ' + r.diasPlazo + ' d&iacute;as de plazo seg&uacute;n pol&iacute;tica Perufarma</div>';
-    html += '</div>';
-    return html;
-  }).join('');
-}
-
-// ══════════════════════════════════════════════════════
-// FEEDBACK (líder presencial)
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
+// FEEDBACK
+// ══════════════════════════════════
 function renderFeedbackPanel() {
   var panel = document.getElementById('feedbackPanel');
   if (!panel) return;
-  panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Cargando...</div>';
-
-  var misJobs = liderDni ? jobs.filter(function(j) { return j.dniLider === liderDni; }) : jobs;
-  var misPuestos = misJobs.map(function(j) { return j.titulo; });
-
-  safeFetch('/api/jobs?type=results').then(function(d) {
-    var results = (d && d.results) ? d.results : JSON.parse(localStorage.getItem('rresults') || '[]');
-    var avanzar = results.filter(function(r) {
-      return r.recomendacion === 'Avanzar' && (misPuestos.length===0 || misPuestos.indexOf(r.puesto)!==-1);
-    });
-    if (!avanzar.length) {
-      panel.innerHTML = '<div class="empty-state" style="padding:20px 0;">No hay candidatos con recomendaci&oacute;n <strong>&ldquo;Avanzar&rdquo;</strong> en tus puestos a&uacute;n.</div>';
-      return;
-    }
-    panel.innerHTML = avanzar.map(function(c) {
-      var fb = feedbacks.find(function(f) { return f.candidato===c.candidato && f.puesto===c.puesto; });
-      var key = (c.candidato+'_'+c.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
-      var fbData = fbTemp[key] || fb || {};
-      var campos = [
-        {id:'comunicacion',label:'Comunicaci\u00f3n'},
-        {id:'tecnico',label:'Conocimiento t\u00e9cnico'},
-        {id:'actitud',label:'Actitud y fit cultural'},
-        {id:'resultados',label:'Orientaci\u00f3n a resultados'}
-      ];
-      var starsHtml = campos.map(function(campo) {
-        var val = fbData[campo.id] || 0;
-        return '<div><div style="font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">' + campo.label + '</div><div>' +
-          [1,2,3,4,5].map(function(n) {
-            return '<span data-key="' + key + '" data-campo="' + campo.id + '" data-n="' + n + '" onclick="setFbStar(this)" style="cursor:pointer;font-size:20px;color:' + (val>=n?'#e8623a':'#e0ddd8') + ';transition:color .1s;">\u2605</span>';
-          }).join('') + '</div></div>';
+  panel.innerHTML='<div style="font-size:13px;color:var(--muted);">Cargando...</div>';
+  var misPuestos = liderDni ? jobs.filter(function(j){return j.dniLider===liderDni;}).map(function(j){return j.titulo;}) : [];
+  safeFetch('/api/jobs?type=results').then(function(d){
+    var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    var avanzar=results.filter(function(r){ return r.recomendacion==='Avanzar'&&(misPuestos.length===0||misPuestos.indexOf(r.puesto)!==-1); });
+    if (!avanzar.length){ panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos con recomendaci&oacute;n "Avanzar" en tus puestos a&uacute;n.</div>'; return; }
+    panel.innerHTML=avanzar.map(function(c){
+      var fb=feedbacks.find(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
+      var key=(c.candidato+'_'+c.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
+      var fbData=fbTemp[key]||fb||{};
+      var campos=[{id:'comunicacion',label:'Comunicaci\u00f3n'},{id:'tecnico',label:'Conocimiento t\u00e9cnico'},{id:'actitud',label:'Actitud y fit cultural'},{id:'resultados',label:'Orientaci\u00f3n a resultados'}];
+      var starsHtml=campos.map(function(campo){
+        var val=fbData[campo.id]||0;
+        return '<div><div style="font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">'+campo.label+'</div><div>'+
+          [1,2,3,4,5].map(function(n){ return '<span data-key="'+key+'" data-campo="'+campo.id+'" data-n="'+n+'" onclick="setFbStar(this)" style="cursor:pointer;font-size:20px;color:'+(val>=n?'#e8623a':'#e0ddd8')+';transition:color .1s;">\u2605</span>'; }).join('')+
+        '</div></div>';
       }).join('');
-      var pBg = c.puntaje>=80?'#edf7f1':c.puntaje>=60?'#fef8ee':'#fbeaea';
-      var pTx = c.puntaje>=80?'#1e5c38':c.puntaje>=60?'#7a5000':'#8b1f1f';
-      var savedBadge = fb ? '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:3px 9px;border-radius:8px;">\u2713 Guardado ' + (fb.fecha||'') + '</span>' : '';
-      return '<div class="card" style="margin-bottom:12px;display:flex;flex-direction:column;gap:14px;" id="fbcard_' + key + '">' +
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
-          '<div><div style="font-size:14px;font-weight:500;">' + c.candidato + '</div>' +
-          '<div style="font-size:12px;color:var(--muted);margin-top:3px;">' + c.puesto + (c.area?' &middot; '+c.area:'') + '</div></div>' +
-          '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<span style="font-size:12px;font-weight:600;background:' + pBg + ';color:' + pTx + ';padding:3px 10px;border-radius:8px;">Prefiltro IA: ' + c.puntaje + '</span>' +
-            savedBadge +
-          '</div>' +
-        '</div>' +
-        (c.fortalezas?'<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> ' + c.fortalezas + '</div>':'') +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' + starsHtml + '</div>' +
-        '<div class="form-group"><label>Comentarios de la entrevista presencial</label>' +
-          '<textarea id="fb_' + key + '" style="height:65px;" placeholder="Observaciones...">' + (fb?fb.comentario||'':'') + '</textarea></div>' +
-        '<div style="display:flex;gap:8px;">' +
-          '<button class="btn btn-primary btn-sm" onclick="saveFeedback(' + JSON.stringify(c.candidato) + ',' + JSON.stringify(c.puesto) + ',' + JSON.stringify(key) + ')">Guardar feedback</button>' +
-          (fb?'<button class="btn btn-secondary btn-sm" onclick="deleteFeedback(' + JSON.stringify(c.candidato) + ',' + JSON.stringify(c.puesto) + ')">Borrar</button>':'') +
-        '</div>' +
+      var pBg=c.puntaje>=80?'#edf7f1':c.puntaje>=60?'#fef8ee':'#fbeaea';
+      var pTx=c.puntaje>=80?'#1e5c38':c.puntaje>=60?'#7a5000':'#8b1f1f';
+      var badge=fb?'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:3px 9px;border-radius:8px;">\u2713 Guardado '+(fb.fecha||'')+'</span>':'';
+      return '<div class="card" style="margin-bottom:12px;display:flex;flex-direction:column;gap:14px;" id="fbcard_'+key+'">'+
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">'+
+          '<div><div style="font-size:14px;font-weight:500;">'+c.candidato+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);">'+c.puesto+(c.area?' &middot; '+c.area:'')+'</div></div>'+
+          '<div style="display:flex;align-items:center;gap:8px;">'+
+            '<span style="font-size:12px;font-weight:600;background:'+pBg+';color:'+pTx+';padding:3px 10px;border-radius:8px;">Prefiltro: '+c.puntaje+'</span>'+badge+
+          '</div></div>'+
+        (c.fortalezas?'<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> '+c.fortalezas+'</div>':'')+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'+starsHtml+'</div>'+
+        '<div class="form-group"><label>Comentarios de la entrevista presencial</label>'+
+          '<textarea id="fb_'+key+'" style="height:65px;" placeholder="Observaciones...">'+( fb?fb.comentario||'':'')+'</textarea></div>'+
+        '<div style="display:flex;gap:8px;">'+
+          '<button class="btn btn-primary btn-sm" onclick="saveFeedback('+JSON.stringify(c.candidato)+','+JSON.stringify(c.puesto)+','+JSON.stringify(key)+')">Guardar feedback</button>'+
+          (fb?'<button class="btn btn-secondary btn-sm" onclick="deleteFeedback('+JSON.stringify(c.candidato)+','+JSON.stringify(c.puesto)+')">Borrar</button>':'')+
+        '</div>'+
       '</div>';
     }).join('');
-  }).catch(function() {
-    panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al cargar candidatos.</div>';
   });
 }
 
-function setFbStar(el) {
-  var key = el.dataset.key;
-  var campo = el.dataset.campo;
-  var n = parseInt(el.dataset.n);
-  if (!fbTemp[key]) fbTemp[key] = {};
-  fbTemp[key][campo] = n;
-  var card = document.getElementById('fbcard_' + key);
-  if (card) {
-    card.querySelectorAll('[data-key="' + key + '"][data-campo="' + campo + '"]').forEach(function(s) {
-      s.style.color = parseInt(s.dataset.n)<=n ? '#e8623a' : '#e0ddd8';
-    });
-  }
+function setFbStar(el){
+  var key=el.dataset.key, campo=el.dataset.campo, n=parseInt(el.dataset.n);
+  if(!fbTemp[key])fbTemp[key]={};
+  fbTemp[key][campo]=n;
+  var card=document.getElementById('fbcard_'+key);
+  if(card) card.querySelectorAll('[data-key="'+key+'"][data-campo="'+campo+'"]').forEach(function(s){ s.style.color=parseInt(s.dataset.n)<=n?'#e8623a':'#e0ddd8'; });
 }
 
-function saveFeedback(candidato, puesto, key) {
-  var txtId = 'fb_' + key;
-  var comentario = document.getElementById(txtId) ? document.getElementById(txtId).value : '';
-  var stars = fbTemp[key] || {};
-  var fb = Object.assign({candidato:candidato, puesto:puesto, comentario:comentario, fecha:new Date().toLocaleDateString('es-PE')}, stars);
-  feedbacks = feedbacks.filter(function(f) { return !(f.candidato===candidato && f.puesto===puesto); });
+function saveFeedback(candidato,puesto,key){
+  var comentario=document.getElementById('fb_'+key)?document.getElementById('fb_'+key).value:'';
+  var fb=Object.assign({candidato:candidato,puesto:puesto,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE')},fbTemp[key]||{});
+  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto===puesto);});
   feedbacks.push(fb);
-  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
-  toast('Feedback guardado \u00b7 ' + candidato);
+  localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
+  toast('Feedback guardado \u00b7 '+candidato);
   renderFeedbackPanel();
 }
 
-function deleteFeedback(candidato, puesto) {
-  feedbacks = feedbacks.filter(function(f) { return !(f.candidato===candidato && f.puesto===puesto); });
-  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+function deleteFeedback(candidato,puesto){
+  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto===puesto);});
+  localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
   toast('Feedback eliminado');
   renderFeedbackPanel();
 }
 
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════
 // TOAST
-// ══════════════════════════════════════════════════════
-function toast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 2500);
+// ══════════════════════════════════
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
 }
 </script>
 </body>
