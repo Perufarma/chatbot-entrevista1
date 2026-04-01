@@ -69,6 +69,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="nav-tab active" onclick="showTab('puestos',this)">Puestos</button>
   <button class="nav-tab" onclick="showTab('resultados',this);renderResultados()">Resultados</button>
   <button class="nav-tab" onclick="showTab('candidatos',this);renderPuestosSelect()">Candidatos</button>
+  <button class="nav-tab" onclick="showTab('lider',this);renderRequisiciones()">Líder</button>
 </nav>
 
 <!-- PUESTOS -->
@@ -143,10 +144,145 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 </div>
 
+<!-- LÍDER -->
+<div class="panel" id="tab-lider">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;">
+    <div>
+      <div class="section-title">Portal del líder</div>
+      <div class="section-sub">Solicitudes de perfil y seguimiento de requerimientos</div>
+    </div>
+    <button class="btn btn-accent" onclick="toggleReqForm()">+ Nueva solicitud</button>
+  </div>
+
+  <!-- Form -->
+  <div class="add-job-form" id="reqForm" style="margin-bottom:24px;">
+    <div id="reqFormTitle" style="font-size:14px;font-weight:500;">Nueva solicitud de perfil</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Puesto solicitado <span style="color:var(--accent2);">*</span></label>
+        <input type="text" id="req_puesto" placeholder="Ej: Supervisor de Distribución">
+      </div>
+      <div class="form-group">
+        <label>Área <span style="color:var(--accent2);">*</span></label>
+        <input type="text" id="req_area" placeholder="Ej: Operaciones, Comercial...">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Sede <span style="color:var(--accent2);">*</span></label>
+        <select id="req_sede" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%;">
+          <option value="">Selecciona...</option>
+          <option>Lima</option>
+          <option>Arequipa</option>
+          <option>Chiclayo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Horario <span style="color:var(--accent2);">*</span></label>
+        <input type="text" id="req_horario" placeholder="Ej: Lunes a sábado 8am-6pm">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Nivel del puesto <span style="color:var(--accent2);">*</span></label>
+      <select id="req_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%;">
+        <option value="">Selecciona el nivel...</option>
+        <option value="60">Gerente / Sub Gerente (60 días)</option>
+        <option value="35">Jefe / Supervisor / Especialista (35 días)</option>
+        <option value="30">Analista / Ejecutivo (30 días)</option>
+        <option value="30">Técnico / Asistente (30 días)</option>
+        <option value="25">Practicante / Auxiliar (25 días)</option>
+      </select>
+    </div>
+
+    <div id="plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#085041;line-height:1.5;"></div>
+
+    <div class="form-group">
+      <label>Motivo <span style="color:var(--accent2);">*</span></label>
+      <select id="req_motivo" onchange="toggleReemplazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%;">
+        <option value="">Selecciona...</option>
+        <option value="reemplazo">Reemplazo</option>
+        <option value="nuevo">Nuevo puesto</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="reemplazoField" style="display:none;">
+      <label>¿Cuándo cesó o cesará el colaborador?</label>
+      <input type="date" id="req_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%;">
+    </div>
+
+    <div class="form-group">
+      <label>Requisitos mínimos <span style="color:var(--accent2);">*</span></label>
+      <textarea id="req_minimos" placeholder="Experiencia mínima, formación requerida, habilidades indispensables..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Requisitos deseables</label>
+      <textarea id="req_deseables" placeholder="Certificaciones, experiencia adicional, habilidades valoradas..."></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="saveRequisicion()">Enviar solicitud</button>
+      <button class="btn btn-secondary" onclick="toggleReqForm()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Requisiciones list -->
+  <div id="reqList"></div>
+
+  <!-- Sección 2: Estado de solicitudes con puntajes -->
+  <div style="margin-top:32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:16px;font-weight:500;letter-spacing:-0.01em;">Candidatos por puesto</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;">Resultados del prefiltro en tiempo real</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="renderCandidatosPorPuesto()">Actualizar</button>
+    </div>
+    <div id="candidatosPorPuesto"></div>
+  </div>
+
+  <!-- Sección 3: Feedback de candidatos -->
+  <div style="margin-top:32px;">
+    <div style="margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:500;letter-spacing:-0.01em;">Feedback de entrevistas presenciales</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:2px;">Califica candidatos que ya entrevistaste en persona</div>
+    </div>
+    <div id="feedbackPanel"></div>
+  </div>
+
+  <!-- Sección 4: Aprobación de perfiles -->
+  <div style="margin-top:32px;margin-bottom:32px;">
+    <div style="margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:500;letter-spacing:-0.01em;">Aprobación de perfiles</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:2px;">Revisa y aprueba los perfiles de puestos antes de publicarlos</div>
+    </div>
+    <div id="aprobacionPanel"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 // ── State ──
 let jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
+
+// ── Helper: fetch seguro que valida JSON ──
+async function safeFetch(url, options) {
+  try {
+    var res = await fetch(url, options);
+    var ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      console.warn('API no-JSON en', url, '— usando localStorage');
+      return null;
+    }
+    return await res.json();
+  } catch(e) {
+    console.warn('safeFetch error:', url, e.message);
+    return null;
+  }
+}
 
 // ── Init ──
 const candidateUrl = window.location.origin + '/candidato.html';
@@ -155,22 +291,25 @@ renderJobs();
 
 // Load from server and sync
 (async () => {
-  try {
-    const res = await fetch('/api/jobs');
-    const data = await res.json();
-    if (data.jobs && data.jobs.length) {
-      jobs = data.jobs;
-      localStorage.setItem('rjobs', JSON.stringify(jobs));
-      renderJobs();
-      renderPuestosSelect();
-    }
-  } catch (e) {
-    console.warn('Usando datos locales:', e);
+  var data = await safeFetch('/api/jobs');
+  if (data && data.jobs && data.jobs.length) {
+    jobs = data.jobs;
+    localStorage.setItem('rjobs', JSON.stringify(jobs));
+    renderJobs();
+    renderPuestosSelect();
   }
 })();
 
 function showTab(id, btn) {
   if (id === 'candidatos') renderPuestosSelect();
+  if (id === 'lider') {
+    renderRequisiciones();
+    setTimeout(function() {
+      renderCandidatosPorPuesto();
+      renderFeedbackPanel();
+      renderAprobacionPanel();
+    }, 100);
+  }
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
@@ -262,13 +401,10 @@ function renderJobs() {
 function getResults() { return JSON.parse(localStorage.getItem('rresults') || '[]'); }
 
 async function renderResultados() {
-  try {
-    const res = await fetch('/api/jobs?type=results');
-    const data = await res.json();
-    if (data.results && data.results.length) {
-      localStorage.setItem('rresults', JSON.stringify(data.results));
-    }
-  } catch(e) {}
+  var data = await safeFetch('/api/jobs?type=results');
+  if (data && data.results && data.results.length) {
+    localStorage.setItem('rresults', JSON.stringify(data.results));
+  }
   const results = getResults();
   const panel = document.getElementById('resultsPanel');
   if (!results.length) {
@@ -355,13 +491,11 @@ function exportCSV() {
 async function clearResults() {
   if (!confirm('¿Eliminar todos los resultados?')) return;
   localStorage.removeItem('rresults');
-  try {
-    await fetch('/api/jobs?type=results', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ results: [] })
-    });
-  } catch(e) {}
+  await safeFetch('/api/jobs?type=results', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ results: [] })
+  });
   renderResultados();
   toast('Resultados eliminados');
 }
@@ -370,16 +504,12 @@ function copyLink() {
   navigator.clipboard.writeText(candidateUrl).then(() => toast('Link copiado'));
 }
 
-async function syncJobsToServer(jobs) {
-  try {
-    await fetch('/api/jobs', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ jobs })
-    });
-  } catch (e) {
-    console.warn('No se pudo sincronizar con servidor:', e);
-  }
+async function syncJobsToServer(j) {
+  await safeFetch('/api/jobs', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ jobs: j })
+  });
 }
 
 function renderPuestosSelect() {
@@ -416,6 +546,411 @@ function generarMensajes() {
       '</div>';
   });
   panel.innerHTML = html;
+}
+
+// ── Líder / Requisiciones ──
+let requisiciones = JSON.parse(localStorage.getItem('rreqs') || '[]');
+
+const PLAZOS = {
+  '60': { label: 'Gerente / Sub Gerente', dias: 60 },
+  '35': { label: 'Jefe / Supervisor / Especialista', dias: 35 },
+  '30': { label: 'Analista / Ejecutivo / Técnico / Asistente', dias: 30 },
+  '25': { label: 'Practicante / Auxiliar', dias: 25 }
+};
+
+function calcularPlazo() {
+  var nivel = document.getElementById('req_nivel').value;
+  var info = document.getElementById('plazoInfo');
+  if (!nivel) { info.style.display = 'none'; return; }
+  var p = PLAZOS[nivel];
+  var fecha = new Date();
+  fecha.setDate(fecha.getDate() + p.dias);
+  var fechaStr = fecha.toLocaleDateString('es-PE', {day:'numeric', month:'long', year:'numeric'});
+  info.style.display = 'block';
+  info.innerHTML = 'Según política Perufarma, el plazo para cubrir este puesto es de <strong>' + p.dias + ' días calendario</strong>. Fecha límite estimada: <strong>' + fechaStr + '</strong>';
+}
+
+function toggleReemplazo() {
+  var motivo = document.getElementById('req_motivo').value;
+  document.getElementById('reemplazoField').style.display = motivo === 'reemplazo' ? 'block' : 'none';
+}
+
+function toggleReqForm() {
+  var f = document.getElementById('reqForm');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) {
+    ['req_puesto','req_area','req_horario','req_minimos','req_deseables','req_cese'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['req_sede','req_nivel','req_motivo'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('plazoInfo').style.display = 'none';
+    document.getElementById('reemplazoField').style.display = 'none';
+    document.getElementById('reqFormTitle').textContent = 'Nueva solicitud de perfil';
+  }
+}
+
+function saveRequisicion() {
+  var puesto = document.getElementById('req_puesto').value.trim();
+  var area = document.getElementById('req_area').value.trim();
+  var sede = document.getElementById('req_sede').value;
+  var horario = document.getElementById('req_horario').value.trim();
+  var nivel = document.getElementById('req_nivel').value;
+  var motivo = document.getElementById('req_motivo').value;
+  var minimos = document.getElementById('req_minimos').value.trim();
+
+  if (!puesto || !area || !sede || !horario || !nivel || !motivo || !minimos) {
+    toast('Completa todos los campos obligatorios'); return;
+  }
+
+  var cese = motivo === 'reemplazo' ? document.getElementById('req_cese').value : '';
+  var diasPlazo = parseInt(nivel);
+  var fechaLimite = new Date();
+  fechaLimite.setDate(fechaLimite.getDate() + diasPlazo);
+
+  var req = {
+    id: Date.now(),
+    fecha: new Date().toLocaleDateString('es-PE'),
+    puesto, area, sede, horario, nivel: PLAZOS[nivel]?.label || nivel,
+    diasPlazo, motivo, cese,
+    minimos,
+    deseables: document.getElementById('req_deseables').value.trim(),
+    fechaLimite: fechaLimite.toLocaleDateString('es-PE'),
+    estado: 'Pendiente'
+  };
+
+  requisiciones.push(req);
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  renderRequisiciones();
+  toggleReqForm();
+  toast('Solicitud enviada correctamente');
+}
+
+async function syncReqsToServer(reqs) {
+  await safeFetch('/api/jobs?type=reqs', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ reqs: reqs })
+  });
+}
+
+function deleteReq(id) {
+  if (!confirm('¿Eliminar esta solicitud?')) return;
+  var numId = parseInt(id);
+  requisiciones = requisiciones.filter(function(r) { return r.id !== numId; });
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  renderRequisiciones();
+  toast('Solicitud eliminada');
+}
+
+function renderRequisiciones() {
+  var list = document.getElementById('reqList');
+  if (!list) return;
+
+  // Load from server
+  safeFetch('/api/jobs?type=reqs').then(function(d) { if (!d) { renderReqCards(); return; }
+    if (d.reqs && d.reqs.length) {
+      requisiciones = d.reqs;
+      localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+    }
+    renderReqCards();
+  }).catch(function() { renderReqCards(); });
+}
+
+function renderReqCards() {
+  var list = document.getElementById('reqList');
+  if (!list) return;
+  if (!requisiciones.length) {
+    list.innerHTML = '<div class="empty-state">No hay solicitudes aún. Haz clic en <strong>+ Nueva solicitud</strong> para comenzar.</div>';
+    return;
+  }
+
+  var estadoColor = function(e) {
+    return e === 'Pendiente' ? {bg:'#fef8ee',text:'#7a5000'} :
+           e === 'En proceso' ? {bg:'#edf7f1',text:'#1e5c38'} :
+           {bg:'#EEEDFE',text:'#3C3489'};
+  };
+
+  list.innerHTML = requisiciones.slice().reverse().map(function(r) {
+    var ec = estadoColor(r.estado);
+    var motivoLabel = r.motivo === 'reemplazo' ? 'Reemplazo' + (r.cese ? ' \u2014 Cese: ' + r.cese : '') : 'Nuevo puesto';
+    var selPend = r.estado==='Pendiente'?' selected':'';
+    var selProc = r.estado==='En proceso'?' selected':'';
+    var selCub  = r.estado==='Cubierto'?' selected':'';
+    var html = '<div class="job-card" style="margin-bottom:12px;">';
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
+    html += '<div><div class="job-card-title">' + r.puesto + '</div>';
+    html += '<div class="job-card-dept">' + r.area + ' \u00b7 ' + r.sede + '</div></div>';
+    html += '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + ec.bg + ';color:' + ec.text + ';white-space:nowrap;">' + r.estado + '</span>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted);">';
+    html += '<div>Motivo: <strong style="color:var(--text);">' + motivoLabel + '</strong></div>';
+    html += '<div>Horario: <strong style="color:var(--text);">' + r.horario + '</strong></div>';
+    html += '<div>Nivel: <strong style="color:var(--text);">' + r.nivel + '</strong></div>';
+    html += '<div>Fecha l\u00edmite: <strong style="color:#c0392b;">' + r.fechaLimite + '</strong></div>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Requisitos m\u00ednimos:</strong> ' + r.minimos.substring(0,120) + (r.minimos.length>120?'\u2026':'') + '</div>';
+    if (r.deseables) html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Deseables:</strong> ' + r.deseables.substring(0,100) + (r.deseables.length>100?'\u2026':'') + '</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+    html += '<select data-req-id="' + r.id + '" onchange="cambiarEstado(this.dataset.reqId, this.value)" style="flex:1;background:var(--bg);border:0.5px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);outline:none;">';
+    html += '<option' + selPend + '>Pendiente</option>';
+    html += '<option' + selProc + '>En proceso</option>';
+    html += '<option' + selCub  + '>Cubierto</option>';
+    html += '</select>';
+    html += '<button class="btn btn-danger btn-sm" data-del-id="' + r.id + '" onclick="deleteReq(this.dataset.delId)">Eliminar</button>';
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--muted);">Solicitado el ' + r.fecha + ' \u00b7 ' + r.diasPlazo + ' d\u00edas de plazo seg\u00fan pol\u00edtica Perufarma</div>';
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+function cambiarEstado(id, estado) {
+  var numId = parseInt(id);
+  requisiciones = requisiciones.map(function(r) {
+    return r.id === numId ? Object.assign({}, r, {estado: estado}) : r;
+  });
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  renderReqCards();
+  toast('Estado actualizado');
+}
+
+// ── Sección 2: Candidatos por puesto ──
+function renderCandidatosPorPuesto() {
+  var panel = document.getElementById('candidatosPorPuesto');
+  if (!panel) return;
+  panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
+
+  safeFetch('/api/jobs?type=results').then(function(d) {
+    var results = (d && d.results) ? d.results : JSON.parse(localStorage.getItem('rresults') || '[]');
+    if (!results.length) {
+      panel.innerHTML = '<div class="empty-state" style="padding:20px;">Aún no hay candidatos evaluados.</div>';
+      return;
+    }
+
+    // Agrupar por puesto
+    var byPuesto = {};
+    results.forEach(function(r) {
+      if (!byPuesto[r.puesto]) byPuesto[r.puesto] = [];
+      byPuesto[r.puesto].push(r);
+    });
+
+    var rBg = function(r) { return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea'; };
+    var rTx = function(r) { return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f'; };
+    var sBg = function(s) { return s>=80?'#edf7f1':s>=60?'#fef8ee':'#fbeaea'; };
+    var sTx = function(s) { return s>=80?'#1e5c38':s>=60?'#7a5000':'#8b1f1f'; };
+
+    panel.innerHTML = Object.keys(byPuesto).map(function(puesto) {
+      var cands = byPuesto[puesto].slice().sort(function(a,b) { return b.puntaje - a.puntaje; });
+      var avanzarCount = cands.filter(function(c) { return c.recomendacion === 'Avanzar'; }).length;
+
+      var rows = cands.map(function(c, idx) {
+        var resumen = (c.resumen || '');
+        var resumenCorto = resumen.length > 90 ? resumen.substring(0,90) + '…' : resumen;
+        var rankBadge = idx === 0 ? '<span style="font-size:10px;background:#fef8ee;color:#7a5000;border-radius:4px;padding:1px 5px;margin-left:6px;">★ Top</span>' : '';
+        return '<tr style="transition:background 0.1s;" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+
+          '<td style="padding:9px 12px;font-weight:500;white-space:nowrap;">' + c.candidato + rankBadge + '</td>' +
+          '<td style="padding:9px 12px;color:var(--muted);font-size:12px;white-space:nowrap;">' + (c.fecha||'') + (c.hora?' · '+c.hora:'') + '</td>' +
+          '<td style="padding:9px 12px;text-align:center;">' +
+            '<span style="background:'+sBg(c.puntaje)+';color:'+sTx(c.puntaje)+';padding:3px 9px;border-radius:8px;font-size:12px;font-weight:600;font-family:\'DM Mono\',monospace;">' + c.puntaje + '</span>' +
+          '</td>' +
+          '<td style="padding:9px 12px;text-align:center;">' +
+            '<span style="background:'+rBg(c.recomendacion)+';color:'+rTx(c.recomendacion)+';padding:2px 9px;border-radius:8px;font-size:11px;font-weight:500;">' + c.recomendacion + '</span>' +
+          '</td>' +
+          '<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:200px;">' + resumenCorto + '</td>' +
+        '</tr>';
+      }).join('');
+
+      var avgPuntaje = Math.round(cands.reduce(function(s,c){ return s+c.puntaje; },0) / cands.length);
+
+      return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">' +
+        '<div style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+          '<div style="font-size:13px;font-weight:500;">' + puesto + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:12px;color:var(--muted);">' + cands.length + ' candidato' + (cands.length!==1?'s':'') + '</span>' +
+            '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">✓ ' + avanzarCount + ' para avanzar</span>' +
+            '<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. ' + avgPuntaje + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="overflow-x:auto;">' +
+          '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+            '<thead><tr style="background:var(--bg);">' +
+              '<th style="padding:8px 12px;text-align:left;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;">Candidato</th>' +
+              '<th style="padding:8px 12px;text-align:left;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;">Fecha</th>' +
+              '<th style="padding:8px 12px;text-align:center;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;">Puntaje</th>' +
+              '<th style="padding:8px 12px;text-align:center;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;">Recomendación</th>' +
+              '<th style="padding:8px 12px;text-align:left;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;">Resumen IA</th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }).catch(function() {
+    panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al cargar resultados.</div>';
+  });
+}
+
+// ── Sección 3: Feedback de entrevistas presenciales ──
+let feedbacks = JSON.parse(localStorage.getItem('rfeedbacks') || '[]');
+var fbTemp = {};
+
+function renderFeedbackPanel() {
+  var panel = document.getElementById('feedbackPanel');
+  if (!panel) return;
+  panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
+
+  safeFetch('/api/jobs?type=results').then(function(d) {
+    var results = (d && d.results) ? d.results : JSON.parse(localStorage.getItem('rresults') || '[]');
+    var avanzar = results.filter(function(r) { return r.recomendacion === 'Avanzar'; });
+
+    if (!avanzar.length) {
+      panel.innerHTML = '<div class="empty-state" style="padding:20px;">No hay candidatos con recomendación <strong>"Avanzar"</strong> aún.<br><span style="font-size:12px;">Solo aparecerán aquí los candidatos que la IA recomiende avanzar.</span></div>';
+      return;
+    }
+
+    panel.innerHTML = avanzar.map(function(c) {
+      var fb = feedbacks.find(function(f) { return f.candidato === c.candidato && f.puesto === c.puesto; });
+      var key = (c.candidato + '_' + c.puesto).replace(/[^a-zA-Z0-9_]/g, '_');
+      var fbData = fbTemp[key] || fb || {};
+
+      var campos = [
+        { id: 'comunicacion', label: 'Comunicación' },
+        { id: 'tecnico', label: 'Conocimiento técnico' },
+        { id: 'actitud', label: 'Actitud y fit cultural' },
+        { id: 'presentacion', label: 'Presentación personal' }
+      ];
+
+      var starsHtml = campos.map(function(campo) {
+        var val = fbData[campo.id] || 0;
+        var starsRow = [1,2,3,4,5].map(function(n) {
+          return '<span data-key="' + key + '" data-campo="' + campo.id + '" data-n="' + n + '" onclick="setFbStar(this)" style="cursor:pointer;font-size:20px;line-height:1;color:' + (val >= n ? '#e8623a' : '#e0ddd8') + ';transition:color .1s;">★</span>';
+        }).join('');
+        return '<div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">' + campo.label + '</div>' +
+          '<div>' + starsRow + '</div>' +
+        '</div>';
+      }).join('');
+
+      var txtId = 'fb_' + key;
+      var savedBadge = fb ? '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:3px 9px;border-radius:8px;font-weight:500;">✓ Guardado</span>' : '';
+
+      // Promedio prefiltro IA con color
+      var pBg = c.puntaje>=80?'#edf7f1':c.puntaje>=60?'#fef8ee':'#fbeaea';
+      var pTx = c.puntaje>=80?'#1e5c38':c.puntaje>=60?'#7a5000':'#8b1f1f';
+
+      return '<div class="card" style="margin-bottom:12px;display:flex;flex-direction:column;gap:14px;" id="fbcard_' + key + '">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+          '<div>' +
+            '<div style="font-size:14px;font-weight:500;">' + c.candidato + '</div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-top:3px;">' + c.puesto + (c.area ? ' · ' + c.area : '') + '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<span style="font-size:12px;font-weight:600;background:' + pBg + ';color:' + pTx + ';padding:3px 10px;border-radius:8px;font-family:\'DM Mono\',monospace;">Prefiltro IA: ' + c.puntaje + '</span>' +
+            savedBadge +
+          '</div>' +
+        '</div>' +
+        (c.fortalezas ? '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> ' + c.fortalezas + '</div>' : '') +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' + starsHtml + '</div>' +
+        '<div class="form-group">' +
+          '<label>Comentarios de la entrevista presencial</label>' +
+          '<textarea id="' + txtId + '" style="height:65px;" placeholder="Ej: Muy buena comunicación, mostró seguridad en sus respuestas...">' + (fb ? fb.comentario||'' : '') + '</textarea>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          '<button class="btn btn-primary btn-sm" onclick="saveFeedback(' + JSON.stringify(c.candidato) + ',' + JSON.stringify(c.puesto) + ',' + JSON.stringify(key) + ')">Guardar feedback</button>' +
+          (fb ? '<button class="btn btn-secondary btn-sm" onclick="deleteFeedback(' + JSON.stringify(c.candidato) + ',' + JSON.stringify(c.puesto) + ')">Borrar</button>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }).catch(function() {
+    panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al cargar candidatos.</div>';
+  });
+}
+
+function setFbStar(el) {
+  var key = el.dataset.key;
+  var campo = el.dataset.campo;
+  var n = parseInt(el.dataset.n);
+  if (!fbTemp[key]) fbTemp[key] = {};
+  fbTemp[key][campo] = n;
+  // Actualizar colores de estrellas del grupo
+  var card = document.getElementById('fbcard_' + key);
+  if (card) {
+    card.querySelectorAll('[data-key="' + key + '"][data-campo="' + campo + '"]').forEach(function(s) {
+      s.style.color = parseInt(s.dataset.n) <= n ? '#e8623a' : '#e0ddd8';
+    });
+  }
+}
+
+function saveFeedback(candidato, puesto, key) {
+  var txtId = 'fb_' + key;
+  var comentario = document.getElementById(txtId) ? document.getElementById(txtId).value : '';
+  var stars = fbTemp[key] || {};
+  var fb = Object.assign({ candidato: candidato, puesto: puesto, comentario: comentario, fecha: new Date().toLocaleDateString('es-PE') }, stars);
+  feedbacks = feedbacks.filter(function(f) { return !(f.candidato===candidato && f.puesto===puesto); });
+  feedbacks.push(fb);
+  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+  toast('Feedback guardado · ' + candidato);
+  renderFeedbackPanel();
+}
+
+function deleteFeedback(candidato, puesto) {
+  feedbacks = feedbacks.filter(function(f) { return !(f.candidato===candidato && f.puesto===puesto); });
+  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+  toast('Feedback eliminado');
+  renderFeedbackPanel();
+}
+
+// ── Sección 4: Aprobación de perfiles ──
+function renderAprobacionPanel() {
+  var panel = document.getElementById('aprobacionPanel');
+  if (!panel) return;
+
+  if (!jobs.length) {
+    panel.innerHTML = '<div class="empty-state" style="padding:20px;">No hay perfiles de puestos cargados aún.</div>';
+    return;
+  }
+
+  var aprobaciones = JSON.parse(localStorage.getItem('raprobaciones') || '{}');
+
+  panel.innerHTML = jobs.map(function(j) {
+    var estado = aprobaciones[j.id] || { status: 'Pendiente revisión', comentario: '' };
+    var sBg = estado.status==='Aprobado' ? '#edf7f1' : estado.status==='Cambios solicitados' ? '#fbeaea' : '#fef8ee';
+    var sTx = estado.status==='Aprobado' ? '#1e5c38' : estado.status==='Cambios solicitados' ? '#8b1f1f' : '#7a5000';
+
+    return '<div class="card" style="margin-bottom:12px;display:flex;flex-direction:column;gap:10px;">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:500;">' + j.titulo + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);">' + (j.area||'Sin área') + '</div>' +
+        '</div>' +
+        '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + sBg + ';color:' + sTx + ';white-space:nowrap;">' + estado.status + '</span>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--muted);line-height:1.5;">' + j.desc.substring(0,150) + (j.desc.length>150?'…':'') + '</div>' +
+      (j.instrucciones ? '<div style="font-size:11px;color:#7a5000;background:#fef8ee;border-radius:6px;padding:6px 10px;">Instrucciones: ' + j.instrucciones.substring(0,100) + '</div>' : '') +
+      '<textarea id="apr_' + j.id + '" style="height:55px;" placeholder="Comentarios o cambios solicitados...">' + (estado.comentario||'') + '</textarea>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button class="btn btn-primary btn-sm" style="background:#2d7a4f;border-color:#2d7a4f;" onclick="aprobarPerfil(' + j.id + ',\'Aprobado\')">Aprobar</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="aprobarPerfil(' + j.id + ',\'Cambios solicitados\')">Solicitar cambios</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function aprobarPerfil(id, status) {
+  var aprobaciones = JSON.parse(localStorage.getItem('raprobaciones') || '{}');
+  var txtId = 'apr_' + id;
+  var comentario = document.getElementById(txtId) ? document.getElementById(txtId).value : '';
+  aprobaciones[id] = { status: status, comentario: comentario, fecha: new Date().toLocaleDateString('es-PE') };
+  localStorage.setItem('raprobaciones', JSON.stringify(aprobaciones));
+  toast(status === 'Aprobado' ? 'Perfil aprobado ✓' : 'Cambios solicitados enviados');
+  renderAprobacionPanel();
 }
 
 function toast(msg) {
