@@ -3,24 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entrevista de selección — RecruitAI</title>
+<title>Entrevista de selección — Perufarma S.A.</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
-:root{--bg:#f7f5f0;--surface:#fff;--surface2:#f0ede7;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.13);--text:#1a1814;--muted:#7a7570;--accent2:#e8623a;}
+:root{--bg:#f7f5f0;--surface:#fff;--surface2:#f0ede7;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.13);--text:#1a1814;--muted:#7a7570;--accent2:#e8623a;--orange-bg:#fdf0eb;--orange-text:#8c3d1e;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
 .card{background:var(--surface);border:0.5px solid var(--border2);border-radius:16px;width:100%;max-width:540px;overflow:hidden;}
 .setup{padding:32px;display:flex;flex-direction:column;gap:20px;}
 .brand{display:flex;align-items:center;gap:10px;}
-.brand-logo{width:36px;height:36px;background:var(--accent2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.brand-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;letter-spacing:-0.02em;}
 .title{font-family:'Syne',sans-serif;font-size:22px;font-weight:600;letter-spacing:-0.03em;line-height:1.2;}
 .sub{font-size:13px;color:var(--muted);line-height:1.55;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
 .form-group label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;}
-.form-group input{background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.15s;width:100%;}
-.form-group input:focus{border-color:var(--accent2);}
-/* dropdown replaces radio buttons */
+.form-group input,.form-group select{background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.15s;width:100%;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent2);}
 .btn-start{padding:12px 24px;background:var(--accent2);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;border:none;border-radius:10px;cursor:pointer;width:100%;transition:opacity 0.15s;}
 .btn-start:hover{opacity:0.88;}
 .chat{display:none;flex-direction:column;}
@@ -29,6 +26,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .chat-h-sub{font-size:11px;color:var(--muted);}
 .progress-track{height:2px;background:var(--surface2);}
 .progress-fill{height:2px;background:var(--accent2);transition:width 0.5s ease;}
+.timer-wrap{padding:6px 12px;background:var(--surface);border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;}
+.timer-bar-bg{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.timer-bar-fill{height:4px;border-radius:2px;transition:width 1s linear,background 1s linear;}
+.timer-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);min-width:36px;text-align:right;}
 .messages{padding:16px;display:flex;flex-direction:column;gap:12px;min-height:340px;max-height:420px;overflow-y:auto;background:var(--bg);}
 .messages::-webkit-scrollbar{width:3px;}
 .messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
@@ -43,12 +44,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .msg.user .bubble{background:var(--accent2);color:white;border-radius:14px 14px 4px 14px;}
 .msg-time{font-size:10px;color:var(--muted);padding:0 2px;}
 .msg.user .msg-time{text-align:right;}
+.bot-name{font-size:10px;font-weight:500;color:var(--accent2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:3px;padding-left:2px;}
 .typing{display:flex;align-items:center;gap:4px;padding:10px 14px;background:var(--surface);border:0.5px solid var(--border);border-radius:4px 14px 14px 14px;align-self:flex-start;}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite;}
 .dot:nth-child(2){animation-delay:.2s;}
 .dot:nth-child(3){animation-delay:.4s;}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.mic-hint{font-size:11px;color:var(--muted);text-align:center;padding:3px 0;}
 .input-row{padding:10px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;background:var(--surface);}
+.mic-btn{width:38px;height:38px;border-radius:50%;border:0.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.mic-btn:hover{background:var(--surface2);}
+.mic-btn.recording{background:#fbeaea;border-color:#c0392b;animation:pulse-mic 1s ease-in-out infinite;}
+@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.3)}50%{box-shadow:0 0 0 6px rgba(192,57,43,0)}}
 #userInput{flex:1;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;resize:none;outline:none;line-height:1.5;}
 #userInput:focus{border-color:var(--accent2);}
 #sendBtn{padding:9px 16px;background:var(--accent2);color:white;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;flex-shrink:0;}
@@ -56,6 +63,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #sendBtn:disabled{opacity:.35;cursor:not-allowed;}
 .btn-finish{font-size:12px;padding:5px 12px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
 .btn-finish:hover{border-color:var(--accent2);color:var(--accent2);}
+.speak-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;font-family:'DM Sans',sans-serif;transition:all 0.15s;white-space:nowrap;}
+.speak-toggle:hover{background:var(--surface2);}
+.speak-toggle.active{color:var(--accent2);border-color:var(--accent2);background:var(--orange-bg);}
 .report{display:none;padding:24px;flex-direction:column;gap:16px;}
 .score-row{display:flex;align-items:center;gap:14px;}
 .score-ring{width:60px;height:60px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;flex-shrink:0;}
@@ -71,70 +81,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .rep-block{background:var(--bg);border-radius:8px;padding:12px 14px;}
 .rep-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;}
 .rep-text{font-size:13px;line-height:1.6;color:var(--muted);}
-.no-jobs{font-size:13px;color:var(--muted);padding:8px 0;line-height:1.5;}
-.bot-name{font-size:10px;font-weight:500;color:var(--accent2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:3px;padding-left:2px;}
-.timer-wrap{padding:6px 12px;background:var(--surface);border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;}
-.timer-bar-bg{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
-.timer-bar-fill{height:4px;border-radius:2px;transition:width 1s linear,background 1s linear;}
-.timer-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);min-width:36px;text-align:right;}
-.mic-btn{width:38px;height:38px;border-radius:50%;border:0.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
-.speak-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;font-family:'DM Sans',sans-serif;transition:all 0.15s;white-space:nowrap;}
-.speak-toggle:hover{background:var(--surface2);}
-.speak-toggle.active{color:var(--accent2);border-color:var(--accent2);background:var(--orange-bg);}
-.mic-btn:hover{background:var(--surface2);}
-.mic-btn.recording{background:#fbeaea;border-color:#c0392b;animation:pulse-mic 1s ease-in-out infinite;}
-@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.3)}50%{box-shadow:0 0 0 6px rgba(192,57,43,0)}}
-.mic-hint{font-size:11px;color:var(--muted);text-align:center;padding:3px 0;}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="setup" id="setupPanel">
-    <div class="brand">
-      <img src="data:image/png;base64,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" alt="Perufarma" style="height:120px;width:auto;object-fit:contain;">
-    </div>
-    <div><div class="title">Entrevista de selección</div><div class="sub" style="margin-top:6px;">Completa tu nombre y selecciona el puesto al que estás aplicando para comenzar.</div></div>
+    <div class="brand"><img src="data:image/png;base64,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" alt="Perufarma S.A." style="height:80px;width:auto;object-fit:contain;"></div>
+    <div><div class="title">Entrevista de selección</div><div class="sub" style="margin-top:6px;">Completa todos los campos y selecciona el puesto al que estás aplicando para comenzar.</div></div>
     <div class="form-group"><label>Tu nombre completo <span style="color:var(--accent2);">*</span></label><input type="text" id="candNombre" placeholder="Ej: María Torres"></div>
     <div class="form-group"><label>DNI <span style="color:var(--accent2);">*</span></label><input type="text" id="candDni" placeholder="Ej: 12345678" maxlength="8" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
-    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface2);border-radius:10px;border:0.5px solid var(--border2);">
-      <input type="checkbox" id="dataConsent" style="width:16px;height:16px;margin-top:2px;accent-color:var(--accent2);flex-shrink:0;cursor:pointer;">
-      <label for="dataConsent" style="font-size:12px;color:var(--muted);line-height:1.6;cursor:pointer;">
-        Autorizo a <strong style="color:var(--text);">Perufarma S.A.</strong> a recopilar y tratar mis datos personales (nombre, DNI y respuestas de la entrevista) con la finalidad de evaluar mi postulación laboral, de conformidad con la <strong style="color:var(--text);">Ley N° 29733</strong> — Ley de Protección de Datos Personales del Perú y su reglamento. Los datos serán tratados de forma confidencial y no serán compartidos con terceros sin mi consentimiento.
-      </label>
-    </div>
     <div class="form-group">
       <label>Selecciona el puesto <span style="color:var(--accent2);">*</span></label>
-      <select id="jobSelect" onchange="selectJobFromDropdown(this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%;cursor:pointer;">
+      <select id="jobSelect" onchange="selectJobFromDropdown(this.value)">
         <option value="">-- Selecciona un puesto --</option>
       </select>
-      <div id="jobDesc" style="display:none;margin-top:8px;background:var(--surface2);border-radius:10px;padding:14px 16px;display:none;">
+      <div id="jobDesc" style="display:none;margin-top:8px;background:var(--surface2);border-radius:10px;padding:14px 16px;">
         <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:10px;">¿Cómo funciona la entrevista?</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Estephanie, nuestra entrevistadora virtual, te hará <strong style="color:var(--text);">6 preguntas</strong> una por una relacionadas al puesto.</div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Tendrás <strong style="color:var(--text);">2 minutos</strong> para responder cada pregunta. Una barra de tiempo te indicará cuánto te queda.</div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Algunas preguntas incluirán <strong style="color:var(--text);">escenarios con números</strong> para evaluar tu capacidad de análisis. Sé específico en tus respuestas.</div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Al terminar recibirás un mensaje de confirmación. El equipo de Perufarma revisará tu entrevista y se contactará contigo.</div>
-          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div><div style="font-size:12px;color:var(--muted);line-height:1.5;">Estephanie te hará <strong style="color:var(--text);">6 preguntas</strong> una por una relacionadas al puesto.</div></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div><div style="font-size:12px;color:var(--muted);line-height:1.5;">Tienes <strong style="color:var(--text);">2 minutos</strong> por pregunta. Una barra de tiempo te indicará cuánto te queda.</div></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div><div style="font-size:12px;color:var(--muted);line-height:1.5;">Algunas preguntas incluirán <strong style="color:var(--text);">escenarios con números</strong>. Sé específico en tus respuestas.</div></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:white;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div><div style="font-size:12px;color:var(--muted);line-height:1.5;">Al terminar el equipo de <strong style="color:var(--text);">Perufarma S.A.</strong> se contactará contigo.</div></div>
         </div>
-        <div style="margin-top:12px;padding:8px 10px;background:var(--orange-bg);border-radius:8px;font-size:11px;color:var(--orange-text);line-height:1.5;">
-          Busca un lugar tranquilo y sin interrupciones. La entrevista dura aproximadamente <strong>15 minutos</strong>.
-        </div>
+        <div style="margin-top:12px;padding:8px 10px;background:var(--orange-bg);border-radius:8px;font-size:11px;color:var(--orange-text);line-height:1.5;">Busca un lugar tranquilo. La entrevista dura aproximadamente <strong>15 minutos</strong>.</div>
       </div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface2);border-radius:10px;border:0.5px solid var(--border2);">
+      <input type="checkbox" id="dataConsent" style="width:16px;height:16px;margin-top:2px;accent-color:var(--accent2);flex-shrink:0;cursor:pointer;">
+      <label for="dataConsent" style="font-size:12px;color:var(--muted);line-height:1.6;cursor:pointer;">Autorizo a <strong style="color:var(--text);">Perufarma S.A.</strong> a recopilar y tratar mis datos personales con la finalidad de evaluar mi postulación, de conformidad con la <strong style="color:var(--text);">Ley N° 29733</strong> — Ley de Protección de Datos Personales del Perú.</label>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-top:-8px;"><span style="color:var(--accent2);">*</span> Todos los campos son obligatorios</div>
     <button class="btn-start" onclick="startInterview()">Comenzar entrevista →</button>
   </div>
+
   <div class="chat" id="chatPanel">
     <div class="chat-header">
       <div><div class="chat-h-name" id="chatName">Entrevista</div><div class="chat-h-sub" id="chatSub">Pregunta 1 de 6</div></div>
@@ -149,70 +128,47 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     <div class="messages" id="messages"></div>
     <div class="timer-wrap" id="timerWrap" style="display:none;">
-  <div class="timer-bar-bg"><div class="timer-bar-fill" id="timerBar" style="width:100%;background:#2d7a4f;"></div></div>
-  <div class="timer-label" id="timerLabel">2:00</div>
-</div>
-<div id="finishBtnBottom" style="display:none;padding:12px 14px;background:var(--surface);border-top:0.5px solid var(--border);">
-      <button onclick="finishInterview()" style="width:100%;padding:12px;background:var(--accent2);color:white;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">
-        Finalizar entrevista y enviar evaluación →
-      </button>
+      <div class="timer-bar-bg"><div class="timer-bar-fill" id="timerBar" style="width:100%;background:#2d7a4f;"></div></div>
+      <div class="timer-label" id="timerLabel">2:00</div>
     </div>
     <div class="mic-hint" id="micHint" style="display:none;padding:4px 12px;"></div>
     <div class="input-row">
-      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Grabar respuesta por voz">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" y1="19" x2="12" y2="23"/>
-          <line x1="8" y1="23" x2="16" y2="23"/>
-        </svg>
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Grabar por voz">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
       <textarea id="userInput" placeholder="Habla o escribe tu respuesta... (Shift+Enter para enviar)" onkeydown="if(event.key==='Enter'&&event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
       <button id="sendBtn" onclick="sendMsg()">Enviar</button>
     </div>
   </div>
+
   <div class="report" id="reportPanel"></div>
 </div>
 <script>
 const TOTAL_Q = 6;
 let jobs = [], selectedJobId = null, chatHistory = [], candName = '', qNum = 0, busy = false;
 
-function formatText(text) {
-  var t = text;
-  t = t.split('**').map(function(s, i) { return i % 2 === 1 ? '<strong>' + s + '</strong>' : s; }).join('');
-  t = t.split('*').map(function(s, i) { return i % 2 === 1 ? '<em>' + s + '</em>' : s; }).join('');
-  t = t.replace(/\n\n/g, '</p><p>');
-  t = t.replace(/\n/g, '<br>');
-  return '<p>' + t + '</p>';
+function formatText(t) {
+  t = t.split('**').map(function(s,i){return i%2===1?'<strong>'+s+'</strong>':s;}).join('');
+  t = t.split('*').map(function(s,i){return i%2===1?'<em>'+s+'</em>':s;}).join('');
+  t = t.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+  return '<p>'+t+'</p>';
 }
 
-async function loadJobs() { // returns promise
+async function loadJobs() {
   var sel = document.getElementById('jobSelect');
   try {
     var res = await fetch('/api/jobs');
     var data = await res.json();
     jobs = (data.jobs && data.jobs.length) ? data.jobs : [];
-  } catch(e) {
-    jobs = [];
-  }
-  if (!jobs.length) {
-    sel.innerHTML = '<option value="">No hay puestos disponibles. Contacta al reclutador.</option>';
-    return;
-  }
+  } catch(e) { jobs = []; }
+  if (!jobs.length) { sel.innerHTML = '<option value="">No hay puestos disponibles.</option>'; return; }
   sel.innerHTML = '<option value="">-- Selecciona un puesto --</option>' +
-    jobs.map(function(j) {
-      return '<option value="' + j.id + '">' + j.titulo + (j.area ? ' — ' + j.area : '') + '</option>';
-    }).join('');
+    jobs.map(function(j){ return '<option value="'+j.id+'">'+j.titulo+(j.area?' — '+j.area:'')+'</option>'; }).join('');
 }
 
 function selectJobFromDropdown(val) {
   selectedJobId = val ? parseInt(val) : null;
-  var desc = document.getElementById('jobDesc');
-  if (selectedJobId) {
-    desc.style.display = 'block';
-  } else {
-    desc.style.display = 'none';
-  }
+  document.getElementById('jobDesc').style.display = selectedJobId ? 'block' : 'none';
 }
 
 async function startInterview() {
@@ -224,7 +180,7 @@ async function startInterview() {
   if (!consent) { alert('Debes aceptar el uso de tus datos personales para continuar'); return; }
   if (!selectedJobId) { alert('Selecciona el puesto al que aplicas'); return; }
   candName = candName + ' (DNI: ' + dni + ')';
-  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  var job = jobs.find(function(j){ return j.id === selectedJobId; });
   clearBackup();
   document.getElementById('setupPanel').style.display = 'none';
   var cp = document.getElementById('chatPanel');
@@ -235,299 +191,139 @@ async function startInterview() {
 }
 
 function buildSystem(job) {
-  return 'Eres Estephanie, entrevistadora profesional y empática de Perufarma S.A. Estás entrevistando a ' + candName + ' para el puesto de ' + job.titulo + (job.area ? ' (' + job.area + ')' : '') + '.\n\n' +
-    'SOBRE PERUFARMA S.A.:\n' +
-    'Perufarma S.A. es una empresa peruana con 55 años de trayectoria, líder en distribución a nivel nacional. A pesar de su nombre, no distribuye solo productos farmacéuticos — gestiona más de 70 marcas socias organizadas en 4 unidades de negocio: (1) Consumo: Farma, Alimentos y Cuidado Personal; (2) Bebidas y Licores; (3) Automotriz; (4) Wella Professional para salones de belleza. Tiene almacenes en Lima, Arequipa y Chiclayo, y su fuerza comercial llega a todo el Perú. Es una empresa en constante crecimiento con cultura de largo plazo.\n\n' +
+  return 'Eres Estephanie, entrevistadora profesional y empática de Perufarma S.A. Estás entrevistando a ' + candName + ' para el puesto de ' + job.titulo + (job.area?' ('+job.area+')':'') + '.\n\n' +
+    'SOBRE PERUFARMA S.A.:\nEmpresa peruana con 55 años, líder en distribución. 4 unidades de negocio: Consumo (Farma+Alimentos+Cuidado Personal), Bebidas y Licores, Automotriz, Wella Professional. Almacenes en Lima, Arequipa y Chiclayo. Más de 70 marcas socias.\n\n' +
     'INFORMACIÓN DEL PUESTO:\n' + job.desc + '\n' +
-    (job.exp ? 'Experiencia requerida: ' + job.exp + '\n' : '') +
-    (job.skills ? 'Habilidades clave: ' + job.skills + '\n' : '') +
-    (job.instrucciones ? '\nINSTRUCCIONES DEL RECLUTADOR (prioridad alta):\n' + job.instrucciones + '\n' : '') +
-    '\nDISTRIBUCIÓN DE LAS ' + TOTAL_Q + ' PREGUNTAS:\n' +
-    '\n' +
-    'PREGUNTA 1 — HABILIDADES BLANDAS (TRABAJO EN EQUIPO):\n' +
-    'Pide ejemplo real de colaboración bajo presión. Ejemplo: Cuéntame de una situación donde trabajaste con alguien difícil para cumplir un objetivo. ¿Qué hiciste? Evalúa si asume responsabilidad compartida.\n' +
-    '\n' +
-    'PREGUNTA 2 — HABILIDADES BLANDAS (MANEJO DE ERRORES Y RESPONSABILIDAD):\n' +
-    'Pide ejemplo real. Ejemplo: Cuéntame de un error importante que cometiste en un trabajo anterior. ¿Cómo lo manejaste y qué aprendiste? Evalúa si asume responsabilidad o culpa a otros.\n' +
-    '\n' +
-    'PREGUNTA 3 — RESOLUCIÓN DE PROBLEMAS (PARTE 1 — OPERATIVA):\n' +
-    'Escenario situacional operativo específico al puesto con contexto real. Evalúa metodología y criterio. Si responde solo en teoría pide: Dame un ejemplo concreto de cuando aplicaste eso.\n' +
-    '\n' +
-    'PREGUNTA 4 — RESOLUCIÓN DE PROBLEMAS (PARTE 2 — GESTIÓN):\n' +
-    'Segundo escenario diferente al anterior: comunicación con stakeholders gestión de recursos limitados o toma de decisiones bajo incertidumbre. Más complejo. Sigue presionando si la respuesta es vaga.\n' +
-    '\n' +
-    'PREGUNTA 5 — COMPETENCIA TÉCNICA CON PRESIÓN COGNITIVA:\n' +
-    'Incluye datos numéricos concretos adaptados al puesto. Si tienes 200 pedidos y 3 operarios por 4 horas ¿cómo priorizas? / Tu área tiene 8% de errores y la meta es 2% en 30 días ¿qué harías? Si responde vagamente presiona: ¿Y en números concretos cómo lo medirías?\n' +
-    '\n' +
-    'PREGUNTA 6 — PROYECCIÓN Y COMPROMISO:\n' +
-    'Evalúa visión de crecimiento real. ¿Dónde te ves en 2 años dentro de Perufarma S.A.? ¿Qué estarías dispuesto a aprender o sacrificar para crecer en este puesto? Detecta si solo busca empleo temporal o tiene plan de carrera genuino.\n' +
-    '\n' +
-    'REGLAS ADICIONALES:\n' +
-    '- Si cualquier respuesta es vaga genérica o ensayada SIEMPRE presiona con un ejemplo concreto antes de continuar.\n' +
-    '- Detecta respuestas memorizadas y profundiza con: ¿Puedes darme un caso específico de tu experiencia?\n' +
-    '- Breve comentario empático sobre cada respuesta antes de la siguiente pregunta.\n' +
-    '- Cálido pero directo y profesional. Máximo 4 oraciones por turno.\n' +
+    (job.exp ? 'Experiencia requerida: '+job.exp+'\n' : '') +
+    (job.skills ? 'Habilidades clave: '+job.skills+'\n' : '') +
+    (job.instrucciones ? '\nINSTRUCCIONES DEL RECLUTADOR:\n'+job.instrucciones+'\n' : '') +
+    '\nDISTRIBUCIÓN DE LAS '+TOTAL_Q+' PREGUNTAS:\n' +
+    'P1 — TRABAJO EN EQUIPO: Ejemplo real de colaboración difícil. ¿Qué hiciste? Evalúa responsabilidad compartida.\n' +
+    'P2 — MANEJO DE ERRORES: Ejemplo real de error importante. ¿Cómo lo manejaste? Evalúa si asume responsabilidad o culpa a otros.\n' +
+    'P3 — RESOLUCIÓN DE PROBLEMAS (OPERATIVA): Escenario situacional con contexto real. Si responde en teoría pide ejemplo concreto.\n' +
+    'P4 — RESOLUCIÓN DE PROBLEMAS (GESTIÓN): Escenario diferente: comunicación con stakeholders o recursos limitados. Más complejo.\n' +
+    'P5 — COMPETENCIA TÉCNICA CON NÚMEROS: Incluye datos numéricos. Ej: 200 pedidos, 3 operarios, 4 horas ¿cómo priorizas? Si responde vagamente presiona con números concretos.\n' +
+    'P6 — PROYECCIÓN Y COMPROMISO: ¿Dónde te ves en 2 años en Perufarma S.A.? ¿Qué aprenderías o sacrificarías? Detecta si solo busca empleo temporal.\n\n' +
+    'REGLAS:\n' +
+    '- Haz exactamente '+TOTAL_Q+' preguntas, UNA por turno. NO genéricas.\n' +
+    '- Si respuesta vaga o ensayada: pide ejemplo concreto antes de continuar.\n' +
+    '- Breve comentario empático antes de cada siguiente pregunta.\n' +
+    '- Cálido, directo y profesional. Máximo 4 oraciones por turno.\n' +
     '- Responde SIEMPRE en español.\n' +
-    '- IMPORTANTE: Lleva conteo estricto de preguntas. Cuando hayas hecho exactamente ' + TOTAL_Q + ' preguntas, tu siguiente mensaje debe ser SOLO un cierre: comenta brevemente la última respuesta y agradece al candidato. NO hagas ninguna pregunta adicional después de la pregunta número ' + TOTAL_Q + '. Ningún signo de interrogación en el mensaje de cierre.\n' +
-    '- Mensaje de cierre debe incluir: (1) comentario breve sobre la última respuesta, (2) agradecimiento por el tiempo, (3) mención de que Perufarma S.A. se contactará pronto. Sin preguntas.';
+    '- CRÍTICO: Tras las '+TOTAL_Q+' preguntas, tu siguiente mensaje es SOLO cierre: comenta brevemente la última respuesta, agradece, e indica en negrita: **Muchas gracias por completar el proceso. Para finalizar y enviar tu evaluación, haz clic en el botón FINALIZAR ubicado en la parte superior derecha de la pantalla.** NO hagas más preguntas.';
 }
 
 async function callClaude(job, msgs, retries) {
   retries = retries || 0;
   try {
-    // Trim messages to avoid token limits - keep system + last 12 messages max
     var trimmed = msgs.length > 12 ? msgs.slice(msgs.length - 12) : msgs;
     var res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({model: 'claude-sonnet-4-20250514', max_tokens: 800, system: buildSystem(job), messages: trimmed})
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:800, system:buildSystem(job), messages:trimmed})
     });
-    if (!res.ok && retries < 2) {
-      await new Promise(function(r) { setTimeout(r, 1500); });
-      return callClaude(job, msgs, retries + 1);
-    }
+    if (!res.ok && retries < 2) { await new Promise(function(r){setTimeout(r,1500);}); return callClaude(job,msgs,retries+1); }
     var d = await res.json();
-    if (d.error && retries < 2) {
-      await new Promise(function(r) { setTimeout(r, 1500); });
-      return callClaude(job, msgs, retries + 1);
-    }
-    var block = d.content && d.content.find(function(b) { return b.type === 'text'; });
+    if (d.error && retries < 2) { await new Promise(function(r){setTimeout(r,1500);}); return callClaude(job,msgs,retries+1); }
+    var block = d.content && d.content.find(function(b){return b.type==='text';});
     return block ? block.text : 'Lo siento, hubo un problema. Por favor haz clic en Enviar para reintentar.';
   } catch(e) {
-    if (retries < 2) {
-      await new Promise(function(r) { setTimeout(r, 1500); });
-      return callClaude(job, msgs, retries + 1);
-    }
+    if (retries < 2) { await new Promise(function(r){setTimeout(r,1500);}); return callClaude(job,msgs,retries+1); }
     return 'Error de conexión. Por favor haz clic en Enviar para reintentar tu respuesta.';
   }
 }
 
 function addMsg(role, text) {
   var box = document.getElementById('messages');
-  var t = new Date().toLocaleTimeString('es', {hour: '2-digit', minute: '2-digit'});
+  var t = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
   var d = document.createElement('div');
-  d.className = 'msg ' + role;
-  var content = role === 'bot' ? formatText(text) : text;
-  var nameTag = role === 'bot' ? '<div class="bot-name">Estephanie</div>' : '';
-  d.innerHTML = nameTag + '<div class="bubble">' + content + '</div><div class="msg-time">' + t + '</div>';
+  d.className = 'msg '+role;
+  var c = role==='bot' ? formatText(text) : text;
+  var name = role==='bot' ? '<div class="bot-name">Estephanie</div>' : '';
+  d.innerHTML = name+'<div class="bubble">'+c+'</div><div class="msg-time">'+t+'</div>';
   box.appendChild(d); box.scrollTop = box.scrollHeight;
 }
 
 function showTyping() {
   var box = document.getElementById('messages');
   var t = document.createElement('div');
-  t.id = 'typing'; t.className = 'typing';
-  t.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-  box.appendChild(t); box.scrollTop = box.scrollHeight;
+  t.id='typing'; t.className='typing';
+  t.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  box.appendChild(t); box.scrollTop=box.scrollHeight;
 }
-function hideTyping() { var t = document.getElementById('typing'); if (t) t.remove(); }
+function hideTyping() { var t=document.getElementById('typing'); if(t)t.remove(); }
 
 function updateProgress() {
-  document.getElementById('progressFill').style.width = Math.min((qNum / TOTAL_Q) * 100, 100) + '%';
-  document.getElementById('chatSub').textContent = qNum <= TOTAL_Q ? 'Pregunta ' + (qNum + 1) + ' de ' + TOTAL_Q : 'Entrevista completada';
+  document.getElementById('progressFill').style.width = Math.min((qNum/TOTAL_Q)*100,100)+'%';
+  document.getElementById('chatSub').textContent = qNum < TOTAL_Q ? 'Pregunta '+(qNum+1)+' de '+TOTAL_Q : (qNum===TOTAL_Q ? 'Última pregunta respondida' : 'Entrevista completada');
 }
 
 async function firstMessage(job) {
   showTyping();
-  var init = 'Inicia la entrevista. Saluda brevemente a ' + candName + ', menciona el puesto de ' + job.titulo + ' y haz la primera pregunta.';
-  chatHistory.push({role: 'user', content: init});
+  var init = 'Inicia la entrevista. Saluda brevemente a '+candName+', menciona el puesto de '+job.titulo+' y haz la primera pregunta.';
+  chatHistory.push({role:'user',content:init});
   var resp = await callClaude(job, chatHistory);
   hideTyping();
-  chatHistory.push({role: 'assistant', content: resp});
-  addMsg('bot', resp);
+  chatHistory.push({role:'assistant',content:resp});
+  addMsg('bot',resp);
   window._startTimerAfterSpeak = true;
   speak(resp);
-  qNum = 1; updateProgress();
+  qNum = 0; updateProgress();
 }
 
-// ── Text to Speech ──
-let speakEnabled = true;
-let bestVoice = null;
-
+// ── TTS ──
+let speakEnabled = true, bestVoice = null;
 function loadVoices() {
-  var voices = window.speechSynthesis.getVoices();
-  if (!voices.length) return;
-  var preferred = [
-    'Paulina', 'Monica', 'Conchita', 'Lucia',
-    'Microsoft Sabina', 'Microsoft Laura', 'Microsoft Helena',
-    'Google español', 'es-MX', 'es-ES', 'es-US', 'es'
-  ];
-  for (var p = 0; p < preferred.length; p++) {
-    for (var v = 0; v < voices.length; v++) {
-      if (voices[v].name.includes(preferred[p]) || voices[v].lang.startsWith('es')) {
-        if (voices[v].name.toLowerCase().includes(preferred[p].toLowerCase()) ||
-            (voices[v].lang.startsWith('es') && voices[v].name !== bestVoice?.name)) {
-          if (!bestVoice) bestVoice = voices[v];
-        }
-      }
-    }
+  var vs = window.speechSynthesis.getVoices();
+  if (!vs.length) return;
+  for (var i=0;i<vs.length;i++) {
+    var n = vs[i].name.toLowerCase();
+    if (vs[i].lang.startsWith('es') && (n.includes('paulina')||n.includes('monica')||n.includes('conchita')||n.includes('lucia')||n.includes('sabina')||n.includes('laura')||n.includes('helena'))) { bestVoice=vs[i]; break; }
   }
-  // Prefer female-sounding voices
-  for (var v = 0; v < voices.length; v++) {
-    var n = voices[v].name.toLowerCase();
-    if (voices[v].lang.startsWith('es') &&
-        (n.includes('paulina') || n.includes('monica') || n.includes('conchita') ||
-         n.includes('lucia') || n.includes('sabina') || n.includes('laura') ||
-         n.includes('helena') || n.includes('female') || n.includes('mujer'))) {
-      bestVoice = voices[v];
-      break;
-    }
-  }
-  if (!bestVoice) {
-    for (var v = 0; v < voices.length; v++) {
-      if (voices[v].lang.startsWith('es')) { bestVoice = voices[v]; break; }
-    }
-  }
+  if (!bestVoice) { for (var i=0;i<vs.length;i++) { if (vs[i].lang.startsWith('es')) { bestVoice=vs[i]; break; } } }
 }
-
-window.speechSynthesis.onvoiceschanged = loadVoices;
-loadVoices();
+window.speechSynthesis.onvoiceschanged = loadVoices; loadVoices();
 
 function speak(text) {
   window.speechSynthesis.cancel();
-  var clean = text.replace(/<[^>]*>/g, '');
-  // Remove markdown
-  while (clean.indexOf('**') !== -1) clean = clean.replace('**', '');
-  while (clean.indexOf('*') !== -1) clean = clean.replace('*', '');
+  var clean = text.replace(/<[^>]*>/g,'');
+  while (clean.indexOf('**')!==-1) clean=clean.replace('**','');
+  while (clean.indexOf('*')!==-1) clean=clean.replace('*','');
   clean = clean.trim();
-
   var fired = false;
   function onDone() {
-    if (fired) return;
-    fired = true;
-    if (window._startTimerAfterSpeak) {
-      window._startTimerAfterSpeak = false;
-      startTimer();
-    }
+    if (fired) return; fired=true;
+    if (window._startTimerAfterSpeak) { window._startTimerAfterSpeak=false; startTimer(); }
   }
-
   if (!speakEnabled) { onDone(); return; }
-
   var utt = new SpeechSynthesisUtterance(clean);
-  utt.lang = 'es-PE';
-  utt.rate = 1.15;
-  utt.pitch = 1.05;
-  utt.volume = 1;
-  if (bestVoice) utt.voice = bestVoice;
-  utt.onend = onDone;
-  utt.onerror = onDone;
-
-  // Fallback timer in case onend never fires
+  utt.lang='es-PE'; utt.rate=1.15; utt.pitch=1.05; utt.volume=1;
+  if (bestVoice) utt.voice=bestVoice;
+  utt.onend=onDone; utt.onerror=onDone;
   var words = clean.split(' ').length;
-  var ms = Math.ceil(words / (1.15 * 2.5) * 1000) + 1000;
-  setTimeout(onDone, ms);
-
+  setTimeout(onDone, Math.ceil(words/2.5/1.15*1000)+1000);
   window.speechSynthesis.speak(utt);
 }
 
 function toggleSpeak() {
   speakEnabled = !speakEnabled;
   window.speechSynthesis.cancel();
-  window._startTimerAfterSpeak = false;
-  stopTimer();
+  window._startTimerAfterSpeak=false; stopTimer();
   var btn = document.getElementById('speakToggle');
   if (speakEnabled) {
     btn.classList.add('active');
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Voz activada';
+    btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Voz activada';
   } else {
     btn.classList.remove('active');
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Voz desactivada';
+    btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Voz desactivada';
   }
 }
 
-// ── Speech Recognition ──
-let recognition = null;
-let isRecording = false;
-
-function initSpeech() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return null;
-  var r = new SpeechRecognition();
-  r.lang = 'es-PE';
-  r.continuous = true;
-  r.interimResults = true;
-  r.maxAlternatives = 1;
-  return r;
-}
-
-function toggleMic() {
-  if (isRecording) {
-    stopMic();
-  } else {
-    startMic();
-  }
-}
-
-function startMic() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.');
-    return;
-  }
-  recognition = initSpeech();
-  var inp = document.getElementById('userInput');
-  var btn = document.getElementById('micBtn');
-  var hint = document.getElementById('micHint');
-  var baseText = inp.value;
-  var interim = '';
-
-  recognition.onstart = function() {
-    isRecording = true;
-    btn.classList.add('recording');
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="#c0392b" stroke="#c0392b" stroke-width="2" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
-    hint.style.display = 'block';
-    hint.textContent = 'Escuchando... Habla con claridad';
-    hint.style.color = '#c0392b';
-  };
-
-  recognition.onresult = function(e) {
-    interim = '';
-    var final = baseText;
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        final += e.results[i][0].transcript + ' ';
-        baseText = final;
-      } else {
-        interim = e.results[i][0].transcript;
-      }
-    }
-    inp.value = final + interim;
-  };
-
-  recognition.onerror = function(e) {
-    stopMic();
-    if (e.error === 'not-allowed') {
-      hint.style.display = 'block';
-      hint.textContent = 'Permiso de micrófono denegado. Actívalo en tu navegador.';
-      hint.style.color = '#c0392b';
-    }
-  };
-
-  recognition.onend = function() {
-    if (isRecording) recognition.start();
-  };
-
-  recognition.start();
-}
-
-function stopMic() {
-  isRecording = false;
-  if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
-  var btn = document.getElementById('micBtn');
-  var hint = document.getElementById('micHint');
-  btn.classList.remove('recording');
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
-  hint.style.display = 'none';
-}
-
-// ── Backup local ──
+/// ── Backup local ──
 function saveBackup() {
   try {
     localStorage.setItem('interview_backup', JSON.stringify({
-      candName: candName,
-      selectedJobId: selectedJobId,
-      qNum: qNum,
-      chatHistory: chatHistory,
+      candName: candName, selectedJobId: selectedJobId,
+      qNum: qNum, chatHistory: chatHistory,
       timestamp: new Date().toISOString()
     }));
   } catch(e) {}
@@ -538,7 +334,6 @@ function loadBackup() {
     var b = localStorage.getItem('interview_backup');
     if (!b) return null;
     var data = JSON.parse(b);
-    // Only valid if less than 2 hours old
     var age = (new Date() - new Date(data.timestamp)) / 1000 / 60;
     if (age > 120) { clearBackup(); return null; }
     return data;
@@ -554,23 +349,18 @@ function restoreFromBackup(backup) {
   selectedJobId = backup.selectedJobId;
   chatHistory = backup.chatHistory;
   qNum = backup.qNum;
-
   var job = jobs.find(function(j) { return j.id === selectedJobId; });
   if (!job) return false;
-
   document.getElementById('setupPanel').style.display = 'none';
   var cp = document.getElementById('chatPanel');
   cp.style.display = 'flex'; cp.style.flexDirection = 'column';
   document.getElementById('chatName').textContent = candName + ' · ' + job.titulo;
   updateProgress();
-
-  // Restore messages
   chatHistory.forEach(function(m, i) {
-    if (i === 0) return; // Skip init message
+    if (i === 0) return;
     if (m.role === 'user') addMsg('user', m.content);
     else addMsg('bot', m.content);
   });
-
   if (qNum > TOTAL_Q) {
     document.getElementById('userInput').disabled = true;
     document.getElementById('sendBtn').disabled = true;
@@ -581,206 +371,166 @@ function restoreFromBackup(backup) {
   return true;
 }
 
+// ── Timer ──
 const TIMER_SECONDS = 120;
-let timerInterval = null;
-let timerRemaining = TIMER_SECONDS;
+let timerInterval = null, timerRemaining = TIMER_SECONDS;
 
 function startTimer() {
   timerRemaining = TIMER_SECONDS;
-  const wrap = document.getElementById('timerWrap');
-  const bar = document.getElementById('timerBar');
-  const label = document.getElementById('timerLabel');
-  wrap.style.display = 'flex';
-  bar.style.width = '100%';
-  bar.style.background = '#2d7a4f';
-  updateTimerDisplay();
-  clearInterval(timerInterval);
+  var wrap=document.getElementById('timerWrap'), bar=document.getElementById('timerBar'), label=document.getElementById('timerLabel');
+  wrap.style.display='flex'; bar.style.width='100%'; bar.style.background='#2d7a4f';
+  updateTimerDisplay(); clearInterval(timerInterval);
   timerInterval = setInterval(function() {
     timerRemaining--;
     updateTimerDisplay();
-    const pct = (timerRemaining / TIMER_SECONDS) * 100;
-    bar.style.width = pct + '%';
-    if (pct <= 30) bar.style.background = '#e09112';
-    if (pct <= 10) bar.style.background = '#c0392b';
-    if (timerRemaining <= 0) {
-      clearInterval(timerInterval);
-      autoSendOnTimeout();
-    }
+    var pct = (timerRemaining/TIMER_SECONDS)*100;
+    bar.style.width=pct+'%';
+    if (pct<=30) bar.style.background='#e09112';
+    if (pct<=10) bar.style.background='#c0392b';
+    if (timerRemaining<=0) { clearInterval(timerInterval); autoSendOnTimeout(); }
   }, 1000);
 }
+function stopTimer() { clearInterval(timerInterval); document.getElementById('timerWrap').style.display='none'; }
+function updateTimerDisplay() { var m=Math.floor(timerRemaining/60),s=timerRemaining%60; document.getElementById('timerLabel').textContent=m+':'+(s<10?'0':'')+s; }
+function autoSendOnTimeout() { var inp=document.getElementById('userInput'); if(!inp.value.trim()) inp.value='[Sin respuesta — tiempo agotado]'; sendMsg(); }
 
-function stopTimer() {
-  clearInterval(timerInterval);
-  document.getElementById('timerWrap').style.display = 'none';
+// ── Mic ──
+let recognition=null, isRecording=false;
+function toggleMic() { if(isRecording) stopMic(); else startMic(); }
+function startMic() {
+  var SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if (!SR) { alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.'); return; }
+  recognition = new SR(); recognition.lang='es-PE'; recognition.continuous=true; recognition.interimResults=true;
+  var inp=document.getElementById('userInput'), btn=document.getElementById('micBtn'), hint=document.getElementById('micHint');
+  var baseText=inp.value, interim='';
+  recognition.onstart=function(){ isRecording=true; btn.classList.add('recording'); btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="#c0392b" stroke="#c0392b" stroke-width="2" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'; hint.style.display='block'; hint.textContent='Escuchando... Habla con claridad'; hint.style.color='#c0392b'; };
+  recognition.onresult=function(e){ interim=''; var final=baseText; for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal){final+=e.results[i][0].transcript+' ';baseText=final;}else{interim=e.results[i][0].transcript;}} inp.value=final+interim; };
+  recognition.onerror=function(e){ stopMic(); if(e.error==='not-allowed'){hint.style.display='block';hint.textContent='Permiso de micrófono denegado.';hint.style.color='#c0392b';} };
+  recognition.onend=function(){ if(isRecording) recognition.start(); };
+  recognition.start();
+}
+function stopMic() {
+  isRecording=false;
+  if(recognition){recognition.onend=null;recognition.stop();recognition=null;}
+  var btn=document.getElementById('micBtn'), hint=document.getElementById('micHint');
+  btn.classList.remove('recording');
+  btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+  hint.style.display='none';
 }
 
-function updateTimerDisplay() {
-  const m = Math.floor(timerRemaining / 60);
-  const s = timerRemaining % 60;
-  document.getElementById('timerLabel').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+// ── Backup ──
+function saveBackup() {
+  try { localStorage.setItem('interview_backup', JSON.stringify({candName,selectedJobId,qNum,chatHistory,timestamp:new Date().toISOString()})); } catch(e){}
 }
-
-function autoSendOnTimeout() {
-  const inp = document.getElementById('userInput');
-  if (!inp.value.trim()) {
-    inp.value = '[Sin respuesta — tiempo agotado]';
-  }
-  sendMsg();
+function loadBackup() {
+  try { var b=localStorage.getItem('interview_backup'); if(!b) return null; var d=JSON.parse(b); if((new Date()-new Date(d.timestamp))/60000>120){clearBackup();return null;} return d; } catch(e){return null;}
 }
-
-async function sendMsg() {
-  if (busy) return;
-  var inp = document.getElementById('userInput');
-  var txt = inp.value.trim();
-  if (!txt) return;
-  var savedTxt = txt;
-  inp.value = '';
-  stopTimer();
-  stopMic();
-  window.speechSynthesis.cancel();
-  window._startTimerAfterSpeak = false;
-  stopTimer();
-  addMsg('user', txt);
-  chatHistory.push({role: 'user', content: txt});
-  saveBackup();
-  busy = true; document.getElementById('sendBtn').disabled = true;
-  showTyping();
-  var job = jobs.find(function(j) { return j.id === selectedJobId; });
-  var resp = await callClaude(job, chatHistory);
-  hideTyping();
-  // If error, restore user's text so they can retry
-  if (resp.indexOf('Error') === 0 || resp.indexOf('Lo siento') === 0) {
-    chatHistory.pop(); // Remove the failed user message
-    inp.value = savedTxt;
-    inp.disabled = false;
-    document.getElementById('sendBtn').disabled = false;
-    busy = false;
-    return;
-  }
-  chatHistory.push({role: 'assistant', content: resp});
-  addMsg('bot', resp);
-  qNum = Math.min(qNum + 1, TOTAL_Q + 1);
-  saveBackup();
+function clearBackup() { try{localStorage.removeItem('interview_backup');}catch(e){} }
+function restoreFromBackup(backup) {
+  candName=backup.candName; selectedJobId=backup.selectedJobId; chatHistory=backup.chatHistory; qNum=backup.qNum;
+  var job=jobs.find(function(j){return j.id===selectedJobId;});
+  if(!job) return false;
+  document.getElementById('setupPanel').style.display='none';
+  var cp=document.getElementById('chatPanel'); cp.style.display='flex'; cp.style.flexDirection='column';
+  document.getElementById('chatName').textContent=candName+' · '+job.titulo;
   updateProgress();
-  busy = false; document.getElementById('sendBtn').disabled = false;
-  if (qNum > TOTAL_Q) {
-    // This is Claude's closing message after all questions answered
-    stopTimer();
-    inp.disabled = true;
-    document.getElementById('sendBtn').disabled = true;
-    document.getElementById('micBtn').disabled = true;
-    stopMic();
-    window._startTimerAfterSpeak = false;
-    speak(resp);
-    setTimeout(function() {
-      var btn = document.getElementById('finishBtnBottom');
-      if (btn) { btn.style.display = 'block'; btn.scrollIntoView({behavior:'smooth'}); }
-    }, 2000);
-  } else if (qNum === TOTAL_Q) {
-    // Candidate just answered the last question - let Claude give closing message
-    window._startTimerAfterSpeak = false;
-    stopTimer();
-    speak(resp);
-    // Don't disable input yet - wait for Claude's closing response
+  chatHistory.forEach(function(m,i){ if(i===0)return; if(m.role==='user')addMsg('user',m.content); else addMsg('bot',m.content); });
+  if(qNum>TOTAL_Q){ document.getElementById('userInput').disabled=true; document.getElementById('sendBtn').disabled=true; document.getElementById('micBtn').disabled=true; }
+  return true;
+}
+
+// ── Send ──
+async function sendMsg() {
+  if(busy) return;
+  var inp=document.getElementById('userInput');
+  var txt=inp.value.trim(); if(!txt) return;
+  var savedTxt=txt; inp.value='';
+  stopTimer(); stopMic(); window.speechSynthesis.cancel(); window._startTimerAfterSpeak=false;
+  addMsg('user',txt); chatHistory.push({role:'user',content:txt}); saveBackup();
+  busy=true; document.getElementById('sendBtn').disabled=true;
+  showTyping();
+  var job=jobs.find(function(j){return j.id===selectedJobId;});
+  var resp=await callClaude(job,chatHistory);
+  hideTyping();
+  if(resp.indexOf('Error')===0||resp.indexOf('Lo siento')===0) {
+    chatHistory.pop(); inp.value=savedTxt; inp.disabled=false; document.getElementById('sendBtn').disabled=false; busy=false;
+    addMsg('bot',resp); return;
+  }
+  chatHistory.push({role:'assistant',content:resp});
+  addMsg('bot',resp);
+  qNum=Math.min(qNum+1,TOTAL_Q+1); saveBackup(); updateProgress();
+  busy=false; document.getElementById('sendBtn').disabled=false;
+  if(qNum>TOTAL_Q) {
+    stopTimer(); inp.disabled=true; document.getElementById('sendBtn').disabled=true; document.getElementById('micBtn').disabled=true; stopMic();
+    window._startTimerAfterSpeak=false; speak(resp);
+  } else if(qNum===TOTAL_Q) {
+    window._startTimerAfterSpeak=false; stopTimer(); speak(resp);
   } else {
-    window._startTimerAfterSpeak = true;
-    speak(resp);
+    window._startTimerAfterSpeak=true; speak(resp);
   }
 }
 
+// ── Finish ──
 async function finishInterview() {
-  document.getElementById('chatPanel').style.display = 'none';
-  var rp = document.getElementById('reportPanel');
-  rp.style.display = 'flex'; rp.style.flexDirection = 'column';
-  rp.innerHTML = '<p style="font-size:13px;color:var(--muted);padding:8px 0;">Generando tu reporte de evaluación...</p>';
-  var job = jobs.find(function(j) { return j.id === selectedJobId; });
-  var transcript = chatHistory.filter(function(m, i) { return i > 0; }).map(function(m) {
-    return (m.role === 'assistant' ? 'Estephanie' : candName) + ': ' + m.content;
-  }).join('\n\n');
-  var prompt = 'Analiza esta entrevista para el puesto de ' + job.titulo + ' y evalúa al candidato ' + candName + '.\nPUESTO: ' + job.titulo + '\n' + job.desc + '\n' +
-    (job.skills ? 'HABILIDADES: ' + job.skills + '\n' : '') +
-    'TRANSCRIPCIÓN:\n' + transcript + '\n' +
-    'Responde ÚNICAMENTE con JSON válido:\n{"puntaje_general":número,"nivel":"Excelente"|"Bueno"|"Regular"|"Bajo","recomendacion":"Avanzar"|"Considerar"|"No avanzar","dimensiones":[{"nombre":"Comunicación","puntaje":número},{"nombre":"Conocimiento técnico","puntaje":número},{"nombre":"Experiencia relevante","puntaje":número},{"nombre":"Motivación y fit","puntaje":número}],"fortalezas":"texto","areas_mejora":"texto","resumen":"texto"}';
+  document.getElementById('chatPanel').style.display='none';
+  var rp=document.getElementById('reportPanel');
+  rp.style.display='flex'; rp.style.flexDirection='column';
+  rp.innerHTML='<p style="font-size:13px;color:var(--muted);padding:8px 0;">Generando tu reporte de evaluación...</p>';
+  var job=jobs.find(function(j){return j.id===selectedJobId;});
+  var transcript=chatHistory.filter(function(m,i){return i>0;}).map(function(m){return (m.role==='assistant'?'Estephanie':candName)+': '+m.content;}).join('\n\n');
+  var prompt='Analiza esta entrevista para el puesto de '+job.titulo+' y evalúa al candidato '+candName+'.\nPUESTO: '+job.titulo+'\n'+job.desc+'\n'+(job.skills?'HABILIDADES: '+job.skills+'\n':'')+'TRANSCRIPCIÓN:\n'+transcript+'\nEvalúa con estrellas del 1 al 5 (1=Muy bajo, 2=Bajo, 3=Regular, 4=Bueno, 5=Excelente).\nResponde ÚNICAMENTE con JSON válido sin texto adicional:\n{"estrellas_general":número_entero_1_a_5,"nivel":"Excelente"|"Bueno"|"Regular"|"Bajo","recomendacion":"Avanzar"|"Considerar"|"No avanzar","dimensiones":[{"nombre":"Comunicación","estrellas":número_1_a_5},{"nombre":"Conocimiento técnico","estrellas":número_1_a_5},{"nombre":"Experiencia relevante","estrellas":número_1_a_5},{"nombre":"Motivación y fit","estrellas":número_1_a_5}],"fortalezas":"texto","areas_mejora":"texto","resumen":"texto"}';
   try {
-    var res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{role: 'user', content: prompt}]})});
-    var d = await res.json();
-    var block = d.content && d.content.find(function(b) { return b.type === 'text'; });
-    var r = JSON.parse(block.text.replace(/```json|```/g, '').trim());
-    await saveResult(r, job);
-    renderReport(r, job);
-  } catch(e) {
-    rp.innerHTML = '<p style="color:#c0392b;font-size:13px;">Error al generar reporte.</p><button onclick="finishInterview()" style="margin-top:8px;padding:8px 16px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Reintentar</button>';
-  }
+    var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    var d=await res.json();
+    var block=d.content&&d.content.find(function(b){return b.type==='text';});
+    var r=JSON.parse(block.text.replace(/```json|```/g,'').trim());
+    await saveResult(r,job); renderReport(r,job);
+  } catch(e) { rp.innerHTML='<p style="color:#c0392b;font-size:13px;">Error al generar reporte.</p><button onclick="finishInterview()" style="margin-top:8px;padding:8px 16px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Reintentar</button>'; }
 }
 
-async function saveResult(r, job) {
+async function saveResult(r,job) {
   clearBackup();
-  var transcript = chatHistory
-    .filter(function(m, i) { return i > 0; })
-    .map(function(m) { return (m.role === 'assistant' ? 'Estephanie' : candName) + ': ' + m.content; })
-    .join(' | ');
-
-  var dniMatch = candName.match(/\(DNI: (\d+)\)/);
-  var dni = dniMatch ? dniMatch[1] : '';
-  var nombreLimpio = candName.replace(/ \(DNI: \d+\)/, '');
-
-  var entry = {
-    fecha: new Date().toLocaleDateString('es-PE'),
-    hora: new Date().toLocaleTimeString('es-PE', {hour: '2-digit', minute: '2-digit'}),
-    candidato: nombreLimpio, dni: dni, puesto: job.titulo, area: job.area || '',
-    puntaje: r.puntaje_general, nivel: r.nivel, recomendacion: r.recomendacion,
-    comunicacion: (r.dimensiones.find(function(d) { return d.nombre === 'Comunicación'; }) || {}).puntaje || '',
-    conocimiento: (r.dimensiones.find(function(d) { return d.nombre === 'Conocimiento técnico'; }) || {}).puntaje || '',
-    experiencia: (r.dimensiones.find(function(d) { return d.nombre === 'Experiencia relevante'; }) || {}).puntaje || '',
-    motivacion: (r.dimensiones.find(function(d) { return d.nombre === 'Motivación y fit'; }) || {}).puntaje || '',
-    fortalezas: r.fortalezas, areas_mejora: r.areas_mejora, resumen: r.resumen,
-    transcripcion: transcript
-  };
+  var dniMatch=candName.match(/[(]DNI: (\d+)[)]/);
+  var dni=dniMatch?dniMatch[1]:'';
+  var nombreLimpio=candName.replace(/ [(]DNI: \d+[)]/,'');
+  var transcript=chatHistory.filter(function(m,i){return i>0;}).map(function(m){return(m.role==='assistant'?'Estephanie':candName)+': '+m.content;}).join(' | ');
+  var entry={fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),candidato:nombreLimpio,dni:dni,puesto:job.titulo,area:job.area||'',estrellas:r.estrellas_general,puntaje:r.estrellas_general,nivel:r.nivel,recomendacion:r.recomendacion,comunicacion:(r.dimensiones.find(function(d){return d.nombre==='Comunicación';})||{}).estrellas||0,conocimiento:(r.dimensiones.find(function(d){return d.nombre==='Conocimiento técnico';})||{}).estrellas||0,experiencia:(r.dimensiones.find(function(d){return d.nombre==='Experiencia relevante';})||{}).estrellas||0,motivacion:(r.dimensiones.find(function(d){return d.nombre==='Motivación y fit';})||{}).estrellas||0,fortalezas:r.fortalezas,areas_mejora:r.areas_mejora,resumen:r.resumen,transcripcion:transcript};
   try {
-    var existing = await fetch('/api/jobs?type=results');
-    var data = await existing.json();
-    var results = data.results || [];
+    var existing=await fetch('/api/jobs?type=results');
+    var data=await existing.json();
+    var results=data.results||[];
     results.push(entry);
-    await fetch('/api/jobs?type=results', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ results: results })
-    });
-  } catch(e) {
-    var local = JSON.parse(localStorage.getItem('rresults') || '[]');
-    local.push(entry);
-    localStorage.setItem('rresults', JSON.stringify(local));
-  }
+    await fetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results})});
+  } catch(e) { var local=JSON.parse(localStorage.getItem('rresults')||'[]'); local.push(entry); localStorage.setItem('rresults',JSON.stringify(local)); }
 }
 
-function sCol(s) { return s >= 80 ? {b:'#2d7a4f',bg:'#edf7f1',bar:'#2d7a4f'} : s >= 60 ? {b:'#b8760a',bg:'#fef8ee',bar:'#e09112'} : {b:'#c0392b',bg:'#fbeaea',bar:'#c0392b'}; }
-function rCol(r) { return r === 'Avanzar' ? {bg:'#edf7f1',t:'#1e5c38'} : r === 'Considerar' ? {bg:'#fef8ee',t:'#7a5000'} : {bg:'#fbeaea',t:'#8b1f1f'}; }
+function sCol(s){return s>=4?{b:'#2d7a4f',bg:'#edf7f1',bar:'#2d7a4f'}:s>=3?{b:'#b8760a',bg:'#fef8ee',bar:'#e09112'}:{b:'#c0392b',bg:'#fbeaea',bar:'#c0392b'};}
+function renderStars(n,color){var h='';for(var i=1;i<=5;i++)h+='<span style="font-size:20px;color:'+(i<=n?color:'#e0ddd8')+';">★</span>';return h;}
+function rCol(r){return r==='Avanzar'?{bg:'#edf7f1',t:'#1e5c38'}:r==='Considerar'?{bg:'#fef8ee',t:'#7a5000'}:{bg:'#fbeaea',t:'#8b1f1f'};}
 
-function renderReport(r, job) {
-  document.getElementById('reportPanel').innerHTML =
-    '<div style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:8px 0;text-align:center;">' +
-    '<img src="data:image/png;base64,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" alt="Perufarma" style="height:120px;width:auto;object-fit:contain;">' +
-    '<div style="font-family:Syne,sans-serif;font-size:20px;font-weight:600;letter-spacing:-0.02em;color:var(--text);">¡Gracias, ' + candName + '!</div>' +
-    '<div style="font-size:14px;color:var(--muted);line-height:1.7;max-width:380px;">Hemos recibido tu entrevista para el puesto de <strong>' + job.titulo + '</strong>. Nuestro equipo revisará tu evaluación y se pondrá en contacto contigo pronto.</div>' +
-    '<div style="width:48px;height:1px;background:var(--border2);"></div>' +
-    '<div style="font-size:13px;color:var(--muted);">Mientras tanto, síguenos en nuestras redes:</div>' +
-    '<a href="https://www.linkedin.com/company/perufarma-s.a./posts/?feedView=all" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 20px;background:#0a66c2;color:white;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500;">' +
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>' +
-    'Perufarma S.A.</a>' +
-    '<div style="font-size:11px;color:var(--muted);margin-top:4px;">¡Mucho éxito en el proceso de selección!</div>' +
+function renderReport(r,job) {
+  var estGen=r.estrellas_general||r.puntaje_general||3;
+  var c=sCol(estGen),rc=rCol(r.recomendacion);
+  var dims=r.dimensiones.map(function(d){var est=d.estrellas||d.puntaje||3;var dc=sCol(est);return '<div class="dim-row"><span class="dim-label">'+d.nombre+'</span><div style="flex:1;">'+renderStars(est,dc.bar)+'</div></div>';}).join('');
+  document.getElementById('reportPanel').innerHTML=
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:8px 0;text-align:center;">'+
+    '<img src="data:image/png;base64,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" alt="Perufarma S.A." style="height:80px;width:auto;object-fit:contain;">'+
+    '<div style="font-family:Syne,sans-serif;font-size:20px;font-weight:600;letter-spacing:-0.02em;color:var(--text);">¡Gracias por tu tiempo!</div>'+
+    '<div style="font-size:14px;color:var(--muted);line-height:1.7;max-width:380px;">Hemos recibido tu entrevista para el puesto de <strong>'+job.titulo+'</strong>. El equipo de Reclutamiento y Selección de <strong>Perufarma S.A.</strong> revisará tu evaluación y se pondrá en contacto contigo pronto.</div>'+
+    '<div style="width:48px;height:1px;background:var(--border2);"></div>'+
+    '<div style="font-size:13px;color:var(--muted);">Síguenos en nuestras redes:</div>'+
+    '<a href="https://www.linkedin.com/company/perufarma-s.a./posts/?feedView=all" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 20px;background:#0a66c2;color:white;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500;"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>Perufarma Distribuidores</a>'+
+    '<div style="font-size:11px;color:var(--muted);">¡Mucho éxito en el proceso de selección!</div>'+
     '</div>';
 }
 
 loadJobs().then(function() {
-  var backup = loadBackup();
-  if (backup && backup.chatHistory && backup.chatHistory.length > 2) {
-    var age = Math.round((new Date() - new Date(backup.timestamp)) / 1000 / 60);
-    var restore = confirm('Tienes una entrevista en progreso de hace ' + age + ' minuto(s). ¿Deseas continuar donde la dejaste?');
-    if (restore) {
+  var backup=loadBackup();
+  if(backup&&backup.chatHistory&&backup.chatHistory.length>2){
+    var age=Math.round((new Date()-new Date(backup.timestamp))/60000);
+    if(confirm('Tienes una entrevista en progreso de hace '+age+' minuto(s). ¿Deseas continuar?')){
       restoreFromBackup(backup);
-    } else {
-      clearBackup();
-    }
+    } else { clearBackup(); }
   }
 });
 </script>
