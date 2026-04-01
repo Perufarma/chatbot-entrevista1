@@ -146,7 +146,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <!-- Sección 2: Nueva solicitud (solo visible al crear o al expandir) -->
       <div id="reqSection">
         <div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:4px;border-bottom:0.5px solid var(--border2);margin-top:8px;">Nueva solicitud de personal</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Completa esta sección para abrir un proceso de reclutamiento. Se guardar&aacute; un <strong style="color:var(--text);">snapshot del perfil actual</strong> y se notificar&aacute; al l&iacute;der por correo.</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Completa esta sección para abrir un proceso. Se guardar&aacute; un <strong style="color:var(--text);">snapshot del perfil actual</strong> (descripción, skills e instrucciones) y se notificar&aacute; al l&iacute;der por correo.</div>
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div class="form-row">
             <div class="form-group">
@@ -183,10 +183,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
           <div class="form-group" id="reemplazoField" style="display:none;">
             <label>¿Cuándo cesó o cesará el colaborador?</label>
             <input type="date" id="f_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          </div>
-          <div class="form-group">
-            <label>Requisitos mínimos *</label>
-            <textarea id="f_minimos" placeholder="Experiencia mínima, formación requerida, habilidades indispensables..."></textarea>
           </div>
           <div class="form-group">
             <label>Fecha de inicio del proceso *</label>
@@ -343,9 +339,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 // ══════════════════════════════════
 // STATE
 // ══════════════════════════════════
-var jobs = JSON.parse(localStorage.getItem('rjobs') || '[]');
-var requisiciones = JSON.parse(localStorage.getItem('rreqs') || '[]');
-var feedbacks = JSON.parse(localStorage.getItem('rfeedbacks') || '[]');
+function safeParseArray(key) {
+  try {
+    var v = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch(e) { return []; }
+}
+var jobs = safeParseArray('rjobs');
+var requisiciones = safeParseArray('rreqs');
+var feedbacks = safeParseArray('rfeedbacks');
 var fbTemp = {};
 var liderDni = null;
 
@@ -378,12 +380,12 @@ verificarAlertas();
 
 (async function() {
   var d = await safeFetch('/api/jobs');
-  if (d && d.jobs && d.jobs.length) {
+  if (d && Array.isArray(d.jobs) && d.jobs.length) {
     jobs = d.jobs; localStorage.setItem('rjobs', JSON.stringify(jobs));
     renderJobsList(); renderEnvioSelect();
   }
   var dr = await safeFetch('/api/jobs?type=reqs');
-  if (dr && dr.reqs && dr.reqs.length) {
+  if (dr && Array.isArray(dr.reqs) && dr.reqs.length) {
     requisiciones = dr.reqs; localStorage.setItem('rreqs', JSON.stringify(requisiciones));
   }
   verificarAlertas();
@@ -564,7 +566,7 @@ function toggleForm() {
   var f = document.getElementById('addJobForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) {
-    ['f_titulo','f_area','f_desc','f_exp','f_skills','f_instrucciones','f_emailLider','f_dniLider','f_horario','f_minimos','f_cese'].forEach(function(id){
+    ['f_titulo','f_area','f_desc','f_exp','f_skills','f_instrucciones','f_emailLider','f_dniLider','f_horario','f_cese'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.value='';
     });
     ['f_sede','f_nivel','f_motivo'].forEach(function(id){
@@ -595,7 +597,7 @@ function editJob(id) {
   document.getElementById('formTitle').textContent = 'Editar puesto';
   document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
   // Al editar, limpiar campos de solicitud y mostrar sección
-  ['f_horario','f_minimos','f_cese'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['f_horario','f_cese'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   ['f_sede','f_nivel','f_motivo'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
   document.getElementById('plazoInfo').style.display='none';
@@ -645,14 +647,14 @@ function saveJobAndCreateReq() {
   var sede = document.getElementById('f_sede').value;
   var nivel = document.getElementById('f_nivel').value;
   var motivo = document.getElementById('f_motivo').value;
-  var minimos = document.getElementById('f_minimos').value.trim();
   var horario = document.getElementById('f_horario').value.trim();
   var fechaInicio = document.getElementById('f_fechaInicio').value;
 
   if (!titulo||!desc) { toast('Completa nombre y descripción del puesto'); return; }
   if (!emailLider) { toast('Agrega el email del líder'); return; }
   if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
-  if (!sede||!nivel||!motivo||!minimos||!horario||!fechaInicio) { toast('Completa todos los campos de la solicitud'); return; }
+  if (!sede||!nivel||!motivo||!horario||!fechaInicio) { toast('Completa todos los campos de la solicitud'); return; }
+  var minimos = desc; // Los requisitos mínimos son la descripción del puesto
 
   // Primero guardar/actualizar el puesto
   var jobData = {
@@ -790,7 +792,7 @@ function cambiarEstadoReq(id, estado) {
 function abrirNuevaSolicitud(id) {
   editJob(id);
   // Limpiar campos solicitud
-  ['f_horario','f_minimos','f_cese'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
+  ['f_horario','f_cese'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
   ['f_sede','f_nivel','f_motivo'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
   document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
   document.getElementById('plazoInfo').style.display='none';
