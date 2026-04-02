@@ -12,19 +12,18 @@ export default async function handler(req, res) {
   }
 
   const type = req.query.type;
-  let key = type === 'results' ? 'results' : type === 'reqs' ? 'reqs' : 'jobs';
+  const key  = type === 'results' ? 'results' : type === 'reqs' ? 'reqs' : 'jobs';
+  const headers = { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' };
 
   // ── GET ──
   if (req.method === 'GET') {
     try {
-      const r = await fetch(`${KV_URL}/get/${key}`, {
-        headers: { Authorization: `Bearer ${KV_TOKEN}` }
-      });
+      const r    = await fetch(`${KV_URL}/get/${key}`, { headers });
       const data = await r.json();
-      let items = [];
+      let items  = [];
       if (data.result) {
         try {
-          const parsed = JSON.parse(data.result);
+          const parsed = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
           items = Array.isArray(parsed) ? parsed : [];
         } catch(e) { items = []; }
       }
@@ -41,18 +40,18 @@ export default async function handler(req, res) {
       if (payload === undefined) {
         return res.status(400).json({ error: `Payload key "${key}" no encontrada` });
       }
-      // Guardar como string JSON (una sola serialización)
+      // Usar pipeline con SET — el value se serializa como string JSON
+      // Formato: [["SET", "key", "value_string"]]
       const valueStr = JSON.stringify(payload);
-      const r = await fetch(`${KV_URL}/set/${key}`, {
+      const r = await fetch(`${KV_URL}/pipeline`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${KV_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(valueStr)
+        headers,
+        body: JSON.stringify([["SET", key, valueStr]])
       });
       const result = await r.json();
-      if (result.error) return res.status(500).json({ error: result.error });
+      if (result[0] && result[0].error) {
+        return res.status(500).json({ error: result[0].error });
+      }
       return res.status(200).json({ ok: true });
     } catch(e) {
       return res.status(500).json({ error: e.message });
