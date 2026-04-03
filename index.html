@@ -114,15 +114,24 @@ a[title]{cursor:pointer;}
 
       <!-- Sección 1: Datos del puesto -->
       <div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:4px;border-bottom:0.5px solid var(--border2);">Datos del puesto</div>
-      <div class="form-group">
-        <label>Puesto *</label>
-        <select id="f_titulo_sel" onchange="seleccionarPuestoDefault(this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          <option value="">Selecciona un puesto...</option>
-        </select>
-        <input type="text" id="f_titulo" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-      </div>
       <div class="form-row">
-        <div class="form-group"><label>&Aacute;rea *</label><input type="text" id="f_area" placeholder="Ej: Operaciones"></div>
+        <div class="form-group">
+          <label>&Aacute;rea</label>
+          <select id="f_area_sel" onchange="filtrarPuestosArea('f',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <option value="">Selecciona un área...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Puesto *</label>
+          <select id="f_titulo_sel" onchange="seleccionarPuestoDefault(this.value)" disabled style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;opacity:0.5;">
+            <option value="">Primero selecciona un área</option>
+          </select>
+          <input type="text" id="f_titulo" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+        </div>
+      </div>
+      <div class="form-group" id="f_area_wrap" style="display:none;">
+        <label>&Aacute;rea *</label>
+        <input type="text" id="f_area" placeholder="Ej: Operaciones">
       </div>
       <div class="form-group"><label>Descripción, responsabilidades, experiencia y habilidades *</label><textarea id="f_desc" placeholder="Describe el puesto, responsabilidades, experiencia requerida y habilidades clave..."></textarea></div>
       <div style="border:0.5px solid var(--border2);border-radius:8px;overflow:hidden;">
@@ -340,8 +349,28 @@ a[title]{cursor:pointer;}
 
         <!-- Formulario nueva solicitud colapsado -->
         <div id="formLiderLogin" style="display:none;flex-direction:column;gap:12px;border-top:0.5px solid var(--border2);padding-top:16px;margin-top:4px;">
-          <div class="form-group"><label>Puesto solicitado *</label><input type="text" id="ll_puesto" placeholder="Ej: Supervisor de Ventas"></div>
-          <div class="form-group"><label>&Aacute;rea *</label><input type="text" id="ll_area" placeholder="Ej: Comercial"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>&Aacute;rea</label>
+              <select id="ll_area_sel" onchange="filtrarPuestosDefault('ll',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+                <option value="">Todas las áreas</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Puesto solicitado *</label>
+              <select id="ll_puesto_sel" onchange="seleccionarPuestoLider('ll',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+                <option value="">Selecciona un puesto...</option>
+              </select>
+              <input type="text" id="ll_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>&Aacute;rea *</label>
+            <select id="ll_area_sel" onchange="filtrarPuestosArea('ll',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+              <option value="">Selecciona un área...</option>
+            </select>
+            <input type="text" id="ll_area" placeholder="Especifica el área..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          </div>
           <div class="form-row">
             <div class="form-group">
               <label>Sede *</label>
@@ -401,10 +430,27 @@ a[title]{cursor:pointer;}
       <!-- Form nueva solicitud líder -->
       <div class="add-job-form" id="addJobFormLider" style="margin-bottom:24px;border-left:3px solid var(--accent2);">
         <div style="font-size:14px;font-weight:500;">Nueva solicitud de personal</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5;">Ingresa los datos del puesto que necesitas cubrir. El equipo de Reclutamiento recibirá tu solicitud.</div>
         <div class="form-row">
-          <div class="form-group"><label>Puesto solicitado *</label><input type="text" id="lf_puesto" placeholder="Ej: Supervisor de Ventas"></div>
-          <div class="form-group"><label>&Aacute;rea *</label><input type="text" id="lf_area" placeholder="Ej: Comercial"></div>
+          <div class="form-group">
+            <label>&Aacute;rea</label>
+            <select id="lf_area_sel" onchange="filtrarPuestosDefault('lf',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+              <option value="">Todas las áreas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Puesto solicitado *</label>
+            <select id="lf_puesto_sel" onchange="seleccionarPuestoLider('lf',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+              <option value="">Selecciona un puesto...</option>
+            </select>
+            <input type="text" id="lf_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>&Aacute;rea *</label>
+          <select id="lf_area_sel" onchange="filtrarPuestosArea('lf',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <option value="">Selecciona un área...</option>
+          </select>
+          <input type="text" id="lf_area" placeholder="Especifica el área..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -622,7 +668,7 @@ async function safeFetch(url, options) {
 var candidateUrl = window.location.origin + '/candidato.html';
 document.getElementById('shareUrl').textContent = candidateUrl;
 renderJobsList();
-poblarSelectPuestosDefault();
+poblarSelectAreas();
 verificarAlertas();
 
 (async function() {
@@ -666,6 +712,7 @@ function mostrarLider() {
   setTimeout(function(){
     var inp = document.getElementById('liderDniInput');
     if (inp) { inp.value = ''; inp.focus(); }
+    poblarSelectAreas();
   }, 100);
 }
 
@@ -829,8 +876,10 @@ function toggleForm() {
     document.getElementById('formTitle').textContent = 'Nuevo puesto';
     document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
     // Resetear selector de puesto
-    var sel = document.getElementById('f_titulo_sel');
-    if (sel) { poblarSelectPuestosDefault(); sel.value = ''; }
+    var sel = document.getElementById('f_area_sel');
+    if (sel) { poblarSelectAreas(); sel.value = ''; }
+    var pSel = document.getElementById('f_titulo_sel');
+    if (pSel) { pSel.innerHTML='<option value="">Primero selecciona un área</option>'; pSel.disabled=true; pSel.style.opacity='0.5'; }
     var inp = document.getElementById('f_titulo');
     if (inp) { inp.value = ''; inp.style.display = 'none'; }
     document.getElementById('reqSection').style.display = 'block';
@@ -1563,46 +1612,142 @@ function getTituloForm() {
   return sel.value;
 }
 
-function poblarSelectPuestosDefault() {
-  var sel = document.getElementById('f_titulo_sel');
-  if (!sel) return;
-  var cur = sel.value;
-  sel.innerHTML = '<option value="">Selecciona un puesto...</option>';
+// Obtiene áreas únicas de los defaults
+function getAreasDefault() {
+  var areas = [];
   PUESTOS_DEFAULT.forEach(function(p) {
+    if (areas.indexOf(p.area) === -1) areas.push(p.area);
+  });
+  return areas;
+}
+
+// Pobla el select de área para un prefijo ('f', 'll', 'lf')
+function poblarAreaSel(prefix) {
+  var selArea = document.getElementById(prefix + '_area_sel') || document.getElementById(prefix === 'f' ? 'f_area_sel' : null);
+  if (!selArea) return;
+  var areas = getAreasDefault();
+  selArea.innerHTML = '<option value="">Todas las áreas</option>';
+  areas.forEach(function(a) {
+    var opt = document.createElement('option');
+    opt.value = a; opt.textContent = a;
+    selArea.appendChild(opt);
+  });
+}
+
+// Filtra puestos según área seleccionada
+function filtrarPuestosDefault(prefix, areaFiltro) {
+  var selId = prefix === 'f' ? 'f_titulo_sel' : prefix + '_puesto_sel';
+  var sel = document.getElementById(selId);
+  if (!sel) return;
+  var filtrados = areaFiltro
+    ? PUESTOS_DEFAULT.filter(function(p){ return p.area === areaFiltro; })
+    : PUESTOS_DEFAULT;
+  sel.innerHTML = '<option value="">Selecciona un puesto...</option>';
+  filtrados.forEach(function(p) {
     var opt = document.createElement('option');
     opt.value = p.titulo;
-    opt.textContent = p.titulo + ' — ' + p.area;
+    opt.textContent = p.titulo;
     sel.appendChild(opt);
   });
   var otro = document.createElement('option');
-  otro.value = '__otro__';
-  otro.textContent = '+ Otro / Nuevo puesto';
+  otro.value = '__otro__'; otro.textContent = '+ Otro / Nuevo puesto';
   sel.appendChild(otro);
-  if (cur) sel.value = cur;
+  // Limpiar campos al cambiar área
+  var inp = document.getElementById(prefix === 'f' ? 'f_titulo' : prefix + '_puesto');
+  if (inp) { inp.style.display = 'none'; inp.value = ''; }
+  var areaInp = document.getElementById(prefix === 'f' ? 'f_area' : prefix + '_area');
+  if (areaInp) areaInp.value = areaFiltro || '';
+  var descInp = document.getElementById(prefix === 'f' ? 'f_desc' : prefix + '_desc');
+  if (descInp) descInp.value = '';
+}
+
+// Áreas disponibles extraídas de los defaults + "Otra"
+function getAreas() {
+  var areas = [];
+  PUESTOS_DEFAULT.forEach(function(p) {
+    if (areas.indexOf(p.area) === -1) areas.push(p.area);
+  });
+  return areas;
+}
+
+function poblarSelectAreas() {
+  var areas = getAreas();
+  ['f_area_sel','ll_area_sel','lf_area_sel'].forEach(function(selId) {
+    var sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Selecciona un área...</option>';
+    areas.forEach(function(a) {
+      var opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      sel.appendChild(opt);
+    });
+    var otra = document.createElement('option');
+    otra.value = '__otra__'; otra.textContent = '+ Otra área';
+    sel.appendChild(otra);
+  });
+}
+
+function filtrarPuestosArea(prefix, area) {
+  var puestoSel  = document.getElementById(prefix === 'f' ? 'f_titulo_sel' : prefix + '_puesto_sel');
+  var areaInp    = document.getElementById(prefix === 'f' ? 'f_area'       : prefix + '_area');
+  var puestoInp  = document.getElementById(prefix === 'f' ? 'f_titulo'     : prefix + '_puesto');
+
+  // Manejar "Otra área"
+  if (area === '__otra__') {
+    if (areaInp) { areaInp.style.display = 'block'; areaInp.value = ''; areaInp.focus(); }
+    if (puestoSel) { puestoSel.innerHTML = '<option value="__otro__">+ Otro / Nuevo puesto</option>'; puestoSel.disabled = false; puestoSel.style.opacity = '1'; }
+    if (puestoInp) { puestoInp.style.display = 'none'; puestoInp.value = ''; }
+    return;
+  }
+  if (areaInp) { areaInp.style.display = 'none'; areaInp.value = area === '__otra__' ? '' : area; }
+
+  if (!puestoSel) return;
+  if (!area) {
+    puestoSel.innerHTML = '<option value="">Primero selecciona un área</option>';
+    puestoSel.disabled = true; puestoSel.style.opacity = '0.5';
+    if (puestoInp) puestoInp.style.display = 'none';
+    return;
+  }
+
+  // Filtrar puestos del área
+  var filtrados = PUESTOS_DEFAULT.filter(function(p) { return p.area === area; });
+  puestoSel.innerHTML = '<option value="">Selecciona un puesto...</option>';
+  filtrados.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.titulo; opt.textContent = p.titulo;
+    puestoSel.appendChild(opt);
+  });
+  var otro = document.createElement('option');
+  otro.value = '__otro__'; otro.textContent = '+ Otro / Nuevo puesto';
+  puestoSel.appendChild(otro);
+  puestoSel.disabled = false; puestoSel.style.opacity = '1';
+  if (puestoInp) puestoInp.style.display = 'none';
+
+  // También actualizar el campo área oculto con el valor seleccionado
+  if (areaInp) areaInp.value = area;
+}
+
+function poblarSelectPuestosDefault() {
+  poblarAreaSel('f');
+  filtrarPuestosDefault('f', '');
 }
 
 function seleccionarPuestoDefault(val) {
   var inp = document.getElementById('f_titulo');
   if (val === '__otro__') {
-    // Mostrar campo manual, limpiar autocompletados
     if (inp) { inp.style.display = 'block'; inp.value = ''; inp.focus(); }
     document.getElementById('f_area').value = '';
     document.getElementById('f_desc').value = '';
-    var instrPanel = document.getElementById('instrPanel');
-    if (instrPanel) instrPanel.style.display = 'none';
     document.getElementById('f_instrucciones').value = '';
     return;
   }
   if (inp) inp.style.display = 'none';
   if (!val) return;
-  // Buscar en defaults
   var p = PUESTOS_DEFAULT.find(function(x){ return x.titulo === val; });
   if (!p) return;
   document.getElementById('f_area').value = p.area || '';
   document.getElementById('f_desc').value = p.desc || '';
-  // Instrucciones vacías (el reclutador las llena si necesita)
   document.getElementById('f_instrucciones').value = '';
-  // Email/DNI no se autocompetan — son datos del proceso específico
 }
 
 function toggleOtraSede(inputId, val) {
@@ -1622,6 +1767,31 @@ function toggleInstrucciones() {
   if (chev) chev.innerHTML = open ? '&#9660;' : '&#9650;';
 }
 
+function poblarSelectPuestosLider() {
+  ['ll','lf'].forEach(function(prefix) {
+    poblarAreaSel(prefix);
+    filtrarPuestosDefault(prefix, '');
+  });
+}
+
+function seleccionarPuestoLider(prefix, val) {
+  var inp  = document.getElementById(prefix + '_puesto');
+  var area = document.getElementById(prefix + '_area');
+  var desc = document.getElementById(prefix + '_desc');
+  if (val === '__otro__') {
+    if (inp)  { inp.style.display = 'block'; inp.value = ''; inp.focus(); }
+    if (area) area.value = '';
+    if (desc) desc.value = '';
+    return;
+  }
+  if (inp) inp.style.display = 'none';
+  if (!val) return;
+  var p = PUESTOS_DEFAULT.find(function(x){ return x.titulo === val; });
+  if (!p) return;
+  if (area) area.value = p.area || '';
+  if (desc) desc.value = p.desc || '';
+}
+
 function toggleFormLiderLogin() {
   var f = document.getElementById('formLiderLogin');
   if (!f) return;
@@ -1630,13 +1800,16 @@ function toggleFormLiderLogin() {
   f.style.flexDirection = 'column';
   if (!open) {
     ['ll_puesto','ll_area','ll_desc','ll_dni'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-    ['ll_sede','ll_nivel','ll_motivo'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    ['ll_sede','ll_nivel','ll_motivo','ll_puesto_sel'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    var llInp=document.getElementById('ll_puesto'); if(llInp) llInp.style.display='none';
     var os = document.getElementById('ll_otraSede'); if(os){os.style.display='none';os.value='';}
   }
 }
 
 function guardarSolicitudLogin() {
-  var puesto  = document.getElementById('ll_puesto').value.trim();
+  var ll_sel = document.getElementById('ll_puesto_sel');
+  var ll_inp = document.getElementById('ll_puesto');
+  var puesto = (ll_sel && ll_sel.value && ll_sel.value !== '__otro__') ? ll_sel.value : (ll_inp ? ll_inp.value.trim() : '');
   var area    = document.getElementById('ll_area').value.trim();
   var sedeS   = document.getElementById('ll_sede').value;
   var sedeO   = document.getElementById('ll_otraSede') ? document.getElementById('ll_otraSede').value.trim() : '';
@@ -1714,7 +1887,9 @@ function toggleFormLider() {
 }
 
 function guardarSolicitudLider() {
-  var puesto    = document.getElementById('lf_puesto').value.trim();
+  var lf_sel = document.getElementById('lf_puesto_sel');
+  var lf_inp = document.getElementById('lf_puesto');
+  var puesto = (lf_sel && lf_sel.value && lf_sel.value !== '__otro__') ? lf_sel.value : (lf_inp ? lf_inp.value.trim() : '');
   var area      = document.getElementById('lf_area').value.trim();
   var sedeSelect = document.getElementById('lf_sede').value;
   var sedeOtra  = document.getElementById('lf_otraSede') ? document.getElementById('lf_otraSede').value.trim() : '';
