@@ -447,6 +447,27 @@ async function sendMsg() {
   var savedTxt=txt; inp.value='';
   stopTimer(); stopMic(); window.speechSynthesis.cancel(); window._startTimerAfterSpeak=false;
   addMsg('user',txt); chatHistory.push({role:'user',content:txt}); saveBackup();
+  // ── Código de prueba ──
+  if (txt.toLowerCase().trim() === 'prueba2026') {
+    inp.value=''; busy=true;
+    document.getElementById('sendBtn').disabled=true;
+    showTyping();
+    var job=jobs.find(function(j){return j.id===selectedJobId;});
+    // Generar respuesta de prueba rápida
+    var respPrueba = qNum < TOTAL_Q
+      ? '✓ [MODO PRUEBA] Respuesta registrada. Pasando a la pregunta '+(qNum+2)+' de '+TOTAL_Q+'...'
+      : '✓ [MODO PRUEBA] Última respuesta registrada. Puedes finalizar la entrevista.';
+    hideTyping();
+    chatHistory.push({role:'assistant',content:respPrueba});
+    addMsg('bot',respPrueba);
+    qNum=Math.min(qNum+1,TOTAL_Q+1); saveBackup(); updateProgress();
+    busy=false; document.getElementById('sendBtn').disabled=false;
+    if(qNum>TOTAL_Q){
+      inp.disabled=true; document.getElementById('sendBtn').disabled=true; document.getElementById('micBtn').disabled=true;
+    }
+    return;
+  }
+
   busy=true; document.getElementById('sendBtn').disabled=true;
   showTyping();
   var job=jobs.find(function(j){return j.id===selectedJobId;});
