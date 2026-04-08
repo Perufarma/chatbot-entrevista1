@@ -82,7 +82,7 @@ a[title]{cursor:pointer;}
 .lider-nav-logo span{color:var(--accent2);}
 .lider-content{max-width:960px;margin:0 auto;padding:28px;}
 .lider-login-wrap{display:flex;align-items:center;justify-content:center;min-height:70vh;}
-.lider-login-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:16px;padding:36px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:20px;text-align:center;}
+.lider-login-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:16px;padding:40px;max-width:560px;width:100%;display:flex;flex-direction:column;gap:20px;text-align:center;}
 </style>
 </head>
 <body>
@@ -330,7 +330,6 @@ a[title]{cursor:pointer;}
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
       <div id="liderNombreNav" style="font-size:13px;color:var(--muted);"></div>
-      <button class="btn btn-accent btn-sm" onclick="toggleFormLider()" title="Crea una nueva solicitud de personal para que el equipo de Reclutamiento la gestione">+ Nueva solicitud</button>
       <button class="btn btn-secondary btn-sm" onclick="cerrarSesionLider()" title="Vuelve a la pantalla de ingreso por DNI">Salir</button>
     </div>
   </nav>
@@ -363,6 +362,21 @@ a[title]{cursor:pointer;}
               </select>
               <input type="text" id="ll_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
             </div>
+          </div>
+          <div class="form-group">
+            <label>Gerencia *</label>
+            <select id="ll_gerencia" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+              <option value="">Selecciona tu gerencia...</option>
+              <option value="Unidad de Negocio Consumo">Unidad de Negocio Consumo</option>
+              <option value="Operaciones">Operaciones</option>
+              <option value="Unidad de Negocio Automotriz">Unidad de Negocio Automotriz</option>
+              <option value="GAF">GAF</option>
+              <option value="Unidad de Negocio Licores">Unidad de Negocio Licores</option>
+              <option value="Gestión del Talento Humano">Gestión del Talento Humano</option>
+              <option value="Gerencia de Legal, Regulatorio y Cumplimiento">Gerencia de Legal, Regulatorio y Cumplimiento</option>
+              <option value="Gerencia de Innovación y Nuevos Negocios">Gerencia de Innovación y Nuevos Negocios</option>
+              <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
+            </select>
           </div>
           <div class="form-group">
             <label>&Aacute;rea *</label>
@@ -400,7 +414,7 @@ a[title]{cursor:pointer;}
               <option value="nuevo">Nuevo puesto</option>
             </select>
           </div>
-          <div class="form-group"><label>Descripci&oacute;n y requisitos *</label><textarea id="ll_desc" style="height:80px;" placeholder="Describe brevemente el perfil que necesitas..."></textarea></div>
+          <div class="form-group"><label>Descripci&oacute;n y requisitos *</label><textarea id="ll_desc" style="height:120px;" placeholder="Describe el perfil que necesitas: experiencia requerida, habilidades clave, responsabilidades principales..."></textarea></div>
           <div class="form-group"><label>Tu DNI (para seguimiento)</label><input type="text" id="ll_dni" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
           <button class="btn btn-accent" onclick="guardarSolicitudLogin()" style="width:100%;">Enviar solicitud &rarr;</button>
           <button class="btn btn-secondary" onclick="toggleFormLiderLogin()" style="width:100%;">Cancelar</button>
@@ -428,7 +442,7 @@ a[title]{cursor:pointer;}
     <div id="liderDashboard" style="display:none;">
 
       <!-- Form nueva solicitud líder -->
-      <div class="add-job-form" id="addJobFormLider" style="margin-bottom:24px;border-left:3px solid var(--accent2);">
+      <div class="add-job-form" id="addJobFormLider" style="margin-bottom:24px;border-left:3px solid var(--accent2);max-width:100%;">
         <div style="font-size:14px;font-weight:500;">Nueva solicitud de personal</div>
         <div class="form-row">
           <div class="form-group">
@@ -444,6 +458,21 @@ a[title]{cursor:pointer;}
             </select>
             <input type="text" id="lf_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
           </div>
+        </div>
+        <div class="form-group">
+          <label>Gerencia *</label>
+          <select id="lf_gerencia" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <option value="">Selecciona tu gerencia...</option>
+          <option value="Unidad de Negocio Consumo">Unidad de Negocio Consumo</option>
+          <option value="Operaciones">Operaciones</option>
+          <option value="Unidad de Negocio Automotriz">Unidad de Negocio Automotriz</option>
+          <option value="GAF">GAF</option>
+          <option value="Unidad de Negocio Licores">Unidad de Negocio Licores</option>
+          <option value="Gestión del Talento Humano">Gestión del Talento Humano</option>
+          <option value="Gerencia de Legal, Regulatorio y Cumplimiento">Gerencia de Legal, Regulatorio y Cumplimiento</option>
+          <option value="Gerencia de Innovación y Nuevos Negocios">Gerencia de Innovación y Nuevos Negocios</option>
+          <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
+          </select>
         </div>
         <div class="form-group">
           <label>&Aacute;rea *</label>
@@ -1806,7 +1835,7 @@ function toggleFormLiderLogin() {
   f.style.flexDirection = 'column';
   if (!open) {
     ['ll_puesto','ll_area','ll_desc','ll_dni'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-    ['ll_sede','ll_nivel','ll_motivo','ll_puesto_sel'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    ['ll_sede','ll_nivel','ll_motivo','ll_puesto_sel','ll_gerencia'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
     var llInp=document.getElementById('ll_puesto'); if(llInp) llInp.style.display='none';
     var os = document.getElementById('ll_otraSede'); if(os){os.style.display='none';os.value='';}
   }
@@ -1831,6 +1860,7 @@ function guardarSolicitudLogin() {
   var fechaLimDate = new Date(); fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
   var nivelLabel = PLAZOS[nivel] ? PLAZOS[nivel].label : nivel;
 
+  var gerencia = document.getElementById('ll_gerencia') ? document.getElementById('ll_gerencia').value : '';
   var req = {
     id: Date.now(), jobId: null,
     fecha: new Date().toLocaleDateString('es-PE'),
@@ -1838,7 +1868,7 @@ function guardarSolicitudLogin() {
     fechaInicioRaw: new Date().toISOString().slice(0,10),
     fechaLimite: fechaLimDate.toLocaleDateString('es-PE'),
     fechaLimiteRaw: fechaLimDate.toISOString(),
-    puesto: puesto, area: area, sede: sede, horario: '—',
+    puesto: puesto, area: area, gerencia: gerencia, sede: sede, horario: '—',
     nivelVal: nivel, nivel: nivelLabel,
     diasPlazo: diasPlazo, motivo: motivo, cese: '',
     minimos: desc, deseables: '',
@@ -1923,7 +1953,7 @@ function guardarSolicitudLider() {
     fechaInicioRaw: fechaInicio,
     fechaLimite: fechaLimiteDate.toLocaleDateString('es-PE'),
     fechaLimiteRaw: fechaLimiteDate.toISOString(),
-    puesto: puesto, area: area, sede: sede, horario: horario,
+    puesto: puesto, area: area, gerencia: (document.getElementById('lf_gerencia')?document.getElementById('lf_gerencia').value:''), sede: sede, horario: horario,
     nivelVal: nivel, nivel: PLAZOS[nivel] ? PLAZOS[nivel].label : nivel,
     diasPlazo: diasPlazo, motivo: motivo, cese: '',
     minimos: desc, deseables: deseables,
