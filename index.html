@@ -725,9 +725,8 @@ async function safeFetch(url, options) {
 // ══════════════════════════════════
 var candidateUrl = window.location.origin + '/candidato.html';
 document.getElementById('shareUrl').textContent = candidateUrl;
-renderJobsList();
+// renderJobsList se llama DESPUÉS de cargar datos del servidor
 poblarSelectPuestosDefault();
-// verificarAlertas se llama después de cargar datos del servidor
 
 (async function() {
   // Cargar jobs
@@ -755,6 +754,8 @@ poblarSelectPuestosDefault();
   renderJobsList();
   renderEnvioSelect();
   verificarAlertas();
+  poblarSelectPuestosDefault();
+  console.log('[RecruitAI] Datos cargados — jobs:', jobs.length, 'reqs:', requisiciones.length, 'feedbacks:', feedbacks.length);
 })();
 
 // ══════════════════════════════════
