@@ -114,25 +114,35 @@ a[title]{cursor:pointer;}
 
       <!-- Sección 1: Datos del puesto -->
       <div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:4px;border-bottom:0.5px solid var(--border2);">Datos del puesto</div>
+      <div class="form-group">
+        <label>Gerencia</label>
+        <select id="f_gerencia" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          <option value="">Selecciona la gerencia...</option>
+          <option value="Unidad de Negocio Consumo">Unidad de Negocio Consumo</option>
+          <option value="Operaciones">Operaciones</option>
+          <option value="Unidad de Negocio Automotriz">Unidad de Negocio Automotriz</option>
+          <option value="GAF">GAF</option>
+          <option value="Unidad de Negocio Licores">Unidad de Negocio Licores</option>
+          <option value="Gestión del Talento Humano">Gestión del Talento Humano</option>
+          <option value="Gerencia de Legal, Regulatorio y Cumplimiento">Gerencia de Legal, Regulatorio y Cumplimiento</option>
+          <option value="Gerencia de Innovación y Nuevos Negocios">Gerencia de Innovación y Nuevos Negocios</option>
+          <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
+        </select>
+      </div>
       <div class="form-row">
         <div class="form-group">
-          <label>&Aacute;rea</label>
-          <select id="f_area_sel" onchange="filtrarPuestosArea('f',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            <option value="">Selecciona un área...</option>
-          </select>
+          <label>&Aacute;rea *</label>
+          <input type="text" id="f_area" placeholder="Ej: Comercial Canal Moderno" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
         </div>
         <div class="form-group">
           <label>Puesto *</label>
-          <select id="f_titulo_sel" onchange="seleccionarPuestoDefault(this.value)" disabled style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;opacity:0.5;">
-            <option value="">Primero selecciona un área</option>
+          <select id="f_titulo_sel" onchange="seleccionarPuestoDefault(this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <option value="">Selecciona un puesto...</option>
           </select>
           <input type="text" id="f_titulo" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
         </div>
       </div>
-      <div class="form-group" id="f_area_wrap" style="display:none;">
-        <label>&Aacute;rea *</label>
-        <input type="text" id="f_area" placeholder="Ej: Operaciones">
-      </div>
+
       <div class="form-group"><label>Descripción, responsabilidades, experiencia y habilidades *</label><textarea id="f_desc" placeholder="Describe el puesto, responsabilidades, experiencia requerida y habilidades clave..."></textarea></div>
       <div style="border:0.5px solid var(--border2);border-radius:8px;overflow:hidden;">
         <div onclick="toggleInstrucciones()" style="padding:10px 14px;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:500;color:var(--muted);user-select:none;">
@@ -380,10 +390,7 @@ a[title]{cursor:pointer;}
           </div>
           <div class="form-group">
             <label>&Aacute;rea *</label>
-            <select id="ll_area_sel" onchange="filtrarPuestosArea('ll',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-              <option value="">Selecciona un área...</option>
-            </select>
-            <input type="text" id="ll_area" placeholder="Especifica el área..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <input type="text" id="ll_area" placeholder="Ej: Comercial Canal Moderno" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -446,66 +453,55 @@ a[title]{cursor:pointer;}
         <div style="font-size:14px;font-weight:500;">Nueva solicitud de personal</div>
         <div class="form-row">
           <div class="form-group">
-            <label>&Aacute;rea</label>
-            <select id="lf_area_sel" onchange="filtrarPuestosDefault('lf',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-              <option value="">Todas las áreas</option>
+            <label>Gerencia *</label>
+            <select id="lf_gerencia" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+              <option value="">Selecciona tu gerencia...</option>
+            <option value="Unidad de Negocio Consumo">Unidad de Negocio Consumo</option>
+            <option value="Operaciones">Operaciones</option>
+            <option value="Unidad de Negocio Automotriz">Unidad de Negocio Automotriz</option>
+            <option value="GAF">GAF</option>
+            <option value="Unidad de Negocio Licores">Unidad de Negocio Licores</option>
+            <option value="Gestión del Talento Humano">Gestión del Talento Humano</option>
+            <option value="Gerencia de Legal, Regulatorio y Cumplimiento">Gerencia de Legal, Regulatorio y Cumplimiento</option>
+            <option value="Gerencia de Innovación y Nuevos Negocios">Gerencia de Innovación y Nuevos Negocios</option>
+            <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Puesto solicitado *</label>
-            <select id="lf_puesto_sel" onchange="seleccionarPuestoLider('lf',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-              <option value="">Selecciona un puesto...</option>
-            </select>
-            <input type="text" id="lf_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <label>&Aacute;rea *</label>
+            <input type="text" id="lf_area" placeholder="Ej: Comercial Canal Moderno" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
           </div>
         </div>
         <div class="form-group">
-          <label>Gerencia *</label>
-          <select id="lf_gerencia" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            <option value="">Selecciona tu gerencia...</option>
-          <option value="Unidad de Negocio Consumo">Unidad de Negocio Consumo</option>
-          <option value="Operaciones">Operaciones</option>
-          <option value="Unidad de Negocio Automotriz">Unidad de Negocio Automotriz</option>
-          <option value="GAF">GAF</option>
-          <option value="Unidad de Negocio Licores">Unidad de Negocio Licores</option>
-          <option value="Gestión del Talento Humano">Gestión del Talento Humano</option>
-          <option value="Gerencia de Legal, Regulatorio y Cumplimiento">Gerencia de Legal, Regulatorio y Cumplimiento</option>
-          <option value="Gerencia de Innovación y Nuevos Negocios">Gerencia de Innovación y Nuevos Negocios</option>
-          <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
+          <label>Puesto solicitado *</label>
+          <select id="lf_puesto_sel" onchange="seleccionarPuestoLider('lf',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <option value="">Selecciona un puesto...</option>
           </select>
-        </div>
-        <div class="form-group">
-          <label>&Aacute;rea *</label>
-          <select id="lf_area_sel" onchange="filtrarPuestosArea('lf',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            <option value="">Selecciona un área...</option>
-          </select>
-          <input type="text" id="lf_area" placeholder="Especifica el área..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          <input type="text" id="lf_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Sede *</label>
             <select id="lf_sede" onchange="toggleOtraSede('lf_otraSede',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
-              <option>Almacén Arequipa</option>
-              <option>Almacén Chiclayo</option>
-              <option>Central</option>
-              <option>Comunal</option>
+              <option>Almacén Arequipa</option><option>Almacén Chiclayo</option>
+              <option>Central</option><option>Comunal</option>
               <option value="Otras">Otras</option>
             </select>
             <input type="text" id="lf_otraSede" placeholder="Especifica la sede..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
           </div>
-          <div class="form-group"><label>Horario *</label><input type="text" id="lf_horario" placeholder="Ej: Lunes a s&aacute;bado 8am-6pm"></div>
+          <div class="form-group"><label>Horario *</label><input type="text" id="lf_horario" placeholder="Ej: Lunes a sábado 8am-6pm"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Nivel del puesto *</label>
             <select id="lf_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
-              <option value="60">Gerente / Sub Gerente (60 d&iacute;as)</option>
-              <option value="35">Jefe / Supervisor / Especialista (35 d&iacute;as)</option>
-              <option value="30">Analista / Ejecutivo (30 d&iacute;as)</option>
-              <option value="30">T&eacute;cnico / Asistente (30 d&iacute;as)</option>
-              <option value="25">Practicante / Auxiliar (25 d&iacute;as)</option>
+              <option value="60">Gerente / Sub Gerente (60 días)</option>
+              <option value="35">Jefe / Supervisor / Especialista (35 días)</option>
+              <option value="30">Analista / Ejecutivo (30 días)</option>
+              <option value="30">Técnico / Asistente (30 días)</option>
+              <option value="25">Practicante / Auxiliar (25 días)</option>
             </select>
           </div>
           <div class="form-group">
@@ -517,12 +513,10 @@ a[title]{cursor:pointer;}
             </select>
           </div>
         </div>
-        <div class="form-group">
-          <label>Descripci&oacute;n y requisitos m&iacute;nimos *</label>
-          <textarea id="lf_desc" style="height:100px;" placeholder="Describe el perfil que necesitas: experiencia requerida, habilidades clave, responsabilidades principales..."></textarea>
+        <div class="form-group"><label>Descripción y requisitos *</label>
+          <textarea id="lf_desc" style="height:120px;" placeholder="Describe el perfil que necesitas: experiencia requerida, habilidades clave, responsabilidades..."></textarea>
         </div>
-        <div class="form-group">
-          <label>Requisitos deseables</label>
+        <div class="form-group"><label>Requisitos deseables</label>
           <textarea id="lf_deseables" style="height:70px;" placeholder="Certificaciones, idiomas, experiencia adicional valorada..."></textarea>
         </div>
         <div class="form-group">
@@ -530,8 +524,8 @@ a[title]{cursor:pointer;}
           <input type="date" id="lf_fechaInicio" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-accent" onclick="guardarSolicitudLider()" title="Envía la solicitud al equipo de Reclutamiento y la registra en tus procesos activos">Enviar solicitud al reclutador &rarr;</button>
-          <button class="btn btn-secondary" onclick="toggleFormLider()" title="Cierra el formulario sin guardar">Cancelar</button>
+          <button class="btn btn-accent" onclick="guardarSolicitudLider()">Enviar solicitud al reclutador &rarr;</button>
+          <button class="btn btn-secondary" onclick="toggleFormLider()">Cancelar</button>
         </div>
       </div>
 
@@ -685,7 +679,7 @@ async function safeFetch(url, options) {
 var candidateUrl = window.location.origin + '/candidato.html';
 document.getElementById('shareUrl').textContent = candidateUrl;
 renderJobsList();
-poblarSelectAreas();
+poblarSelectPuestosDefault();
 verificarAlertas();
 
 (async function() {
@@ -729,7 +723,7 @@ function mostrarLider() {
   setTimeout(function(){
     var inp = document.getElementById('liderDniInput');
     if (inp) { inp.value = ''; inp.focus(); }
-    poblarSelectAreas();
+    poblarSelectPuestosDefault();
   }, 100);
 }
 
@@ -969,6 +963,7 @@ function saveJobOnly() {
 
   var jobData = {
     titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
+    gerencia:document.getElementById('f_gerencia')?document.getElementById('f_gerencia').value:'',
     instrucciones:document.getElementById('f_instrucciones').value.trim(),
     emailLider:emailLider, dniLider:dniLider
   };
@@ -1011,6 +1006,7 @@ function saveJobAndCreateReq() {
   // Primero guardar/actualizar el puesto
   var jobData = {
     titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
+    gerencia:document.getElementById('f_gerencia')?document.getElementById('f_gerencia').value:'',
     instrucciones:document.getElementById('f_instrucciones').value.trim(),
     emailLider:emailLider, dniLider:dniLider
   };
@@ -1763,50 +1759,47 @@ function filtrarPuestosArea(prefix, area) {
 }
 
 function poblarSelectPuestosDefault() {
-  poblarAreaSel('f');
-  filtrarPuestosDefault('f', '');
+  // Poblar todos los selects de puesto con todos los defaults
+  ['f_titulo_sel','lf_puesto_sel','ll_puesto_sel'].forEach(function(selId) {
+    var sel = document.getElementById(selId);
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">Selecciona un puesto...</option>';
+    PUESTOS_DEFAULT.forEach(function(p) {
+      var opt = document.createElement('option');
+      opt.value = p.titulo;
+      opt.textContent = p.titulo + ' — ' + p.area;
+      sel.appendChild(opt);
+    });
+    var otro = document.createElement('option');
+    otro.value = '__otro__';
+    otro.textContent = '+ Otro / Nuevo puesto';
+    sel.appendChild(otro);
+    sel.disabled = false; sel.style.opacity = '1';
+    if (cur) sel.value = cur;
+  });
 }
 
 function seleccionarPuestoDefault(val) {
   var inp = document.getElementById('f_titulo');
   if (val === '__otro__') {
     if (inp) { inp.style.display = 'block'; inp.value = ''; inp.focus(); }
-    document.getElementById('f_area').value = '';
-    document.getElementById('f_desc').value = '';
-    document.getElementById('f_instrucciones').value = '';
+    var aEl = document.getElementById('f_area'); if (aEl) aEl.value = '';
+    var dEl = document.getElementById('f_desc'); if (dEl) dEl.value = '';
+    var iEl = document.getElementById('f_instrucciones'); if (iEl) iEl.value = '';
     return;
   }
   if (inp) inp.style.display = 'none';
   if (!val) return;
   var p = PUESTOS_DEFAULT.find(function(x){ return x.titulo === val; });
   if (!p) return;
-  document.getElementById('f_area').value = p.area || '';
-  document.getElementById('f_desc').value = p.desc || '';
-  document.getElementById('f_instrucciones').value = '';
-}
-
-function toggleOtraSede(inputId, val) {
-  var el = document.getElementById(inputId);
-  if (!el) return;
-  el.style.display = val === 'Otras' ? 'block' : 'none';
-  if (val !== 'Otras') el.value = '';
-}
-
-function toggleInstrucciones() {
-  var panel = document.getElementById('instrPanel');
-  var chev  = document.getElementById('instrChevron');
-  if (!panel) return;
-  var open = panel.style.display === 'flex';
-  panel.style.display = open ? 'none' : 'flex';
-  panel.style.flexDirection = 'column';
-  if (chev) chev.innerHTML = open ? '&#9660;' : '&#9650;';
+  var aEl = document.getElementById('f_area'); if (aEl) aEl.value = p.area || '';
+  var dEl = document.getElementById('f_desc'); if (dEl) dEl.value = p.desc || '';
+  var iEl = document.getElementById('f_instrucciones'); if (iEl) iEl.value = '';
 }
 
 function poblarSelectPuestosLider() {
-  ['ll','lf'].forEach(function(prefix) {
-    poblarAreaSel(prefix);
-    filtrarPuestosDefault(prefix, '');
-  });
+  poblarSelectPuestosDefault();
 }
 
 function seleccionarPuestoLider(prefix, val) {
