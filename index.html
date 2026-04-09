@@ -97,6 +97,7 @@ a[title]{cursor:pointer;}
     <button class="nav-tab active" id="btn-puestos" onclick="showTab('puestos',this)">Puestos</button>
     <button class="nav-tab" id="btn-envio" onclick="showTab('envio',this)">Env&iacute;o masivo</button>
     <button class="nav-tab" id="btn-candidatos" onclick="showTab('candidatos',this);renderCandidatosPorPuesto()">Candidatos</button>
+    <button class="nav-tab" id="btn-dashboard" onclick="showTab('dashboard',this);renderDashboard()">Dashboard</button>
     <button class="nav-tab" id="btn-lider" onclick="mostrarLider()">L&iacute;der</button>
   </nav>
 
@@ -246,6 +247,10 @@ a[title]{cursor:pointer;}
     <!-- Filtros -->
     <div class="filter-bar" id="filterBar" style="display:none;">
       <input type="text" id="filtroTexto" placeholder="&#128269; Buscar puesto..." oninput="renderJobsList()" style="flex:1;min-width:180px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" id="mostrarCubiertos" onchange="renderJobsList()" style="accent-color:var(--accent2);">
+        Mostrar cubiertos
+      </label>
       <select id="filtroArea" onchange="renderJobsList()" style="min-width:140px;"><option value="">Todas las áreas</option></select>
       <select id="filtroLider" onchange="renderJobsList()" style="min-width:160px;"><option value="">Todos los líderes</option></select>
     </div>
@@ -343,6 +348,14 @@ a[title]{cursor:pointer;}
     </div>
 
     <div id="candidatosPorPuesto"></div>
+  </div>
+  <!-- DASHBOARD -->
+  <div class="panel" id="tab-dashboard">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div><div class="section-title">Dashboard de reclutamiento</div><div class="section-sub">M&eacute;tricas del proceso en tiempo real</div></div>
+      <button class="btn btn-secondary btn-sm" onclick="renderDashboard()">Actualizar</button>
+    </div>
+    <div id="dashboardContent"><div class="empty-state">Cargando métricas...</div></div>
   </div>
 </div><!-- /reclutadorApp -->
 
@@ -804,7 +817,7 @@ var ETAPAS = [
 ];
 
 function calcularEtapaActual(req, candidatos, feedbacks) {
-  // Etapas manuales vienen del campo etapas de la req
+  if (!req) return 0;
   var etapasCompletadas = req.etapas || {};
 
   // Etapa 1: HC — manual
@@ -825,6 +838,7 @@ function calcularEtapaActual(req, candidatos, feedbacks) {
 }
 
 function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
+  if (!req || typeof ETAPAS === 'undefined') return '';
   var etapaActual = calcularEtapaActual(req, candidatos, feedbacks);
   var etapasComp  = req.etapas || {};
   var html = '<div style="margin:16px 0 20px;">';
@@ -868,7 +882,9 @@ function avanzarEtapa(reqId, etapaId) {
     if (r.id===numId || r.id===reqId) {
       var etapas = Object.assign({}, r.etapas||{});
       etapas[etapaId] = new Date().toLocaleDateString('es-PE');
-      return Object.assign({},r,{etapas:etapas});
+      // Si se confirma tramites → marcar proceso como Cubierto
+      var nuevoEstado = etapaId === 'tramites' ? 'Cubierto' : r.estado;
+      return Object.assign({},r,{etapas:etapas, estado:nuevoEstado});
     }
     return r;
   });
@@ -898,13 +914,17 @@ function renderLiderProcesos() {
     html += '<div><div style="font-size:14px;font-weight:500;">' + r.puesto + '</div>';
     html += '<div style="font-size:12px;color:var(--muted);">' + r.area + ' &middot; ' + r.sede + '</div></div>';
     html += '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + c.bg + ';color:' + c.t + ';">' + r.estado + '</span></div>';
-    // Línea de tiempo
-    safeFetch('/api/jobs?type=results').then(function(rd){
-      var cands = (rd&&rd.results)?rd.results:JSON.parse(localStorage.getItem('rresults')||'[]');
-      var fbs   = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
-      var ltEl  = document.getElementById('lt_'+r.id);
-      if (ltEl) ltEl.innerHTML = renderLineaTiempo(r, cands, fbs, false);
-    });
+    // Línea de tiempo — capturar r en closure
+    (function(req){
+      safeFetch('/api/jobs?type=results').then(function(rd){
+        var cands = (rd&&rd.results)?rd.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+        var fbs   = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+        var ltEl  = document.getElementById('lt_'+req.id);
+        if (ltEl && typeof renderLineaTiempo === 'function') {
+          ltEl.innerHTML = renderLineaTiempo(req, cands, fbs, false);
+        }
+      }).catch(function(){ });
+    })(r);
     html += '<div id="lt_'+r.id+'"><div style="font-size:11px;color:var(--muted);padding:8px 0;">Cargando etapas...</div></div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;margin-top:8px;">';
     html += '<div style="color:var(--muted);">Inicio: <strong style="color:var(--text);">' + (r.fechaInicio||r.fecha) + '</strong></div>';
@@ -936,10 +956,19 @@ function renderLiderCandidatos() {
   if (!panel) return;
   panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Cargando...</div>';
   var misPuestos = jobs.filter(function(j){ return j.dniLider===liderDni; }).map(function(j){ return j.titulo; });
+  // Puestos cuyos procesos NO están en etapa 7 (trámites)
+  var puestosActivos = misPuestos.filter(function(titulo) {
+    var reqsDePuesto = requisiciones.filter(function(r){ return r.puesto===titulo; });
+    if (!reqsDePuesto.length) return true;
+    var lastR = reqsDePuesto[reqsDePuesto.length-1];
+    var etapas = lastR.etapas || {};
+    return !etapas.tramites; // ocultar si ya está en trámites
+  });
+
   safeFetch('/api/jobs?type=results').then(function(d) {
     var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
-    var misCands = results.filter(function(r){ return misPuestos.indexOf(r.puesto)!==-1 && r.visibleLider!==false; });
-    if (!misCands.length) { panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos evaluados para tus puestos a&uacute;n.</div>'; return; }
+    var misCands = results.filter(function(r){ return puestosActivos.indexOf(r.puesto)!==-1 && r.visibleLider!==false; });
+    if (!misCands.length) { panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos activos para tus puestos a&uacute;n.</div>'; return; }
     panel.innerHTML = renderTablaByPuesto(misCands);
   });
 }
@@ -983,6 +1012,36 @@ function guardarDesiderablesLider(id) {
 // ══════════════════════════════════
 // ALERTAS VENCIMIENTO
 // ══════════════════════════════════
+var SLA_ETAPA = {hc:2,convoc:3,eval:5,longlist:3,entrevista:5,oferta:3,tramites:5};
+
+function calcularSLAAlerts() {
+  var alerts = [];
+  try {
+    var hoy = Date.now();
+    var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria',eval:'Evaluaci\u00f3n GTH',longlist:'Longlist',entrevista:'Entrevista/Feedback',oferta:'Oferta Laboral',tramites:'Tr\u00e1mites'};
+    if (!Array.isArray(requisiciones)) return alerts;
+    requisiciones.forEach(function(r) {
+      try {
+        if (!r || r.estado==='Cubierto') return;
+        var etapas = (r.etapas && typeof r.etapas==='object') ? r.etapas : {};
+        var refMs = r.id && r.id > 1000000000000 ? r.id : hoy;
+        var etapasSLA = ['hc','convoc','eval','longlist','entrevista','oferta'];
+        etapasSLA.forEach(function(e, i) {
+          if (etapas[e]) return;
+          var anteriorOk = i===0 || etapas[etapasSLA[i-1]];
+          if (!anteriorOk) return;
+          var diasEnEtapa = Math.floor((hoy - refMs) / (1000*60*60*24));
+          var slaMax = (SLA_ETAPA && SLA_ETAPA[e]) ? SLA_ETAPA[e] : 5;
+          if (diasEnEtapa > slaMax) {
+            alerts.push({puesto:r.puesto||'—', area:r.area||'', etapa:ETAPA_NOMBRES[e]||e, dias:diasEnEtapa, sla:slaMax});
+          }
+        });
+      } catch(re){}
+    });
+  } catch(e){}
+  return alerts;
+}
+
 function verificarAlertas() {
   var banner = document.getElementById('alertaVencimiento');
   if (!banner) return;
@@ -993,14 +1052,19 @@ function verificarAlertas() {
     if (!lim || isNaN(lim)) return false;
     return Math.ceil((lim-hoy)/(1000*60*60*24)) <= 7;
   });
-  if (!proximas.length) { banner.style.display='none'; return; }
+  var slaAlerts = typeof calcularSLAAlerts==='function' ? calcularSLAAlerts() : [];
+  if (!proximas.length && !slaAlerts.length) { banner.style.display='none'; banner.innerHTML=''; return; }
   banner.style.display='block';
   var items = proximas.map(function(r){
-    var lim = new Date(r.fechaLimiteRaw);
-    var dias = Math.ceil((lim-new Date())/(1000*60*60*24));
-    return '<div style="font-size:13px;line-height:1.8;">&bull; <strong>'+r.puesto+'</strong> &mdash; '+(dias<=0?'<span style="color:#c0392b;font-weight:600;">VENCIDO</span>':'vence en <span style="color:#c0392b;font-weight:600;">'+dias+' d&iacute;a'+(dias!==1?'s':'')+'</span>')+' ('+r.area+')</div>';
+    var dias = Math.ceil((new Date(r.fechaLimiteRaw)-hoy)/(1000*60*60*24));
+    return '<div style="font-size:12px;line-height:1.8;">&bull; <strong>'+r.puesto+'</strong> &mdash; '+(dias<=0?'<span style="color:#c0392b;font-weight:600;">VENCIDO</span>':'vence en <span style="color:#c0392b;font-weight:600;">'+dias+' d&iacute;a'+(dias!==1?'s':'')+'</span>')+' ('+r.area+')</div>';
   }).join('');
-  banner.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:18px;">&#9888;</span><div><div style="font-size:13px;font-weight:500;margin-bottom:6px;color:#7a5000;">Procesos pr&oacute;ximos a vencer</div>'+items+'</div></div>';
+  var slaItems = slaAlerts.map(function(a){
+    return '<div style="font-size:12px;line-height:1.8;">&bull; <strong>'+a.puesto+'</strong> &mdash; etapa <em>'+a.etapa+'</em> lleva <span style="color:#c0392b;font-weight:600;">'+a.dias+' d&iacute;as</span> (SLA: '+a.sla+')</div>';
+  }).join('');
+  banner.innerHTML =
+    (proximas.length?'<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:'+(slaAlerts.length?'8px':'0')+';"><span style="font-size:16px;">&#9888;</span><div><div style="font-size:12px;font-weight:600;margin-bottom:4px;color:#7a5000;">Procesos pr\u00f3ximos a vencer</div>'+items+'</div></div>':'')+
+    (slaAlerts.length?'<div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;">&#9201;</span><div><div style="font-size:12px;font-weight:600;margin-bottom:4px;color:#7a5000;">SLA vencido por etapa</div>'+slaItems+'</div></div>':'');
 }
 
 // ══════════════════════════════════
@@ -1434,10 +1498,17 @@ function renderJobsList() {
   var texto = (document.getElementById('filtroTexto').value||'').toLowerCase();
   var filtroArea = selArea.value;
   var filtroLider = selLider.value;
+  var mostrarCub = document.getElementById('mostrarCubiertos') && document.getElementById('mostrarCubiertos').checked;
   var filtered = jobs.filter(function(j){
     if (texto && !(j.titulo+' '+(j.area||'')+' '+(j.emailLider||'')).toLowerCase().includes(texto)) return false;
     if (filtroArea && j.area!==filtroArea) return false;
     if (filtroLider && j.emailLider!==filtroLider) return false;
+    // Filtrar cubiertos por defecto
+    if (!mostrarCub) {
+      var jReqs = requisiciones.filter(function(r){ return r.jobId===j.id; });
+      var lastR = jReqs.length ? jReqs[jReqs.length-1] : null;
+      if (lastR && lastR.estado==='Cubierto') return false;
+    }
     return true;
   });
 
@@ -1462,9 +1533,11 @@ function renderJobsList() {
     var sBg = estadoReq==='Cubierto'?'#EEEDFE':estadoReq==='En proceso'?'#edf7f1':'#fef8ee';
     var sTx = estadoReq==='Cubierto'?'#3C3489':estadoReq==='En proceso'?'#1e5c38':'#7a5000';
     var limite = lastReq && lastReq.fechaLimite ? lastReq.fechaLimite : '—';
-    var rowBg = idx%2===0 ? 'var(--surface)' : 'var(--bg)';
+    var esCubierto = estadoReq === 'Cubierto';
+    var rowBg = esCubierto ? 'var(--surface2)' : (idx%2===0 ? 'var(--surface)' : 'var(--bg)');
+    var rowOpacity = esCubierto ? 'opacity:0.6;' : '';
 
-    html += '<tr style="background:'+rowBg+';border-top:0.5px solid var(--border2);cursor:pointer;" onclick="abrirDetalleJob('+j.id+')">'+
+    html += '<tr style="background:'+rowBg+';border-top:0.5px solid var(--border2);cursor:pointer;'+rowOpacity+'" onclick="abrirDetalleJob('+j.id+')">'+
       '<td style="padding:11px 14px;font-weight:500;">'+j.titulo+'</td>'+
       '<td style="padding:11px 14px;color:var(--muted);font-size:12px;">'+( j.area||'—')+'</td>'+
       '<td style="padding:11px 14px;color:var(--muted);font-size:12px;">'+( j.emailLider||'—')+'</td>'+
@@ -1645,6 +1718,50 @@ async function saveCandidatoManual() {
 }
 
 // ══════════════════════════════════
+// COMPARADOR DE CANDIDATOS
+// ══════════════════════════════════
+function compararTop(puestoEnc) {
+  var puesto = decodeURIComponent(puestoEnc);
+  var results = JSON.parse(localStorage.getItem('rresults')||'[]');
+  var cands = results.filter(function(c){ return c.puesto===puesto; });
+  cands.sort(function(a,b){ return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0); });
+  var top = cands.slice(0,3);
+  var dims = ['comunicacion','conocimiento','experiencia','motivacion'];
+  var dimLabels = {'comunicacion':'Comunicación','conocimiento':'Conocimiento técnico','experiencia':'Experiencia','motivacion':'Motivación y fit'};
+
+  var cols = top.map(function(c,i){
+    var est = c.estrellas||c.puntaje||0;
+    var badge = i===0?'#f4c430':i===1?'#c0c0c0':'#cd7f32';
+    var header = '<div style="text-align:center;padding-bottom:12px;border-bottom:0.5px solid var(--border2);">'+
+      '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+badge+';color:white;">#'+(i+1)+'</span>'+
+      '<div style="font-size:13px;font-weight:600;margin-top:6px;">'+c.candidato+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);">'+c.puesto+'</div>'+
+      '<div style="margin-top:6px;">'+renderStars(est,starsColor(est))+'</div>'+
+    '</div>';
+    var dimRows = dims.map(function(d){
+      var v = parseInt(c[d])||0;
+      return '<div style="margin-top:10px;">'+
+        '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">'+dimLabels[d]+'</div>'+
+        '<div>'+renderStars(v,starsColor(v))+'</div>'+
+      '</div>';
+    }).join('');
+    var fortalezas = c.fortalezas?'<div style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas:</strong> '+c.fortalezas+'</div>':'';
+    var recom = c.recomendacion?'<div style="margin-top:8px;font-size:11px;background:'+(c.recomendacion==='Avanzar'?'#edf7f1':c.recomendacion==='Considerar'?'#fef8ee':'#fbeaea')+';color:'+(c.recomendacion==='Avanzar'?'#1e5c38':c.recomendacion==='Considerar'?'#7a5000':'#8b1f1f')+';padding:3px 10px;border-radius:6px;display:inline-block;">'+c.recomendacion+'</div>':'';
+    return '<div style="flex:1;min-width:0;padding:0 12px;">'+header+dimRows+fortalezas+recom+'</div>';
+  }).join('<div style="width:0.5px;background:var(--border2);"></div>');
+
+  var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" id="comparadorOverlay" onclick="if(event.target===this)this.remove()">'+
+    '<div style="background:var(--surface);border-radius:16px;padding:28px;max-width:700px;width:100%;max-height:85vh;overflow-y:auto;">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'+
+        '<div style="font-size:16px;font-weight:600;">Comparar top '+top.length+' — '+puesto+'</div>'+
+        '<button onclick="document.getElementById(&quot;comparadorOverlay&quot;).remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>'+
+      '</div>'+
+      '<div style="display:flex;gap:0;">'+cols+'</div>'+
+    '</div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// ══════════════════════════════════
 // CANDIDATOS POR PUESTO
 // ══════════════════════════════════
 
@@ -1710,52 +1827,54 @@ function filtrarCandidatos() {
 }
 
 function renderTablaByPuesto(results) {
-  var byPuesto = {};
-  results.forEach(function(r){ if(!byPuesto[r.puesto])byPuesto[r.puesto]=[]; byPuesto[r.puesto].push(r); });
-  var rBg=function(r){return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea';};
-  var rTx=function(r){return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f';};
-  var sBg=function(s){return s>=80?'#edf7f1':s>=60?'#fef8ee':'#fbeaea';};
-  var sTx=function(s){return s>=80?'#1e5c38':s>=60?'#7a5000':'#8b1f1f';};
+  function rBg(r){return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea';}
+  function rTx(r){return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f';}
+  var byPuesto={};
+  results.forEach(function(r){if(!byPuesto[r.puesto])byPuesto[r.puesto]=[];byPuesto[r.puesto].push(r);});
   return Object.keys(byPuesto).map(function(puesto){
-    var cands = byPuesto[puesto].slice().sort(function(a,b){return b.puntaje-a.puntaje;});
+    var cands = byPuesto[puesto];
+    cands.sort(function(a,b){return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);});
     var avanzar = cands.filter(function(c){return c.recomendacion==='Avanzar';}).length;
-    var totalEst = cands.reduce(function(s,c){return s+(c.estrellas||c.puntaje||0);},0);
-      var avg = Math.round(totalEst/cands.length);
-    var rows = cands.map(function(c,idx){
-      var badge = idx===0?'<span style="font-size:10px;background:#fef8ee;color:#7a5000;border-radius:4px;padding:1px 5px;margin-left:4px;">\u2605 Top</span>':'';
+    var avg = Math.round(cands.reduce(function(s,c){return s+(c.estrellas||c.puntaje||0);},0)/cands.length);
+    var rows = cands.map(function(c, cidx){
+      var badge = cidx===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
+        :cidx===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
+        :cidx===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>':'';
       var fuente = c.fuente==='manual'?'<span style="font-size:10px;background:#EEEDFE;color:#3C3489;border-radius:4px;padding:1px 5px;margin-left:4px;">Manual</span>':'';
-      return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+
-        '<td style="padding:9px 12px;font-weight:500;">'+c.candidato+badge+fuente+'</td>'+
-        '<td style="padding:9px 12px;color:var(--muted);font-size:12px;">'+(c.fecha||'')+(c.hora?' &middot; '+c.hora:'')+'</td>'+
-        '<td style="padding:9px 12px;text-align:center;">'+renderStars(c.estrellas||c.puntaje,starsColor(c.estrellas||c.puntaje))+'</td>'+
-        '<td style="padding:9px 12px;text-align:center;"><span style="background:'+rBg(c.recomendacion)+';color:'+rTx(c.recomendacion)+';padding:2px 9px;border-radius:8px;font-size:11px;font-weight:500;">'+c.recomendacion+'</span></td>'+
-        '<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:180px;">'+(c.resumen||'').substring(0,80)+'&hellip;</td>'+
-        '<td style="padding:9px 12px;text-align:center;"><input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onchange="toggleVisibilidad(this)" style="width:15px;height:15px;accent-color:var(--accent2);cursor:pointer;" title="Visible para el l\u00edder"></td>'+
-        '<td style="padding:9px 12px;text-align:center;"><button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" title="Eliminar este candidato" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;border-radius:4px;">&#128465;</button></td>'+
-      '</tr>';
+      return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'
+        +'<td style="padding:9px 12px;font-weight:500;">'+c.candidato+badge+fuente+'</td>'
+        +'<td style="padding:9px 12px;color:var(--muted);font-size:12px;">'+(c.fecha||'')+(c.hora?' &middot; '+c.hora:'')+'</td>'
+        +'<td style="padding:9px 12px;text-align:center;">'+renderStars(c.estrellas||c.puntaje,starsColor(c.estrellas||c.puntaje))+'</td>'
+        +'<td style="padding:9px 12px;text-align:center;"><span style="background:'+rBg(c.recomendacion)+';color:'+rTx(c.recomendacion)+';padding:2px 9px;border-radius:8px;font-size:11px;font-weight:500;">'+c.recomendacion+'</span></td>'
+        +'<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:180px;">'+(c.resumen||'').substring(0,80)+'&hellip;</td>'
+        +'<td style="padding:9px 12px;text-align:center;"><input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onchange="toggleVisibilidad(this)" style="width:15px;height:15px;accent-color:var(--accent2);cursor:pointer;"></td>'
+        +'<td style="padding:9px 12px;text-align:center;"><button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;">&#128465;</button></td>'
+        +'</tr>';
     }).join('');
-    return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'+
-      '<div style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'+
-        '<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'+
-        '<div style="display:flex;gap:8px;">'+
-          '<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'+
-          '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' para avanzar</span>'+
-          '<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+avg+'</span>'+
-        '</div>'+
-      '</div>'+
-      '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'+
-        '<thead><tr style="background:var(--bg);">'+
-          '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidato</th>'+
-          '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Fecha</th>'+
-          '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Evaluaci\u00f3n</th>'+
-          '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Recomendaci&oacute;n</th>'+
-          '<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Resumen</th>'+
-          '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;" title="Visible para el l\u00edder">\ud83d\udc41 L\u00edder</th>'+
-          '<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;"></th>'+
-        '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '</div>';
+    return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'
+      +'<div style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
+        +'<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px;">'
+          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+encodeURIComponent(puesto)+'" onclick="compararTop(this.dataset.puesto)">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
+          +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
+          +'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' para avanzar</span>'
+          +'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>'
+        +'</div>'
+      +'</div>'
+      +'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
+        +'<thead><tr style="background:var(--bg);">'
+          +'<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidato</th>'
+          +'<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Fecha</th>'
+          +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Evaluaci\u00f3n</th>'
+          +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Recomendaci&oacute;n</th>'
+          +'<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Resumen</th>'
+          +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">L\u00edder</th>'
+          +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;"></th>'
+        +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'</div>';
   }).join('');
 }
+
 
 function renderCandidatosPorPuesto() {
   var panel = document.getElementById('candidatosPorPuesto');
@@ -2268,6 +2387,124 @@ function guardarSolicitudLider() {
       '<button onclick="document.getElementById(&quot;liderConfirmOverlay&quot;).remove()" class="btn btn-accent">Entendido &#10003;</button>' +
     '</div></div>';
   document.body.insertAdjacentHTML('beforeend', msgHtml);
+}
+
+// ══════════════════════════════════
+// DASHBOARD DE MÉTRICAS
+// ══════════════════════════════════
+function renderDashboard() {
+  var panel = document.getElementById('dashboardContent');
+  if (!panel) return;
+  panel.innerHTML='<div style="font-size:13px;color:var(--muted);">Cargando...</div>';
+
+  safeFetch('/api/jobs?type=results').then(function(d){
+    var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    var fbs = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+    var hoy = new Date();
+
+    // ── KPIs globales ──
+    var totalPuestos = jobs.length;
+    var totalReqs = requisiciones.filter(function(r){return r.estado!=='Cubierto';}).length;
+    var cubiertos = requisiciones.filter(function(r){return r.estado==='Cubierto';}).length;
+    var totalCands = results.length;
+    var avanzar = results.filter(function(r){return r.recomendacion==='Avanzar';}).length;
+    var tasaAvanzar = totalCands ? Math.round(avanzar/totalCands*100) : 0;
+    var promedioEst = totalCands ? (results.reduce(function(s,r){return s+(r.estrellas||r.puntaje||0);},0)/totalCands).toFixed(1) : 0;
+
+    // Tiempo promedio de cobertura
+    var tiemposCob = requisiciones.filter(function(r){
+      return r.estado==='Cubierto' && r.fechaInicioRaw && r.etapas && r.etapas.tramites;
+    }).map(function(r){
+      try {
+        var ini = new Date(r.fechaInicioRaw);
+        var partes = r.etapas.tramites.split('/');
+        var fin = new Date(partes[2]+'-'+partes[1]+'-'+partes[0]);
+        return Math.ceil((fin-ini)/(1000*60*60*24));
+      } catch(e){ return null; }
+    }).filter(Boolean);
+    var tiempoPromedio = tiemposCob.length ? Math.round(tiemposCob.reduce(function(s,v){return s+v;},0)/tiemposCob.length) : null;
+
+    // ── HTML ──
+    var kpiStyle = 'background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;text-align:center;';
+    var kpis =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">'+
+        mkKpi('Puestos activos', totalPuestos, '', '#e8623a')+
+        mkKpi('Procesos abiertos', totalReqs, '', '#b8760a')+
+        mkKpi('Procesos cubiertos', cubiertos, '', '#2d7a4f')+
+        mkKpi('Total candidatos', totalCands, '', '#3C3489')+
+        mkKpi('Tasa "Avanzar"', tasaAvanzar, '%', '#e8623a')+
+        mkKpi('Estrellas promedio', promedioEst, '★', '#f4c430')+
+        (tiempoPromedio?mkKpi('Días de cobertura prom.', tiempoPromedio, ' días', '#2d7a4f'):'')+
+      '</div>';
+
+    // ── Candidatos por puesto ──
+    var byPuesto = {};
+    results.forEach(function(r){
+      if (!byPuesto[r.puesto]) byPuesto[r.puesto]={total:0,avanzar:0,estrellas:[]};
+      byPuesto[r.puesto].total++;
+      if (r.recomendacion==='Avanzar') byPuesto[r.puesto].avanzar++;
+      byPuesto[r.puesto].estrellas.push(r.estrellas||r.puntaje||0);
+    });
+
+    var tablaRows = Object.keys(byPuesto).sort().map(function(p){
+      var d = byPuesto[p];
+      var prom = (d.estrellas.reduce(function(s,v){return s+v;},0)/d.estrellas.length).toFixed(1);
+      var tasa = Math.round(d.avanzar/d.total*100);
+      var barW = Math.min(tasa,100);
+      var barC = tasa>=60?'#2d7a4f':tasa>=30?'#b8760a':'#c0392b';
+      return '<tr style="border-top:0.5px solid var(--border2);">'+
+        '<td style="padding:10px 14px;font-weight:500;">'+p+'</td>'+
+        '<td style="padding:10px 14px;text-align:center;">'+d.total+'</td>'+
+        '<td style="padding:10px 14px;text-align:center;">'+d.avanzar+'</td>'+
+        '<td style="padding:10px 14px;min-width:120px;">'+
+          '<div style="display:flex;align-items:center;gap:6px;">'+
+            '<div style="flex:1;background:var(--surface2);border-radius:4px;height:6px;"><div style="width:'+barW+'%;background:'+barC+';border-radius:4px;height:6px;"></div></div>'+
+            '<span style="font-size:12px;color:'+barC+';font-weight:600;width:32px;">'+tasa+'%</span>'+
+          '</div>'+
+        '</td>'+
+        '<td style="padding:10px 14px;text-align:center;">'+renderStars(Math.round(parseFloat(prom)),starsColor(Math.round(parseFloat(prom))))+'</td>'+
+      '</tr>';
+    }).join('');
+
+    var tabla = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'+
+      '<div style="padding:14px 16px;border-bottom:0.5px solid var(--border2);font-size:13px;font-weight:500;">Candidatos por puesto</div>'+
+      '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'+
+        '<thead><tr style="background:var(--surface2);">'+
+          '<th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Puesto</th>'+
+          '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Total</th>'+
+          '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Avanzan</th>'+
+          '<th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Tasa conversión</th>'+
+          '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Estrellas prom.</th>'+
+        '</tr></thead><tbody>'+tablaRows+'</tbody></table></div>'+
+    '</div>';
+
+    // ── Distribución de estrellas ──
+    var dist = {1:0,2:0,3:0,4:0,5:0};
+    results.forEach(function(r){ var e=r.estrellas||r.puntaje||0; if(e>=1&&e<=5) dist[e]++; });
+    var maxDist = Math.max.apply(null,Object.values(dist))||1;
+    var distHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;margin-top:12px;">'+
+      '<div style="font-size:13px;font-weight:500;margin-bottom:16px;">Distribución de evaluaciones</div>'+
+      '<div style="display:flex;align-items:flex-end;gap:8px;height:80px;">'+
+      [1,2,3,4,5].map(function(n){
+        var h = Math.round((dist[n]/maxDist)*70);
+        var c = starsColor(n);
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">'+
+          '<span style="font-size:11px;color:var(--muted);">'+dist[n]+'</span>'+
+          '<div style="width:100%;height:'+h+'px;background:'+c+';border-radius:4px 4px 0 0;min-height:4px;"></div>'+
+          '<span style="font-size:12px;">'+'★'.repeat(n)+'</span>'+
+        '</div>';
+      }).join('')+
+      '</div></div>';
+
+    panel.innerHTML = kpis + tabla + distHtml;
+  });
+}
+
+function mkKpi(label, value, suffix, color) {
+  return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;text-align:center;">'+
+    '<div style="font-size:28px;font-weight:700;color:'+color+';">'+value+(suffix||'')+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3;">'+label+'</div>'+
+  '</div>';
 }
 
 // ══════════════════════════════════
