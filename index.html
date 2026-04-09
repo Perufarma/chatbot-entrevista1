@@ -1932,61 +1932,103 @@ function renderFeedbackPanel() {
   safeFetch('/api/jobs?type=results').then(function(d){
     var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
     var avanzar=results.filter(function(r){ return r.recomendacion==='Avanzar'&&(misPuestos.length===0||misPuestos.indexOf(r.puesto)!==-1); });
-    if (!avanzar.length){ panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos con recomendaci&oacute;n "Avanzar" en tus puestos a&uacute;n.</div>'; return; }
-    panel.innerHTML=avanzar.map(function(c){
-      var fb=feedbacks.find(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
-      var key=(c.candidato+'_'+c.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
-      var fbData=fbTemp[key]||fb||{};
-      var campos=[{id:'comunicacion',label:'Comunicaci\u00f3n'},{id:'tecnico',label:'Conocimiento t\u00e9cnico'},{id:'actitud',label:'Actitud y fit cultural'},{id:'resultados',label:'Orientaci\u00f3n a resultados'}];
+    if (!avanzar.length){ panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos con recomendación "Avanzar" en tus puestos aún.</div>'; return; }
 
-      // Verificar límite 24h
-      var vencido = false;
-      if (fb && fb.timestamp) {
-        var diff = (Date.now() - fb.timestamp) / (1000*60*60);
-        if (diff > 24) vencido = true;
+    // Agrupar por puesto
+    var byPuesto = {};
+    avanzar.forEach(function(c){
+      if (!byPuesto[c.puesto]) byPuesto[c.puesto] = [];
+      byPuesto[c.puesto].push(c);
+    });
+
+    panel.innerHTML = Object.keys(byPuesto).map(function(puesto){
+      var cands = byPuesto[puesto];
+      // Resumen del grupo
+      var evaluados = cands.filter(function(c){
+        return feedbacks.some(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
+      }).length;
+      var promedioGrupo = 0;
+      if (evaluados) {
+        var totalEst = 0;
+        cands.forEach(function(c){
+          var fb = feedbacks.find(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
+          if (fb) totalEst += Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4);
+        });
+        promedioGrupo = Math.round(totalEst/evaluados);
       }
-      var collapsed = !!fb;
-      var estGen = fb ? Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4) : 0;
 
-      var starsHtml=campos.map(function(campo){
-        var val=fbData[campo.id]||0;
-        return '<div><div style="font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">'+campo.label+'</div><div>'+
-          [1,2,3,4,5].map(function(n){
-            return vencido
-              ? '<span style="font-size:20px;color:'+(val>=n?'#e8623a':'#e0ddd8')+'">\u2605</span>'
-              : '<span data-key="'+key+'" data-campo="'+campo.id+'" data-n="'+n+'" onclick="setFbStar(this)" style="cursor:pointer;font-size:20px;color:'+(val>=n?'#e8623a':'#e0ddd8')+';transition:color .1s;">\u2605</span>';
-          }).join('')+
-        '</div></div>';
-      }).join('');
-
-      return '<div class="card" style="margin-bottom:12px;" id="fbcard_'+key+'">'+
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:'+(collapsed?'pointer':'default')+';" onclick="toggleFbCard(\''+ key +'\')">'+
-          '<div><div style="font-size:14px;font-weight:500;">'+ c.candidato +'</div>'+
-          '<div style="font-size:12px;color:var(--muted);">'+c.puesto+(c.area?' &middot; '+c.area:'')+'</div></div>'+
-          '<div style="display:flex;align-items:center;gap:8px;">'+
-            (fb ? renderStars(estGen, starsColor(estGen)) : '')+
-            (fb ? '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:3px 9px;border-radius:8px;">\u2713 '+fb.fecha+'</span>' : '')+
-            (collapsed ? '<span style="color:var(--muted);font-size:14px;margin-left:4px;">&#9660;</span>' : '')+
+      // Cards de candidatos
+      var cardsHtml = cands.map(function(c){
+        var fb=feedbacks.find(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
+        var key=(c.candidato+'_'+c.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
+        var fbData=fbTemp[key]||fb||{};
+        var campos=[{id:'comunicacion',label:'Comunicación'},{id:'tecnico',label:'Conocimiento técnico'},{id:'actitud',label:'Actitud y fit cultural'},{id:'resultados',label:'Orientación a resultados'}];
+        var vencido = false;
+        if (fb && fb.timestamp) { if ((Date.now()-fb.timestamp)/(1000*60*60)>24) vencido=true; }
+        var collapsed = !!fb;
+        var estGen = fb ? Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4) : 0;
+        var starsHtml=campos.map(function(campo){
+          var val=fbData[campo.id]||0;
+          return '<div><div style="font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">'+campo.label+'</div><div>'+
+            [1,2,3,4,5].map(function(n){
+              return vencido
+                ? '<span style="font-size:20px;color:'+(val>=n?'#e8623a':'#e0ddd8')+'">★</span>'
+                : '<span data-key="'+key+'" data-campo="'+campo.id+'" data-n="'+n+'" onclick="setFbStar(this)" style="cursor:pointer;font-size:20px;color:'+(val>=n?'#e8623a':'#e0ddd8')+';transition:color .1s;">★</span>';
+            }).join('')+'</div></div>';
+        }).join('');
+        return '<div style="border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:8px;" id="fbcard_'+key+'">'
+          +'<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;background:'+(collapsed?'var(--surface)':'var(--surface2)')+';" onclick="toggleFbCard(this.dataset.key)" data-key="'+key+'">'+
+            '<div>'+
+              '<div style="font-size:13px;font-weight:500;">'+c.candidato+'</div>'+
+              (c.area?'<div style="font-size:11px;color:var(--muted);">'+c.area+'</div>':'')+
+            '</div>'+
+            '<div style="display:flex;align-items:center;gap:8px;">'+
+              (fb ? renderStars(estGen,starsColor(estGen)) : '<span style="font-size:12px;color:var(--muted);">Sin evaluar</span>')+
+              (fb ? '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">✓ '+fb.fecha+'</span>' : '')+
+              '<span style="color:var(--muted);font-size:12px;">'+(collapsed?'&#9660;':'&#9650;')+'</span>'+
+            '</div>'+
           '</div>'+
-        '</div>'+
-        '<div id="fbbody_'+key+'" style="display:'+(collapsed?'none':'flex')+';flex-direction:column;gap:14px;margin-top:14px;">'+
-          (c.fortalezas?'<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> '+c.fortalezas+'</div>':'')+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'+starsHtml+'</div>'+
-          (vencido ? '<div style="font-size:12px;color:#b8760a;background:#fef8ee;padding:8px 12px;border-radius:8px;">&#9200; Tiempo de edici\u00f3n vencido (m\u00e1s de 24h). Solo lectura.</div>' : '')+
-          '<div class="form-group"><label>Comentarios de la entrevista presencial</label>'+
-            '<textarea id="fb_'+key+'" style="height:65px;" placeholder="Observaciones..." '+(vencido?'disabled':'')+'>'+( fb?fb.comentario||'':'')+ '</textarea></div>'+
-          (!vencido ?
-            '<div style="display:flex;gap:8px;">'+
+          '<div id="fbbody_'+key+'" style="display:'+(collapsed?'none':'flex')+';flex-direction:column;gap:14px;padding:16px;border-top:0.5px solid var(--border2);">'+
+            (c.fortalezas?'<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> '+c.fortalezas+'</div>':'')+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'+starsHtml+'</div>'+
+            (vencido?'<div style="font-size:12px;color:#b8760a;background:#fef8ee;padding:8px 12px;border-radius:8px;">&#9200; Tiempo de edición vencido. Solo lectura.</div>':'')+
+            '<div class="form-group"><label>Comentarios de la entrevista presencial</label>'+
+              '<textarea id="fb_'+key+'" style="height:65px;" placeholder="Observaciones..." '+(vencido?'disabled':'')+'>'+( fb?fb.comentario||'':'')+'</textarea></div>'+
+            (!vencido?'<div style="display:flex;gap:8px;">'+
               '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="saveFeedbackBtn(this)">Guardar feedback</button>'+
               (fb?'<button class="btn btn-secondary btn-sm" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="deleteFeedbackBtn(this)">Borrar</button>':'')+
-            '</div>' : '')+
-        '</div>'+
-      '</div>';
+            '</div>':'')+
+          '</div>'+
+        '</div>';
+      }).join('');
+
+      // Card contenedora del grupo
+      return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:14px;overflow:hidden;margin-bottom:16px;">'
+        // Header del grupo
+        +'<div style="padding:14px 18px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
+          +'<div>'
+            +'<div style="font-size:14px;font-weight:600;">'+puesto+'</div>'
+            +'<div style="font-size:12px;color:var(--muted);margin-top:2px;">'+cands.length+' candidato'+(cands.length!==1?'s':'')+' para avanzar</div>'
+          +'</div>'
+          +'<div style="display:flex;align-items:center;gap:12px;">'
+            +(evaluados>0?'<div style="text-align:center;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Prom. evaluados</div>'+renderStars(promedioGrupo,starsColor(promedioGrupo))+'</div>':'')+
+            '<div style="text-align:center;">'
+              +'<div style="font-size:22px;font-weight:700;color:'+(evaluados===cands.length?'#2d7a4f':'#e8623a')+' ;">'+evaluados+'/'+cands.length+'</div>'
+              +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Evaluados</div>'
+            +'</div>'
+          +'</div>'
+        +'</div>'
+        // Candidatos
+        +'<div style="padding:14px 18px;display:flex;flex-direction:column;gap:0;">'+cardsHtml+'</div>'
+      +'</div>';
     }).join('');
   });
 }
 
-function toggleFbCard(key) {
+
+function toggleFbCard(keyOrEl) {
+  var key = typeof keyOrEl === 'string' ? keyOrEl : keyOrEl.dataset && keyOrEl.dataset.key;
+  if (!key) return;
   var body = document.getElementById('fbbody_'+key);
   if (!body) return;
   var hidden = body.style.display === 'none';
