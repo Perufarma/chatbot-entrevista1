@@ -105,7 +105,7 @@ a[title]{cursor:pointer;}
   <div class="panel active" id="tab-puestos">
     <div class="alert-banner" id="alertaVencimiento"></div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;">
-      <div><div class="section-title">Puestos y solicitudes</div><div class="section-sub">Cada puesto incluye su solicitud de personal y notificación al líder</div></div>
+      <div><div class="section-title">Puestos y solicitudes</div><div class="section-sub">Haz clic en el nombre de un puesto → para ver el detalle y gestionar el proceso</div></div>
       <button class="btn btn-accent" onclick="toggleForm()" title="Crea un nuevo perfil de puesto y opcionalmente abre una solicitud de personal">+ Nuevo puesto</button>
     </div>
 
@@ -1565,7 +1565,7 @@ function renderJobsList() {
     var rowOpacity = esCubierto ? 'opacity:0.6;' : '';
 
     html += '<tr style="background:'+rowBg+';border-top:0.5px solid var(--border2);cursor:pointer;'+rowOpacity+'" onclick="abrirDetalleJob('+j.id+')">'+
-      '<td style="padding:11px 14px;font-weight:500;">'+j.titulo+'</td>'+
+      '<td style="padding:11px 14px;font-weight:500;color:var(--accent2);">'+j.titulo+' <span style="font-size:11px;color:var(--muted);">&#8594;</span></td>'+
       '<td style="padding:11px 14px;color:var(--muted);font-size:12px;">'+( j.area||'—')+'</td>'+
       '<td style="padding:11px 14px;color:var(--muted);font-size:12px;">'+( j.emailLider||'—')+'</td>'+
       '<td style="padding:11px 14px;text-align:center;"><span style="font-size:11px;background:'+sBg+';color:'+sTx+';padding:2px 10px;border-radius:6px;font-weight:500;white-space:nowrap;">'+estadoReq+'</span></td>'+
@@ -2023,20 +2023,17 @@ function renderTablaByPuesto(results) {
         +'<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:180px;">'+(c.resumen||'').substring(0,80)+'&hellip;</td>'
         +'<td style="padding:9px 12px;text-align:center;"><input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onchange="toggleVisibilidad(this)" style="width:15px;height:15px;accent-color:var(--accent2);cursor:pointer;"></td>'
         +(function(){
-  var reqC = requisiciones.filter(function(r){return r.puesto===c.puesto;});
-  var lastR = reqC.length ? reqC[reqC.length-1] : null;
-  var rId = lastR ? lastR.id : '';
-  var etC = lastR && lastR.etapas ? lastR.etapas : {};
-  var ofOk = !!etC.oferta; var trOk = !!etC.tramites;
-  var cEnc = encodeURIComponent(c.candidato); var pEnc = encodeURIComponent(c.puesto);
-  return '<td style="padding:9px 12px;text-align:center;">'+
-    '<button class="btn btn-sm ' + (ofOk?'btn-secondary':'btn-primary') + '" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleOferta(this)" style="font-size:11px;padding:3px 8px;'+(ofOk?'text-decoration:line-through;opacity:0.7;':'')+'">'+
-      (ofOk?'✓':'○')+'</button></td>'+
-    '<td style="padding:9px 12px;text-align:center;">'+
-    (ofOk ? '<button class="btn btn-sm ' + (trOk?'btn-secondary':'btn-primary') + '" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;padding:3px 8px;'+(trOk?'text-decoration:line-through;opacity:0.7;':'')+'">'+
-      (trOk?'✓':'○')+'</button>' : '<span style="color:var(--muted);font-size:12px;">—</span>')+
-    '</td>';
-})()+
+          var reqC = requisiciones.filter(function(r){return r.puesto===c.puesto;});
+          var lastR = reqC.length ? reqC[reqC.length-1] : null;
+          var rId = lastR ? lastR.id : '';
+          var etC = lastR && lastR.etapas ? lastR.etapas : {};
+          var ofOk = !!etC.oferta; var trOk = !!etC.tramites;
+          var cEnc = encodeURIComponent(c.candidato); var pEnc = encodeURIComponent(c.puesto);
+          var ofBtn = '<button class="btn btn-sm '+(ofOk?'btn-secondary':'btn-primary')+'" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleOferta(this)" style="font-size:11px;padding:3px 8px;'+(ofOk?'opacity:0.7;':'')+'">'+( ofOk?'\u2713 Oferta':'\u25cb Oferta')+'</button>';
+          var trBtn = ofOk ? '<button class="btn btn-sm '+(trOk?'btn-secondary':'btn-primary')+'" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;padding:3px 8px;'+(trOk?'opacity:0.7;':'')+'">'+( trOk?'\u2713 Ingreso':'\u25cb Ingreso')+'</button>' : '<span style="color:var(--muted);font-size:12px;">\u2014</span>';
+          return '<td style="padding:9px 12px;text-align:center;">'+ofBtn+'</td>'
+               + '<td style="padding:9px 12px;text-align:center;">'+trBtn+'</td>';
+        })()
         +'<td style="padding:9px 12px;text-align:center;"><button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;">&#128465;</button></td>'
         +'</tr>';
     }).join('');
