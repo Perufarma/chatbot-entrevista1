@@ -82,7 +82,7 @@ a[title]{cursor:pointer;}
 .lider-nav-logo span{color:var(--accent2);}
 .lider-content{max-width:960px;margin:0 auto;padding:28px;}
 .lider-login-wrap{display:flex;align-items:center;justify-content:center;min-height:70vh;}
-.lider-login-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:16px;padding:40px;max-width:560px;width:100%;display:flex;flex-direction:column;gap:20px;text-align:center;}
+.lider-login-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:16px;padding:36px 40px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:16px;text-align:left;}
 </style>
 </head>
 <body>
@@ -149,7 +149,7 @@ a[title]{cursor:pointer;}
           <span>&#128203; Instrucciones para el entrevistador IA <span style="font-size:11px;font-weight:400;">(solo reclutador)</span></span>
           <span id="instrChevron" style="font-size:11px;">&#9660;</span>
         </div>
-        <div id="instrPanel" style="display:none;padding:12px 14px;display:none;flex-direction:column;gap:8px;">
+        <div id="instrPanel" style="display:none;padding:12px 14px;flex-direction:column;gap:8px;">
           <textarea id="f_instrucciones" style="height:80px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:DM Sans,sans-serif;outline:none;resize:vertical;width:100%;line-height:1.5;" placeholder="Ej: Enfócate en experiencia práctica. Descarta si no tiene mínimo 1 año..."></textarea>
           <div class="tip-box"><strong>Tip:</strong> Claude seguirá estas instrucciones al generar las preguntas. El candidato no las verá.</div>
         </div>
@@ -191,7 +191,8 @@ a[title]{cursor:pointer;}
               <select id="f_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
                 <option value="">Selecciona el nivel...</option>
                 <option value="60">Gerente / Sub Gerente (60 d&iacute;as)</option>
-                <option value="35">Jefe / Supervisor / Especialista (35 d&iacute;as)</option>
+                <option value="35">Jefe / Supervisor (35 d&iacute;as)</option>
+                <option value="30e">Especialista / Coordinador (30 d&iacute;as)</option>
                 <option value="30">Analista / Ejecutivo (30 d&iacute;as)</option>
                 <option value="30">T&eacute;cnico / Asistente (30 d&iacute;as)</option>
                 <option value="25">Practicante / Auxiliar (25 d&iacute;as)</option>
@@ -207,9 +208,15 @@ a[title]{cursor:pointer;}
             </div>
           </div>
           <div id="plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#085041;line-height:1.5;"></div>
-          <div class="form-group" id="reemplazoField" style="display:none;">
-            <label>&iquest;Cu&aacute;ndo ces&oacute; o cesar&aacute; el colaborador?</label>
-            <input type="date" id="f_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          <div id="reemplazoField" style="display:none;display:flex;flex-direction:column;gap:10px;">
+            <div class="form-group">
+              <label>Nombre del colaborador a reemplazar *</label>
+              <input type="text" id="f_reemplazo_nombre" placeholder="Ej: Juan Pérez García" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
+            <div class="form-group">
+              <label>Fecha de cese *</label>
+              <input type="date" id="f_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
           </div>
           <div class="form-group">
             <label>Fecha de inicio del proceso *</label>
@@ -218,6 +225,14 @@ a[title]{cursor:pointer;}
           <div>
             <button class="btn btn-accent" onclick="saveJobAndCreateReq()" title="Guarda el perfil, registra la solicitud con fechas y plazos, y abre un correo al líder para notificarle">Crear solicitud y notificar l&iacute;der &rarr;</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Motivo del cambio (solo visible al editar) -->
+      <div id="motivoCambioWrap" style="display:none;">
+        <div class="form-group">
+          <label>Motivo del cambio <span style="font-size:11px;color:var(--muted);font-weight:400;">(opcional &mdash; visible para el l&iacute;der)</span></label>
+          <input type="text" id="f_motivoCambio" placeholder="Ej: El l&iacute;der solicit&oacute; ampliar la experiencia requerida..." style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
         </div>
       </div>
 
@@ -348,31 +363,11 @@ a[title]{cursor:pointer;}
     <!-- Login -->
     <div id="liderLoginView" class="lider-login-wrap">
       <div class="lider-login-card">
-        <div>
-          <div class="section-title" style="font-size:20px;">Portal del L&iacute;der</div>
-          <div class="section-sub" style="margin-top:6px;">Gestiona tus solicitudes de personal y revisa el avance de tus procesos</div>
-        </div>
-
-        <!-- Botón nueva solicitud directo -->
-        <button class="btn btn-accent" style="width:100%;" onclick="toggleFormLiderLogin()" title="Crea una solicitud sin necesidad de ingresar tu DNI">+ Nueva solicitud de personal</button>
+        <div class="section-sub" style="text-align:left;font-size:12px;line-height:1.5;">Gestiona tus solicitudes de personal y revisa el avance de tus procesos</div>
+        <button class="btn btn-accent" style="width:auto;align-self:flex-start;" onclick="toggleFormLiderLogin()" title="Crea una solicitud sin necesidad de ingresar tu DNI">+ Nueva solicitud de personal</button>
 
         <!-- Formulario nueva solicitud colapsado -->
         <div id="formLiderLogin" style="display:none;flex-direction:column;gap:12px;border-top:0.5px solid var(--border2);padding-top:16px;margin-top:4px;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>&Aacute;rea</label>
-              <select id="ll_area_sel" onchange="filtrarPuestosDefault('ll',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Todas las áreas</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Puesto solicitado *</label>
-              <select id="ll_puesto_sel" onchange="seleccionarPuestoLider('ll',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Selecciona un puesto...</option>
-              </select>
-              <input type="text" id="ll_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-          </div>
           <div class="form-group">
             <label>Gerencia *</label>
             <select id="ll_gerencia" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
@@ -388,9 +383,18 @@ a[title]{cursor:pointer;}
               <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>&Aacute;rea *</label>
-            <input type="text" id="ll_area" placeholder="Ej: Comercial Canal Moderno" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>&Aacute;rea *</label>
+              <input type="text" id="ll_area" placeholder="Ej: Comercial Canal Moderno" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
+            <div class="form-group">
+              <label>Puesto solicitado *</label>
+              <select id="ll_puesto_sel" onchange="seleccionarPuestoLider('ll',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+                <option value="">Selecciona un puesto...</option>
+              </select>
+              <input type="text" id="ll_puesto" placeholder="Escribe el nombre del nuevo puesto..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -407,7 +411,8 @@ a[title]{cursor:pointer;}
               <select id="ll_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
                 <option value="">Selecciona...</option>
                 <option value="60">Gerente / Sub Gerente</option>
-                <option value="35">Jefe / Supervisor / Especialista</option>
+                <option value="35">Jefe / Supervisor</option>
+                <option value="30e">Especialista / Coordinador</option>
                 <option value="30">Analista / Ejecutivo</option>
                 <option value="30">T&eacute;cnico / Asistente</option>
                 <option value="25">Practicante / Auxiliar</option>
@@ -415,16 +420,27 @@ a[title]{cursor:pointer;}
             </div>
           </div>
           <div class="form-group"><label>Motivo *</label>
-            <select id="ll_motivo" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <select id="ll_motivo" onchange="toggleReemplazoLider('ll')" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
               <option value="reemplazo">Reemplazo</option>
               <option value="nuevo">Nuevo puesto</option>
             </select>
           </div>
+          <div id="ll_reemplazoField" style="display:none;flex-direction:column;gap:10px;">
+            <div class="form-group">
+              <label>Nombre del colaborador a reemplazar *</label>
+              <input type="text" id="ll_reemplazo_nombre" placeholder="Ej: Juan Pérez García" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
+            <div class="form-group">
+              <label>Fecha de cese *</label>
+              <input type="date" id="ll_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
+          </div>
           <div class="form-group"><label>Descripci&oacute;n y requisitos *</label><textarea id="ll_desc" style="height:120px;" placeholder="Describe el perfil que necesitas: experiencia requerida, habilidades clave, responsabilidades principales..."></textarea></div>
           <div class="form-group"><label>Tu DNI (para seguimiento)</label><input type="text" id="ll_dni" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
           <button class="btn btn-accent" onclick="guardarSolicitudLogin()" style="width:100%;">Enviar solicitud &rarr;</button>
           <button class="btn btn-secondary" onclick="toggleFormLiderLogin()" style="width:100%;">Cancelar</button>
+        </div>
         </div>
 
         <!-- Separador -->
@@ -435,13 +451,17 @@ a[title]{cursor:pointer;}
         </div>
 
         <!-- Login DNI -->
-        <div style="font-size:13px;color:var(--muted);text-align:left;font-weight:500;">Sigue tus procesos activos</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:-8px;line-height:1.5;">Ingresa tu DNI para ver el avance, revisar candidatos y dar tu feedback:</div>
-        <div class="form-group">
-          <label>Tu DNI</label>
-          <input type="text" id="liderDniInput" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')accederLider()">
+        <div style="text-align:left;">
+          <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;">Sigue tus procesos activos</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;">Ingresa tu DNI para ver el avance, revisar candidatos y dar tu feedback.</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="form-group" style="flex:1;margin-bottom:0;">
+              <label>Tu DNI</label>
+              <input type="text" id="liderDniInput" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')accederLider()" style="width:100%;">
+            </div>
+            <button class="btn btn-accent" onclick="accederLider()" title="Ingresa al portal con tu DNI para ver tus procesos y candidatos" style="white-space:nowrap;padding:10px 20px;">Ingresar &rarr;</button>
+          </div>
         </div>
-        <button class="btn btn-accent" onclick="accederLider()" title="Ingresa al portal con tu DNI para ver tus procesos y candidatos">Ingresar &rarr;</button>
       </div>
     </div>
 
@@ -498,7 +518,8 @@ a[title]{cursor:pointer;}
             <select id="lf_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
               <option value="60">Gerente / Sub Gerente (60 días)</option>
-              <option value="35">Jefe / Supervisor / Especialista (35 días)</option>
+              <option value="35">Jefe / Supervisor (35 días)</option>
+              <option value="30e">Especialista / Coordinador (30 días)</option>
               <option value="30">Analista / Ejecutivo (30 días)</option>
               <option value="30">Técnico / Asistente (30 días)</option>
               <option value="25">Practicante / Auxiliar (25 días)</option>
@@ -506,11 +527,21 @@ a[title]{cursor:pointer;}
           </div>
           <div class="form-group">
             <label>Motivo *</label>
-            <select id="lf_motivo" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            <select id="lf_motivo" onchange="toggleReemplazoLider('lf')" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
               <option value="reemplazo">Reemplazo</option>
               <option value="nuevo">Nuevo puesto</option>
             </select>
+          </div>
+          <div id="lf_reemplazoField" style="display:none;flex-direction:column;gap:10px;">
+            <div class="form-group">
+              <label>Nombre del colaborador a reemplazar *</label>
+              <input type="text" id="lf_reemplazo_nombre" placeholder="Ej: Juan Pérez García" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
+            <div class="form-group">
+              <label>Fecha de cese *</label>
+              <input type="date" id="lf_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+            </div>
           </div>
         </div>
         <div class="form-group"><label>Descripción y requisitos *</label>
@@ -546,11 +577,7 @@ a[title]{cursor:pointer;}
         <div style="margin-bottom:16px;"><div class="section-head">Feedback de entrevistas presenciales</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Califica candidatos que ya entrevistaste en persona</div></div>
         <div id="feedbackPanel"></div>
       </div>
-      <div class="divider"></div>
-      <div style="margin-bottom:28px;">
-        <div style="margin-bottom:16px;"><div class="section-head">Perfiles pendientes de completar</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Agrega requisitos deseables a tus solicitudes</div></div>
-        <div id="liderPerfilesPendientes"></div>
-      </div>
+
     </div>
   </div>
 </div>
@@ -654,7 +681,8 @@ function cargarPuestosDefault() {
 
 const PLAZOS = {
   '60':{label:'Gerente / Sub Gerente',dias:60},
-  '35':{label:'Jefe / Supervisor / Especialista',dias:35},
+  '35':{label:'Jefe / Supervisor',dias:35},
+  '30e':{label:'Especialista / Coordinador',dias:30},
   '30':{label:'Analista / Ejecutivo / Técnico / Asistente',dias:30},
   '25':{label:'Practicante / Auxiliar',dias:25}
 };
@@ -762,6 +790,95 @@ function accederLider() {
 // ══════════════════════════════════
 // LÍDER — dashboard
 // ══════════════════════════════════
+// ══════════════════════════════════
+// ETAPAS DEL PROCESO
+// ══════════════════════════════════
+var ETAPAS = [
+  { id:'hc',        label:'Validar HC y Presupuesto',          auto: false },
+  { id:'convoc',    label:'Convocatoria Interna/Externa',       auto: true  },
+  { id:'eval',      label:'Evaluación de Postulantes GTH',      auto: true  },
+  { id:'longlist',  label:'Envío de Longlist',                  auto: true  },
+  { id:'entrevista',label:'Entrevista Técnica y Feedback',      auto: true  },
+  { id:'oferta',    label:'Envío de Oferta Laboral',            auto: false },
+  { id:'tramites',  label:'Trámites de Ingreso',                auto: false }
+];
+
+function calcularEtapaActual(req, candidatos, feedbacks) {
+  // Etapas manuales vienen del campo etapas de la req
+  var etapasCompletadas = req.etapas || {};
+
+  // Etapa 1: HC — manual
+  if (!etapasCompletadas.hc) return 0;
+  // Etapa 2: Convocatoria — automática (req existe)
+  // Etapa 3: Evaluación — hay candidatos
+  var hayCandidatos = candidatos.some(function(c){ return c.puesto===req.puesto; });
+  if (!hayCandidatos) return 1;
+  // Etapa 4: Longlist — hay candidatos visibles para el líder
+  var hayVisibles = candidatos.some(function(c){ return c.puesto===req.puesto && c.visibleLider; });
+  if (!hayVisibles) return 2;
+  // Etapa 5: Feedback — hay feedback del líder
+  var hayFeedback = feedbacks.some(function(f){ return f.puesto===req.puesto; });
+  if (!hayFeedback) return 3;
+  if (!etapasCompletadas.oferta) return 4;
+  if (!etapasCompletadas.tramites) return 5;
+  return 6;
+}
+
+function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
+  var etapaActual = calcularEtapaActual(req, candidatos, feedbacks);
+  var etapasComp  = req.etapas || {};
+  var html = '<div style="margin:16px 0 20px;">';
+  html += '<div style="display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:4px;">';
+
+  ETAPAS.forEach(function(e, i) {
+    var done   = i < etapaActual || etapasComp[e.id];
+    var active = i === etapaActual;
+    var color  = done ? '#2d7a4f' : active ? '#e8623a' : '#c8c5bf';
+    var bgCol  = done ? '#edf7f1' : active ? '#fef2ee' : 'var(--surface2)';
+    var icon   = done ? '✓' : active ? '●' : (i+1);
+
+    html += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:80px;">';
+    // Línea izquierda
+    html += '<div style="display:flex;align-items:center;width:100%;">';
+    if (i > 0) html += '<div style="flex:1;height:2px;background:'+(i<=etapaActual?'#2d7a4f':'#e0ddd8')+';"></div>';
+    else html += '<div style="flex:1;"></div>';
+    // Círculo
+    html += '<div style="width:28px;height:28px;border-radius:50%;background:'+color+';color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">'+icon+'</div>';
+    // Línea derecha
+    if (i < ETAPAS.length-1) html += '<div style="flex:1;height:2px;background:'+(i<etapaActual?'#2d7a4f':'#e0ddd8')+';"></div>';
+    else html += '<div style="flex:1;"></div>';
+    html += '</div>';
+    // Label
+    html += '<div style="font-size:10px;color:'+(active?'#e8623a':done?'#2d7a4f':'var(--muted)')+';text-align:center;margin-top:5px;font-weight:'+(active?'600':'400')+';line-height:1.3;padding:0 2px;">'+e.label+'</div>';
+
+    // Botón manual si es reclutador y la etapa es manual y es la actual
+    if (isReclutador && !e.auto && active) {
+      html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:4px;font-size:10px;padding:2px 8px;background:#e8623a;color:white;border:none;border-radius:4px;cursor:pointer;">Confirmar</button>';
+    }
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+function avanzarEtapa(reqId, etapaId) {
+  var numId = parseInt(reqId)||reqId;
+  requisiciones = requisiciones.map(function(r) {
+    if (r.id===numId || r.id===reqId) {
+      var etapas = Object.assign({}, r.etapas||{});
+      etapas[etapaId] = new Date().toLocaleDateString('es-PE');
+      return Object.assign({},r,{etapas:etapas});
+    }
+    return r;
+  });
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  renderLiderProcesos();
+  renderLiderCandidatos();
+  toast('Etapa actualizada ✓');
+}
+
 function renderLiderProcesos() {
   var panel = document.getElementById('liderProcesos');
   if (!panel) return;
@@ -781,6 +898,14 @@ function renderLiderProcesos() {
     html += '<div><div style="font-size:14px;font-weight:500;">' + r.puesto + '</div>';
     html += '<div style="font-size:12px;color:var(--muted);">' + r.area + ' &middot; ' + r.sede + '</div></div>';
     html += '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + c.bg + ';color:' + c.t + ';">' + r.estado + '</span></div>';
+    // Línea de tiempo
+    safeFetch('/api/jobs?type=results').then(function(rd){
+      var cands = (rd&&rd.results)?rd.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+      var fbs   = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+      var ltEl  = document.getElementById('lt_'+r.id);
+      if (ltEl) ltEl.innerHTML = renderLineaTiempo(r, cands, fbs, false);
+    });
+    html += '<div id="lt_'+r.id+'"><div style="font-size:11px;color:var(--muted);padding:8px 0;">Cargando etapas...</div></div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;margin-top:8px;">';
     html += '<div style="color:var(--muted);">Inicio: <strong style="color:var(--text);">' + (r.fechaInicio||r.fecha) + '</strong></div>';
     html += '<div style="color:var(--muted);">L&iacute;mite: <strong style="color:#c0392b;">' + r.fechaLimite + '</strong></div>';
@@ -788,6 +913,19 @@ function renderLiderProcesos() {
     html += '</div>';
     if (r.minimos) html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;"><strong style="color:var(--text);">M&iacute;nimos:</strong> ' + r.minimos.substring(0,150) + (r.minimos.length>150?'&hellip;':'') + '</div>';
     if (r.deseables) html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Deseables:</strong> ' + r.deseables + '</div>';
+    // Historial de cambios
+    var histKey = 'rhist_' + (r.jobId||'');
+    var hist = JSON.parse(localStorage.getItem(histKey)||'[]');
+    if (hist.length) {
+      html += '<div style="margin-top:12px;border-top:0.5px solid var(--border2);padding-top:10px;">';
+      html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Historial de cambios al perfil</div>';
+      hist.slice().reverse().forEach(function(c){
+        html += '<div style="font-size:12px;color:var(--muted);line-height:1.6;display:flex;gap:8px;">';
+        html += '<span style="color:var(--text);font-weight:500;white-space:nowrap;">'+c.fecha+' '+c.hora+'</span>';
+        html += '<span>'+c.motivo+'</span></div>';
+      });
+      html += '</div>';
+    }
     html += '</div>';
     return html;
   }).join('');
@@ -875,7 +1013,7 @@ function toggleForm() {
   var f = document.getElementById('addJobForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) {
-    ['f_area','f_desc','f_instrucciones','f_emailLider','f_dniLider','f_horario','f_cese'].forEach(function(id){
+    ['f_area','f_desc','f_instrucciones','f_emailLider','f_dniLider','f_horario','f_cese','f_reemplazo_nombre'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.value='';
     });
     ['f_sede','f_nivel','f_motivo'].forEach(function(id){
@@ -886,11 +1024,10 @@ function toggleForm() {
     document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
     document.getElementById('formTitle').textContent = 'Nuevo puesto';
     document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
+    var mcw = document.getElementById('motivoCambioWrap'); if(mcw) mcw.style.display='none';
+    var mc = document.getElementById('f_motivoCambio'); if(mc) mc.value='';
     // Resetear selector de puesto
-    var sel = document.getElementById('f_area_sel');
-    if (sel) { poblarSelectAreas(); sel.value = ''; }
-    var pSel = document.getElementById('f_titulo_sel');
-    if (pSel) { pSel.innerHTML='<option value="">Primero selecciona un área</option>'; pSel.disabled=true; pSel.style.opacity='0.5'; }
+    poblarSelectPuestosDefault();
     var inp = document.getElementById('f_titulo');
     if (inp) { inp.value = ''; inp.style.display = 'none'; }
     document.getElementById('reqSection').style.display = 'block';
@@ -941,12 +1078,30 @@ function editJob(id) {
   }
   document.getElementById('formTitle').textContent = 'Editar puesto';
   document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
-  // Al editar, limpiar campos de solicitud y mostrar sección
-  ['f_horario','f_cese'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-  ['f_sede','f_nivel','f_motivo'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
-  document.getElementById('plazoInfo').style.display='none';
-  document.getElementById('reemplazoField').style.display='none';
+  var mcw2 = document.getElementById('motivoCambioWrap'); if(mcw2) mcw2.style.display='block';
+  var mc2 = document.getElementById('f_motivoCambio'); if(mc2) mc2.value='';
+  // Precargar campos de solicitud desde la última requisición
+  var jobReqsEdit = requisiciones.filter(function(r){ return r.jobId===id; });
+  var lastReqEdit = jobReqsEdit.length ? jobReqsEdit[jobReqsEdit.length-1] : null;
+  if (lastReqEdit) {
+    var sedeEl = document.getElementById('f_sede'); if(sedeEl) sedeEl.value = lastReqEdit.sede||'';
+    var horEl = document.getElementById('f_horario'); if(horEl) horEl.value = lastReqEdit.horario||'';
+    var nivEl = document.getElementById('f_nivel'); if(nivEl) nivEl.value = lastReqEdit.nivelVal||lastReqEdit.nivel||'';
+    var motEl = document.getElementById('f_motivo'); if(motEl) motEl.value = lastReqEdit.motivo||'';
+    var fiEl = document.getElementById('f_fechaInicio'); if(fiEl) fiEl.value = lastReqEdit.fechaInicioRaw||new Date().toISOString().slice(0,10);
+    var ceEl = document.getElementById('f_cese'); if(ceEl) ceEl.value = lastReqEdit.cese||'';
+    var rnEl = document.getElementById('f_reemplazo_nombre'); if(rnEl) rnEl.value = lastReqEdit.reemplazoNombre||'';
+    if (lastReqEdit.motivo==='reemplazo') {
+      var rf = document.getElementById('reemplazoField'); if(rf){rf.style.display='flex';rf.style.flexDirection='column';}
+    }
+    calcularPlazo();
+  } else {
+    ['f_horario','f_cese','f_reemplazo_nombre'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    ['f_sede','f_nivel','f_motivo'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
+    document.getElementById('plazoInfo').style.display='none';
+    document.getElementById('reemplazoField').style.display='none';
+  }
   document.getElementById('reqSection').style.display = 'block';
   f.scrollIntoView({behavior:'smooth'});
 }
@@ -976,6 +1131,74 @@ function saveJobOnly() {
     jobs.push(jobData);
     toast('Puesto guardado');
   }
+  // Guardar jobId antes de resetear editingJobId
+  var savedJobId = editingJobId || jobData.id;
+
+  // Si hay campos de solicitud completos, crear o actualizar requisición
+  var sedeSelect2 = document.getElementById('f_sede').value;
+  var sedeOtra2   = document.getElementById('f_otraSede') ? document.getElementById('f_otraSede').value.trim() : '';
+  var sede2       = sedeSelect2 === 'Otras' ? (sedeOtra2||'Otras') : sedeSelect2;
+  var horario2    = document.getElementById('f_horario').value.trim();
+  var nivel2      = document.getElementById('f_nivel').value;
+  var motivo2     = document.getElementById('f_motivo').value;
+  var fechaInicio2 = document.getElementById('f_fechaInicio').value;
+  var cese2       = document.getElementById('f_cese') ? document.getElementById('f_cese').value : '';
+  var rnombre2    = document.getElementById('f_reemplazo_nombre') ? document.getElementById('f_reemplazo_nombre').value.trim() : '';
+
+  if (sede2 || horario2 || nivel2 || motivo2) {
+    var diasPlazo2 = nivel2==='30e'?30:parseInt(nivel2)||0;
+    var fechaLimDate2 = fechaInicio2 ? new Date(fechaInicio2) : new Date();
+    if (diasPlazo2) fechaLimDate2.setDate(fechaLimDate2.getDate()+diasPlazo2);
+    var nivelLabel2 = PLAZOS[nivel2] ? PLAZOS[nivel2].label : nivel2;
+    var reqData2 = {
+      sede:sede2, horario:horario2, nivelVal:nivel2, nivel:nivelLabel2,
+      motivo:motivo2, fechaInicioRaw:fechaInicio2,
+      fechaInicio:fechaInicio2?new Date(fechaInicio2).toLocaleDateString('es-PE'):'',
+      diasPlazo:diasPlazo2,
+      fechaLimiteRaw:fechaLimDate2.toISOString(),
+      fechaLimite:fechaLimDate2.toLocaleDateString('es-PE'),
+      reemplazoNombre:rnombre2, cese:cese2
+    };
+
+    // Buscar requisiciones de este puesto
+    var jobReqs2 = requisiciones.filter(function(r){ return r.jobId===savedJobId; });
+    if (jobReqs2.length) {
+      // Actualizar la última
+      var lastReqId2 = jobReqs2[jobReqs2.length-1].id;
+      requisiciones = requisiciones.map(function(r){
+        return r.id===lastReqId2 ? Object.assign({},r,reqData2) : r;
+      });
+    } else {
+      // Crear una nueva requisición básica con estos datos
+      var job2 = jobs.find(function(j){ return j.id===savedJobId; }) || jobData;
+      requisiciones.push(Object.assign({
+        id: Date.now(), jobId: savedJobId,
+        fecha: new Date().toLocaleDateString('es-PE'),
+        puesto: job2.titulo||titulo, area: job2.area||'',
+        gerencia: job2.gerencia||'',
+        emailLider: job2.emailLider||'', dniLider: job2.dniLider||'',
+        estado: 'Pendiente', desiderablesCompletados: false,
+        minimos: job2.desc||desc, deseables: ''
+      }, reqData2));
+    }
+    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+    syncReqsToServer(requisiciones);
+  }
+
+  // Guardar historial de cambio
+  var motivoCambio = document.getElementById('f_motivoCambio') ? document.getElementById('f_motivoCambio').value.trim() : '';
+  if (savedJobId && motivoCambio) {
+    var cambio = {
+      fecha: new Date().toLocaleDateString('es-PE'),
+      hora: new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+      motivo: motivoCambio
+    };
+    var histKey = 'rhist_' + savedJobId;
+    var hist = JSON.parse(localStorage.getItem(histKey)||'[]');
+    hist.push(cambio);
+    localStorage.setItem(histKey, JSON.stringify(hist));
+  }
+
   editingJobId = null;
   localStorage.setItem('rjobs', JSON.stringify(jobs));
   syncJobsToServer(jobs);
@@ -1023,7 +1246,7 @@ function saveJobAndCreateReq() {
   syncJobsToServer(jobs);
 
   // Crear snapshot del perfil completo al momento de la solicitud
-  var diasPlazo = parseInt(nivel);
+  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
   var fechaLimiteDate = new Date(fechaInicio);
   fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
 
@@ -1047,6 +1270,7 @@ function saveJobAndCreateReq() {
     nivelVal: nivel, nivel: PLAZOS[nivel]?PLAZOS[nivel].label:nivel,
     diasPlazo: diasPlazo, motivo: motivo,
     cese: motivo==='reemplazo'?document.getElementById('f_cese').value:'',
+    reemplazoNombre: motivo==='reemplazo'?(document.getElementById('f_reemplazo_nombre')?document.getElementById('f_reemplazo_nombre').value.trim():''):'',
     minimos: minimos, deseables: '',
     emailLider: emailLider, dniLider: dniLider,
     estado: 'En proceso', desiderablesCompletados: false,
@@ -1139,7 +1363,7 @@ function cambiarEstadoReq(id, estado) {
 function abrirNuevaSolicitud(id) {
   editJob(id);
   // Limpiar campos solicitud
-  ['f_horario','f_cese'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
+  ['f_horario','f_cese','f_reemplazo_nombre'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
   ['f_sede','f_nivel','f_motivo'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
   document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
   document.getElementById('plazoInfo').style.display='none';
@@ -1173,7 +1397,15 @@ function calcularPlazo() {
 }
 
 function toggleReemplazo() {
-  document.getElementById('reemplazoField').style.display = document.getElementById('f_motivo').value==='reemplazo'?'block':'none';
+  var show = document.getElementById('f_motivo').value === 'reemplazo';
+  var el = document.getElementById('reemplazoField');
+  if (el) { el.style.display = show ? 'flex' : 'none'; el.style.flexDirection = 'column'; }
+}
+
+function toggleReemplazoLider(prefix) {
+  var show = (document.getElementById(prefix+'_motivo')||{}).value === 'reemplazo';
+  var el = document.getElementById(prefix+'_reemplazoField');
+  if (el) { el.style.display = show ? 'flex' : 'none'; el.style.flexDirection = 'column'; }
 }
 
 // ══════════════════════════════════
@@ -1245,12 +1477,12 @@ function renderJobsList() {
           '</div>' +
           '<div class="puesto-body" id="body-'+j.id+'">' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--muted);margin-bottom:10px;">' +
-              '<div>Sede: <strong style="color:var(--text);">'+(j.sede||'—')+'</strong></div>' +
-              '<div>Horario: <strong style="color:var(--text);">'+(j.horario||'—')+'</strong></div>' +
-              '<div>Nivel: <strong style="color:var(--text);">'+(j.nivel||'—')+'</strong></div>' +
-              '<div>Motivo: <strong style="color:var(--text);">'+(j.motivo==='reemplazo'?'Reemplazo':'Nuevo puesto')+'</strong></div>' +
-              '<div>Inicio: <strong style="color:var(--text);">'+(j.fechaInicio||'—')+'</strong></div>' +
-              '<div>L&iacute;mite: <strong style="color:#c0392b;">'+(j.fechaLimite||'—')+'</strong></div>' +
+              '<div>Sede: <strong style="color:var(--text);">'+(lastReq&&lastReq.sede?lastReq.sede:'—')+'</strong></div>' +
+              '<div>Horario: <strong style="color:var(--text);">'+(lastReq&&lastReq.horario?lastReq.horario:'—')+'</strong></div>' +
+              '<div>Nivel: <strong style="color:var(--text);">'+(lastReq&&lastReq.nivel?lastReq.nivel:'—')+'</strong></div>' +
+              '<div>Motivo: <strong style="color:var(--text);">'+(lastReq?(lastReq.motivo==='reemplazo'?'Reemplazo':'Nuevo puesto'):'—')+'</strong></div>' +
+              '<div>Inicio: <strong style="color:var(--text);">'+(lastReq&&lastReq.fechaInicio?lastReq.fechaInicio:'—')+'</strong></div>' +
+              '<div>L&iacute;mite: <strong style="color:#c0392b;">'+(lastReq&&lastReq.fechaLimite?lastReq.fechaLimite:'—')+'</strong></div>' +
             '</div>' +
             '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;"><strong style="color:var(--text);">Descripci&oacute;n:</strong> '+j.desc.substring(0,200)+(j.desc.length>200?'&hellip;':'')+'</div>' +
             (j.minimos?'<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;"><strong style="color:var(--text);">M&iacute;nimos:</strong> '+j.minimos.substring(0,150)+(j.minimos.length>150?'&hellip;':'')+'</div>':'') +
@@ -1849,11 +2081,13 @@ function guardarSolicitudLogin() {
 
   if (!puesto||!area||!sede||!nivel||!motivo||!desc) { toast('Completa todos los campos obligatorios'); return; }
 
-  var diasPlazo = parseInt(nivel);
+  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
   var fechaLimDate = new Date(); fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
   var nivelLabel = PLAZOS[nivel] ? PLAZOS[nivel].label : nivel;
 
   var gerencia = document.getElementById('ll_gerencia') ? document.getElementById('ll_gerencia').value : '';
+  var reemplazoNombreLL = motivo === 'reemplazo' ? (document.getElementById('ll_reemplazo_nombre')?document.getElementById('ll_reemplazo_nombre').value.trim():'') : '';
+  var ceseLL = motivo === 'reemplazo' ? (document.getElementById('ll_cese')?document.getElementById('ll_cese').value:'') : '';
   var req = {
     id: Date.now(), jobId: null,
     fecha: new Date().toLocaleDateString('es-PE'),
@@ -1864,6 +2098,7 @@ function guardarSolicitudLogin() {
     puesto: puesto, area: area, gerencia: gerencia, sede: sede, horario: '—',
     nivelVal: nivel, nivel: nivelLabel,
     diasPlazo: diasPlazo, motivo: motivo, cese: '',
+    reemplazoNombre: reemplazoNombreLL, cese: ceseLL,
     minimos: desc, deseables: '',
     emailLider: '', dniLider: dni,
     estado: 'Pendiente', desiderablesCompletados: false,
@@ -1934,7 +2169,7 @@ function guardarSolicitudLider() {
     toast('Completa todos los campos obligatorios'); return;
   }
 
-  var diasPlazo = parseInt(nivel);
+  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
   var fechaLimiteDate = new Date(fechaInicio);
   fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
 
@@ -1947,6 +2182,8 @@ function guardarSolicitudLider() {
     fechaLimite: fechaLimiteDate.toLocaleDateString('es-PE'),
     fechaLimiteRaw: fechaLimiteDate.toISOString(),
     puesto: puesto, area: area, gerencia: (document.getElementById('lf_gerencia')?document.getElementById('lf_gerencia').value:''), sede: sede, horario: horario,
+    reemplazoNombre: motivo==='reemplazo'?(document.getElementById('lf_reemplazo_nombre')?document.getElementById('lf_reemplazo_nombre').value.trim():''):'',
+    cese: motivo==='reemplazo'?(document.getElementById('lf_cese')?document.getElementById('lf_cese').value:''):'',
     nivelVal: nivel, nivel: PLAZOS[nivel] ? PLAZOS[nivel].label : nivel,
     diasPlazo: diasPlazo, motivo: motivo, cese: '',
     minimos: desc, deseables: deseables,
@@ -1979,6 +2216,26 @@ function guardarSolicitudLider() {
       '<button onclick="document.getElementById(&quot;liderConfirmOverlay&quot;).remove()" class="btn btn-accent">Entendido &#10003;</button>' +
     '</div></div>';
   document.body.insertAdjacentHTML('beforeend', msgHtml);
+}
+
+// ══════════════════════════════════
+// HELPERS UI
+// ══════════════════════════════════
+function toggleInstrucciones() {
+  var panel = document.getElementById('instrPanel');
+  var chev  = document.getElementById('instrChevron');
+  if (!panel) return;
+  var open = panel.style.display === 'flex';
+  panel.style.display = open ? 'none' : 'flex';
+  panel.style.flexDirection = 'column';
+  if (chev) chev.innerHTML = open ? '&#9660;' : '&#9650;';
+}
+
+function toggleOtraSede(inputId, val) {
+  var el = document.getElementById(inputId);
+  if (!el) return;
+  el.style.display = val === 'Otras' ? 'block' : 'none';
+  if (val !== 'Otras') el.value = '';
 }
 
 // ══════════════════════════════════
