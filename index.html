@@ -1061,6 +1061,11 @@ function calcularSLAAlerts() {
   return alerts;
 }
 
+function irAPuesto(jid) {
+  showTab('puestos', document.getElementById('btn-puestos'));
+  setTimeout(function(){ abrirDetalleJob(jid); }, 200);
+}
+
 function verificarAlertas() {
   var banner = document.getElementById('alertaVencimiento');
   if (!banner) return;
@@ -1079,7 +1084,10 @@ function verificarAlertas() {
     return '<div style="font-size:12px;line-height:1.8;">&bull; <strong>'+r.puesto+'</strong> &mdash; '+(dias<=0?'<span style="color:#c0392b;font-weight:600;">VENCIDO</span>':'vence en <span style="color:#c0392b;font-weight:600;">'+dias+' d&iacute;a'+(dias!==1?'s':'')+'</span>')+' ('+r.area+')</div>';
   }).join('');
   var slaItems = slaAlerts.map(function(a){
-    return '<div style="font-size:12px;line-height:1.8;">&bull; <strong>'+a.puesto+'</strong> &mdash; etapa <em>'+a.etapa+'</em> lleva <span style="color:#c0392b;font-weight:600;">'+a.dias+' d&iacute;as</span> (SLA: '+a.sla+')</div>';
+    var jobMatch = jobs.find(function(j){ return j.titulo===a.puesto; });
+    var jid = jobMatch ? jobMatch.id : 0;
+    var linkHtml = jobMatch ? '<span onclick="irAPuesto('+jid+')" style="font-size:11px;color:var(--accent2);text-decoration:underline;cursor:pointer;"> Ver puesto \u2192</span>' : '';
+    return '<div style="font-size:12px;line-height:1.8;">&bull; <strong>'+a.puesto+'</strong> &mdash; etapa <em>'+a.etapa+'</em> lleva <span style="color:#c0392b;font-weight:600;">'+a.dias+' d&iacute;as</span> (SLA: '+a.sla+')'+linkHtml+'</div>';
   }).join('');
   banner.innerHTML =
     (proximas.length?'<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:'+(slaAlerts.length?'8px':'0')+';"><span style="font-size:16px;">&#9888;</span><div><div style="font-size:12px;font-weight:600;margin-bottom:4px;color:#7a5000;">Procesos pr\u00f3ximos a vencer</div>'+items+'</div></div>':'')+
@@ -1608,21 +1616,7 @@ function abrirDetalleJob(id) {
         '<div style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;">'+j.desc+'</div>'+
       '</div>'+
       renderHistorialSolicitudes(id)+
-      // Botón HC
-      (function(){
-        var hcEtapas = lastReq && lastReq.etapas ? lastReq.etapas : {};
-        var hcOk = !!hcEtapas.hc;
-        var reqId = lastReq ? lastReq.id : null;
-        var hcBtn = reqId
-          ? '<button class="btn btn-sm '+(hcOk?'btn-secondary':'btn-primary')+'" data-req-id="'+reqId+'" onclick="toggleHC(this)" style="'+(hcOk?'text-decoration:line-through;opacity:0.7;':'')+'">'+
-              (hcOk?'✓ HC Confirmado':'✓ Confirmar HC y Presupuesto')+
-            '</button>'
-          : '';
-        return '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;border:0.5px solid var(--border2);">'+
-          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Acciones del proceso</div>'+
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+hcBtn+'</div>'+
-        '</div>';
-      })()+
+      renderHCBoton(lastReq)+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:0.5px solid var(--border2);padding-top:14px;">'+
         '<button class="btn btn-secondary btn-sm" data-job-id="'+id+'" onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove();editJob(this.dataset.jobId*1)">Editar perfil</button>'+
         '<button class="btn btn-accent btn-sm" data-job-id="'+id+'" onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove();abrirNuevaSolicitud(this.dataset.jobId*1)">+ Nueva solicitud</button>'+
@@ -1633,25 +1627,44 @@ function abrirDetalleJob(id) {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
+// ── Renderizar sección HC en modal ──
+function renderHCBoton(lastReq) {
+  if (!lastReq) return '';
+  var etapas = lastReq.etapas || {};
+  var hcOk = !!etapas.hc;
+  var reqId = lastReq.id;
+  var btnLabel = hcOk ? '✓ HC Confirmado' : '✓ Confirmar HC y Presupuesto';
+  var btnClass = hcOk ? 'btn-secondary' : 'btn-primary';
+  var btnStyle = hcOk ? 'text-decoration:line-through;opacity:0.7;' : '';
+  return '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;border:0.5px solid var(--border2);">'
+    + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Acciones del proceso</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+    + '<button class="btn btn-sm '+btnClass+'" data-req-id="'+reqId+'" data-job-id="'+lastReq.jobId+'" onclick="toggleHC(this)" style="'+btnStyle+'">'+btnLabel+'</button>'
+    + '</div></div>';
+}
+
 // ── Toggle HC desde modal del puesto ──
 function toggleHC(btn) {
   var reqId = parseInt(btn.dataset.reqId) || btn.dataset.reqId;
+  var jobId = parseInt(btn.dataset.jobId) || 0;
   var req = requisiciones.find(function(r){ return r.id===reqId; });
   if (!req) return;
   var etapas = Object.assign({}, req.etapas||{});
   var wasOk = !!etapas.hc;
+  var overlay = document.getElementById('jobDetailOverlay');
   if (wasOk) {
-    // Desmarcar — pedir motivo
     mostrarPopupMotivo('¿Por qué se revierte la confirmación de HC?', function(motivo) {
       delete etapas.hc;
       actualizarEtapasReq(reqId, etapas, 'HC revertido: '+motivo, null);
-      document.getElementById('jobDetailOverlay') && document.getElementById('jobDetailOverlay').remove();
+      if (overlay) overlay.remove();
+      if (jobId) setTimeout(function(){ abrirDetalleJob(jobId); }, 150);
     });
   } else {
     etapas.hc = new Date().toLocaleDateString('es-PE');
     actualizarEtapasReq(reqId, etapas, 'HC y Presupuesto confirmado', null);
-    document.getElementById('jobDetailOverlay') && document.getElementById('jobDetailOverlay').remove();
+    if (overlay) overlay.remove();
     toast('HC y Presupuesto confirmado ✓');
+    if (jobId) setTimeout(function(){ abrirDetalleJob(jobId); }, 150);
   }
 }
 
@@ -1940,19 +1953,7 @@ function mostrarPopupMotivo(titulo, onConfirm) {
 }
 
 // ── Actualizar etapas y bitácora ──
-function actualizarEtapasReq(reqId, etapas, msg, candidato) {
-  var numId = parseInt(reqId)||reqId;
-  requisiciones = requisiciones.map(function(r) {
-    if (r.id!==numId && r.id!==reqId) return r;
-    var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-    bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:msg,candidato:candidato||''});
-    return Object.assign({},r,{etapas:etapas,bitacora:bita});
-  });
-  localStorage.setItem('rreqs',JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-  renderJobsList();
-  verificarAlertas();
-}
+
 
 function toggleVisibilidad(el) {
   var candidato = decodeURIComponent(el.dataset.id);
@@ -2036,7 +2037,7 @@ function renderTablaByPuesto(results) {
       (trOk?'✓':'○')+'</button>' : '<span style="color:var(--muted);font-size:12px;">—</span>')+
     '</td>';
 })()+
-+'<td style="padding:9px 12px;text-align:center;"><button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;">&#128465;</button></td>'
+        +'<td style="padding:9px 12px;text-align:center;"><button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;">&#128465;</button></td>'
         +'</tr>';
     }).join('');
     return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'
