@@ -727,22 +727,33 @@ var candidateUrl = window.location.origin + '/candidato.html';
 document.getElementById('shareUrl').textContent = candidateUrl;
 renderJobsList();
 poblarSelectPuestosDefault();
-verificarAlertas();
+// verificarAlertas se llama después de cargar datos del servidor
 
 (async function() {
+  // Cargar jobs
   var d = await safeFetch('/api/jobs');
   if (d && Array.isArray(d.jobs) && d.jobs.length) {
     jobs = d.jobs; localStorage.setItem('rjobs', JSON.stringify(jobs));
   } else {
-    // Si Upstash está vacío, cargar puestos predefinidos y sincronizar
     cargarPuestosDefault();
     syncJobsToServer(jobs);
   }
-  renderJobsList(); renderEnvioSelect();
+
+  // Cargar requisiciones ANTES de renderizar
   var dr = await safeFetch('/api/jobs?type=reqs');
   if (dr && Array.isArray(dr.reqs) && dr.reqs.length) {
     requisiciones = dr.reqs; localStorage.setItem('rreqs', JSON.stringify(requisiciones));
   }
+
+  // Cargar feedbacks
+  var df = await safeFetch('/api/jobs?type=feedbacks');
+  if (df && Array.isArray(df.feedbacks) && df.feedbacks.length) {
+    feedbacks = df.feedbacks; localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+  }
+
+  // Ahora renderizar con todos los datos cargados
+  renderJobsList();
+  renderEnvioSelect();
   verificarAlertas();
 })();
 
