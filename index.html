@@ -713,6 +713,57 @@ var PUESTOS_DEFAULT = [
     "emailLider": "",
     "dniLider": ""
   }
+,
+  {
+    "id": 1000007,
+    "titulo": "Jefe de Finanzas",
+    "area": "Finanzas",
+    "gerencia": "GAF",
+    "desc": "MISIÓN\nAsegurar la liquidez, rentabilidad y estabilidad financiera de la empresa mediante la correcta administración de recursos, gestión de tesorería y supervisión de la contabilidad.\n\nFUNCIONES PRINCIPALES\n• Gestionar el flujo de caja (Cash Flow) y proyecciones financieras.\n• Supervisar los estados financieros y asegurar el cumplimiento de las obligaciones tributarias.\n• Coordinar auditorías externas y relaciones con entidades bancarias.\n• Evaluar la viabilidad financiera de proyectos de inversión y presupuestos anuales.\n\nKPIs\nMargen de utilidad neta, Días de Cartera (DSO), ROI.",
+    "instrucciones": "",
+    "emailLider": "",
+    "dniLider": ""
+  },
+  {
+    "id": 1000008,
+    "titulo": "Coordinador de Gestion Humana",
+    "area": "Gestión del Talento Humano",
+    "gerencia": "Gestión del Talento Humano",
+    "desc": "MISIÓN\nEjecutar los procesos tácticos de RR.HH. para asegurar la correcta administración del personal, el cumplimiento legal y el desarrollo de la cultura organizacional.\n\nFUNCIONES PRINCIPALES\n• Supervisar el proceso de nómina (planillas) y beneficios sociales.\n• Coordinar los procesos de reclutamiento, selección e inducción.\n• Asegurar el cumplimiento de la normativa laboral vigente y relaciones sindicales.\n• Implementar planes de capacitación y evaluaciones de desempeño.\n\nKPIs\nÍndice de rotación, Clima organizacional, Cumplimiento del plan de capacitación.",
+    "instrucciones": "",
+    "emailLider": "",
+    "dniLider": ""
+  },
+  {
+    "id": 1000009,
+    "titulo": "Jefe de TI",
+    "area": "Tecnologías de la Información",
+    "gerencia": "Gerencia de Innovación y Nuevos Negocios",
+    "desc": "MISIÓN\nLiderar la infraestructura tecnológica y los sistemas de información para garantizar la continuidad operativa y la seguridad de los datos.\n\nFUNCIONES PRINCIPALES\n• Administrar servidores, redes y la seguridad informática (Ciberseguridad).\n• Liderar la implementación y mantenimiento de sistemas ERP o herramientas de BI.\n• Gestionar el soporte técnico a usuarios finales y mantenimiento de hardware.\n• Establecer planes de contingencia y recuperación de desastres (DRP).\n\nKPIs\nTiempo de disponibilidad del sistema (Uptime), Tiempo promedio de resolución de tickets, Cumplimiento de presupuesto de IT.",
+    "instrucciones": "",
+    "emailLider": "",
+    "dniLider": ""
+  },
+  {
+    "id": 1000010,
+    "titulo": "Jefe de Operaciones",
+    "area": "Operaciones",
+    "gerencia": "Operaciones",
+    "desc": "MISIÓN\nOptimizar los procesos de la cadena de suministro para garantizar que el producto llegue al cliente final con la mayor eficiencia de costos y calidad.\n\nFUNCIONES PRINCIPALES\n• Planificar y supervisar la producción o el almacenamiento.\n• Controlar los niveles de inventario y optimizar el uso de almacenes.\n• Diseñar estrategias para reducir costos operativos y cuellos de botella.\n• Garantizar el cumplimiento de las normas de Seguridad y Salud en el Trabajo (SST).\n\nKPIs\nEficiencia operativa, Exactitud de Inventarios (ERI), Costo por unidad procesada.",
+    "instrucciones": "",
+    "emailLider": "",
+    "dniLider": ""
+  },
+  {
+    "id": 1000011,
+    "titulo": "Supervisor de Distribución",
+    "area": "Operaciones",
+    "gerencia": "Operaciones",
+    "desc": "MISIÓN\nCoordinar la logística de última milla para asegurar entregas a tiempo y en perfectas condiciones, optimizando el uso de la flota.\n\nFUNCIONES PRINCIPALES\n• Programar las rutas diarias de despacho y asignar unidades.\n• Monitorear en tiempo real el cumplimiento de las entregas y el gasto de combustible.\n• Gestionar la relación con transportistas tercerizados o flota propia.\n• Resolver incidencias en ruta (rechazos, devoluciones o accidentes).\n\nKPIs\nPedidos Entregados a Tiempo (OTIF), Costo de transporte por unidad, Porcentaje de rechazos/devoluciones.",
+    "instrucciones": "",
+    "emailLider": "",
+    "dniLider": ""
+  }
 ];
 
 // Cargar puestos default si Upstash está vacío
@@ -758,8 +809,16 @@ poblarSelectPuestosDefault();
   var d = await safeFetch('/api/jobs');
   if (d && Array.isArray(d.jobs) && d.jobs.length) {
     jobs = d.jobs; localStorage.setItem('rjobs', JSON.stringify(jobs));
+    // Agregar perfiles que falten del DEFAULT (nuevos perfiles agregados al código)
+    var existingIds = jobs.map(function(j){return j.id;});
+    var faltantes = PUESTOS_DEFAULT.filter(function(p){ return existingIds.indexOf(p.id)===-1; });
+    if (faltantes.length) {
+      faltantes.forEach(function(p){ jobs.push(Object.assign({},p,{emailLider:'',dniLider:''})); });
+      localStorage.setItem('rjobs', JSON.stringify(jobs));
+      syncJobsToServer(jobs);
+      console.log('[RecruitAI] Nuevos perfiles agregados:', faltantes.map(function(p){return p.titulo;}));
+    }
   } else if (!jobs.length) {
-    // Solo cargar defaults si no hay nada en Upstash NI en localStorage
     cargarPuestosDefault();
     syncJobsToServer(jobs);
   }
@@ -2744,8 +2803,26 @@ function guardarSolicitudLogin() {
   var gerencia = document.getElementById('ll_gerencia') ? document.getElementById('ll_gerencia').value : '';
   var reemplazoNombreLL = motivo === 'reemplazo' ? (document.getElementById('ll_reemplazo_nombre')?document.getElementById('ll_reemplazo_nombre').value.trim():'') : '';
   var ceseLL = motivo === 'reemplazo' ? (document.getElementById('ll_cese')?document.getElementById('ll_cese').value:'') : '';
+  // Crear job si no existe
+  var jobExistente = jobs.find(function(j){
+    return j.titulo && puesto && j.titulo.toLowerCase().trim() === puesto.toLowerCase().trim();
+  });
+  var jobId = jobExistente ? jobExistente.id : null;
+  if (!jobExistente) {
+    var nuevoJob = {
+      id: Date.now(),
+      titulo: puesto, area: area, gerencia: gerencia,
+      desc: desc, instrucciones: '',
+      emailLider: '', dniLider: dni || ''
+    };
+    jobs.push(nuevoJob);
+    jobId = nuevoJob.id;
+    localStorage.setItem('rjobs', JSON.stringify(jobs));
+    syncJobsToServer(jobs);
+  }
+
   var req = {
-    id: Date.now(), jobId: null,
+    id: Date.now() + 1, jobId: jobId,
     fecha: new Date().toLocaleDateString('es-PE'),
     fechaInicio: new Date().toLocaleDateString('es-PE'),
     fechaInicioRaw: new Date().toISOString().slice(0,10),
@@ -2753,7 +2830,7 @@ function guardarSolicitudLogin() {
     fechaLimiteRaw: fechaLimDate.toISOString(),
     puesto: puesto, area: area, gerencia: gerencia, sede: sede, horario: '—',
     nivelVal: nivel, nivel: nivelLabel,
-    diasPlazo: diasPlazo, motivo: motivo, cese: '',
+    diasPlazo: diasPlazo, motivo: motivo,
     reemplazoNombre: reemplazoNombreLL, cese: ceseLL,
     minimos: desc, deseables: '',
     emailLider: '', dniLider: dni,
@@ -2829,9 +2906,27 @@ function guardarSolicitudLider() {
   var fechaLimiteDate = new Date(fechaInicio);
   fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
 
+  // Crear job si no existe
+  var jobExistenteLf = jobs.find(function(j){
+    return j.titulo && puesto && j.titulo.toLowerCase().trim()===puesto.toLowerCase().trim();
+  });
+  var jobIdLf = jobExistenteLf ? jobExistenteLf.id : null;
+  if (!jobExistenteLf) {
+    var nuevoJobLf = {
+      id: Date.now(),
+      titulo: puesto, area: area,
+      gerencia: document.getElementById('lf_gerencia')?document.getElementById('lf_gerencia').value:'',
+      desc: desc, instrucciones: '', emailLider: '', dniLider: liderDni||''
+    };
+    jobs.push(nuevoJobLf);
+    jobIdLf = nuevoJobLf.id;
+    localStorage.setItem('rjobs', JSON.stringify(jobs));
+    syncJobsToServer(jobs);
+  }
+
   var req = {
-    id: Date.now(),
-    jobId: null,
+    id: Date.now() + 1,
+    jobId: jobIdLf,
     fecha: new Date().toLocaleDateString('es-PE'),
     fechaInicio: new Date(fechaInicio).toLocaleDateString('es-PE'),
     fechaInicioRaw: fechaInicio,
