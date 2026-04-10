@@ -2496,29 +2496,39 @@ function renderFeedbackPanel() {
               '<span style="color:var(--muted);font-size:12px;">'+(collapsed?'&#9660;':'&#9650;')+'</span>'+
             '</div>'+
           '</div>'+
-          '<div id="fbbody_'+key+'" style="display:'+(collapsed?'none':'flex')+';flex-direction:column;gap:14px;padding:16px;border-top:0.5px solid var(--border2);">'+
-            (c.fortalezas?'<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> '+c.fortalezas+'</div>':'')+
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'+starsHtml+'</div>'+
-            (vencido?'<div style="font-size:12px;color:#b8760a;background:#fef8ee;padding:8px 12px;border-radius:8px;">&#9200; Tiempo de edición vencido. Solo lectura.</div>':'')+
-            '<div class="form-group"><label>Comentarios de la entrevista presencial</label>'+
-              '<textarea id="fb_'+key+'" style="height:65px;" placeholder="Observaciones..." '+(vencido?'disabled':'')+'>'+( fb?fb.comentario||'':'')+'</textarea></div>'+
-            (!vencido?'<div style="display:flex;gap:8px;">'+
-              '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="saveFeedbackBtn(this)">Guardar feedback</button>'+
-              (fb?'<button class="btn btn-secondary btn-sm" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="deleteFeedbackBtn(this)">Borrar</button>':'')+
-            '</div>':'')+
-            (fb?(function(){
-              var cEnc2=encodeURIComponent(c.candidato); var pEnc2=encodeURIComponent(c.puesto);
-              var aptoOk=fb.apto===true; var noAptoOk=fb.apto===false; var esElegido=fb.elegido===true;
-              return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border2);">'+
-                '<span style="font-size:11px;color:var(--muted);font-weight:500;">¿Es apto?</span>'+
-                '<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="font-size:11px;padding:3px 10px;">'+(aptoOk?'✓ Apto':'Apto')+'</button>'+
-                '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="font-size:11px;padding:3px 10px;">'+(noAptoOk?'✗ No apto':'No apto')+'</button>'+
-                (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">🏆 Elegir</button>':'')+
-                (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>':'')+
-              '</div>';
-            })():'')+ 
-          '</div>'+
-        '</div>';
+          (function(){
+            var cEnc2=encodeURIComponent(c.candidato); var pEnc2=encodeURIComponent(c.puesto);
+            var aptoOk=fb?fb.apto===true:false; var noAptoOk=fb?fb.apto===false:false; var esElegido=fb?fb.elegido===true:false;
+            var bodyHtml = '<div id="fbbody_'+key+'" style="display:'+(collapsed?'none':'flex')+';flex-direction:column;gap:12px;padding:16px;border-top:0.5px solid var(--border2);">';
+            bodyHtml += c.fortalezas ? '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> '+c.fortalezas+'</div>' : '';
+            bodyHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'+starsHtml+'</div>';
+            if (vencido) bodyHtml += '<div style="font-size:12px;color:#b8760a;background:#fef8ee;padding:8px 12px;border-radius:8px;">&#9200; Tiempo de edición vencido. Solo lectura.</div>';
+            bodyHtml += '<div class="form-group" style="margin-bottom:0;"><label>Comentarios de la entrevista presencial</label><textarea id="fb_'+key+'" style="height:65px;" placeholder="Observaciones..." '+(vencido?'disabled':'')+'>'+( fb?fb.comentario||'':'')+'</textarea></div>';
+            // Sección apto/elegido + guardar (siempre visible si no vencido, en modo lectura si vencido)
+            bodyHtml += '<div style="background:var(--surface2);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;">';
+            if (!vencido) {
+              bodyHtml += '<div style="font-size:11px;color:var(--muted);line-height:1.5;">&#128161; Puedes marcar varios candidatos como aptos y luego elegir uno como candidato final.</div>';
+              bodyHtml += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
+              bodyHtml += '<span style="font-size:12px;font-weight:500;color:var(--text);">¿Es apto?</span>';
+              bodyHtml += '<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="font-size:11px;padding:4px 12px;">'+(aptoOk?'✓ Apto':'Apto')+'</button>';
+              bodyHtml += '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="font-size:11px;padding:4px 12px;">'+(noAptoOk?'✗ No apto':'No apto')+'</button>';
+              if (aptoOk && !esElegido) bodyHtml += '<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:4px 12px;">?? Elegir como candidato final</button>';
+              if (esElegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">?? Candidato elegido</span>';
+              bodyHtml += '</div>';
+              bodyHtml += '<div style="display:flex;gap:8px;">';
+              bodyHtml += '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="saveFeedbackBtn(this)">Guardar</button>';
+              if (fb) bodyHtml += '<button class="btn btn-secondary btn-sm" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="deleteFeedbackBtn(this)">Borrar</button>';
+              bodyHtml += '</div>';
+            } else if (fb) {
+              // Solo lectura
+              if (fb.apto===true) bodyHtml += '<span style="font-size:12px;background:#edf7f1;color:#1e5c38;padding:3px 10px;border-radius:6px;">✓ Apto</span>';
+              if (fb.apto===false) bodyHtml += '<span style="font-size:12px;background:#fbeaea;color:#8b1f1f;padding:3px 10px;border-radius:6px;">✗ No apto</span>';
+              if (fb.elegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:3px 10px;border-radius:6px;">?? Candidato elegido</span>';
+            }
+            bodyHtml += '</div>';
+            bodyHtml += '</div></div>';
+            return bodyHtml;
+          })()
       }).join('');
 
       // Card contenedora del grupo
