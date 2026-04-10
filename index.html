@@ -733,7 +733,8 @@ poblarSelectPuestosDefault();
   var d = await safeFetch('/api/jobs');
   if (d && Array.isArray(d.jobs) && d.jobs.length) {
     jobs = d.jobs; localStorage.setItem('rjobs', JSON.stringify(jobs));
-  } else {
+  } else if (!jobs.length) {
+    // Solo cargar defaults si no hay nada en Upstash NI en localStorage
     cargarPuestosDefault();
     syncJobsToServer(jobs);
   }
@@ -756,6 +757,8 @@ poblarSelectPuestosDefault();
   verificarAlertas();
   poblarSelectPuestosDefault();
   console.log('[RecruitAI] Datos cargados — jobs:', jobs.length, 'reqs:', requisiciones.length, 'feedbacks:', feedbacks.length);
+  console.log('[RecruitAI] Job IDs:', jobs.map(function(j){return j.id+'='+j.titulo;}));
+  console.log('[RecruitAI] Req jobIds:', requisiciones.map(function(r){return r.jobId+'='+r.puesto;}));
 })();
 
 // ══════════════════════════════════
