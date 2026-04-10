@@ -277,7 +277,6 @@ a[title]{cursor:pointer;}
         Mostrar cubiertos
       </label>
       <select id="filtroArea" onchange="renderJobsList()" style="min-width:140px;"><option value="">Todas las áreas</option></select>
-      <select id="filtroLider" onchange="renderJobsList()" style="min-width:160px;"><option value="">Todos los líderes</option></select>
     </div>
 
     <div id="jobsList"></div>
@@ -512,23 +511,23 @@ a[title]{cursor:pointer;}
     <!-- Dashboard -->
     <div id="liderDashboard" style="display:none;">
 
-      <!-- Form nueva solicitud líder -->
-      <div class="add-job-form" id="addJobFormLider" style="margin-bottom:24px;border-left:3px solid var(--accent2);max-width:100%;">
+      <!-- Nueva solicitud (formulario colapsable) -->
+      <div class="add-job-form" id="addJobFormLider" style="margin-bottom:16px;border-left:3px solid var(--accent2);max-width:100%;">
         <div style="font-size:14px;font-weight:500;">Nueva solicitud de personal</div>
         <div class="form-row">
           <div class="form-group">
             <label>Gerencia *</label>
             <select id="lf_gerencia" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona tu gerencia...</option>
-            <option value="Unidad de Negocio Consumo">Unidad de Negocio Consumo</option>
-            <option value="Operaciones">Operaciones</option>
-            <option value="Unidad de Negocio Automotriz">Unidad de Negocio Automotriz</option>
-            <option value="GAF">GAF</option>
-            <option value="Unidad de Negocio Licores">Unidad de Negocio Licores</option>
-            <option value="Gestión del Talento Humano">Gestión del Talento Humano</option>
-            <option value="Gerencia de Legal, Regulatorio y Cumplimiento">Gerencia de Legal, Regulatorio y Cumplimiento</option>
-            <option value="Gerencia de Innovación y Nuevos Negocios">Gerencia de Innovación y Nuevos Negocios</option>
-            <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
+              <option value="Unidad de Negocio Consumo">Unidad de Negocio Consumo</option>
+              <option value="Operaciones">Operaciones</option>
+              <option value="Unidad de Negocio Automotriz">Unidad de Negocio Automotriz</option>
+              <option value="GAF">GAF</option>
+              <option value="Unidad de Negocio Licores">Unidad de Negocio Licores</option>
+              <option value="Gestión del Talento Humano">Gestión del Talento Humano</option>
+              <option value="Gerencia de Legal, Regulatorio y Cumplimiento">Gerencia de Legal, Regulatorio y Cumplimiento</option>
+              <option value="Gerencia de Innovación y Nuevos Negocios">Gerencia de Innovación y Nuevos Negocios</option>
+              <option value="Unidad de Negocio Wella">Unidad de Negocio Wella</option>
             </select>
           </div>
           <div class="form-group">
@@ -549,8 +548,7 @@ a[title]{cursor:pointer;}
             <select id="lf_sede" onchange="toggleOtraSede('lf_otraSede',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
               <option>Almacén Arequipa</option><option>Almacén Chiclayo</option>
-              <option>Central</option><option>Comunal</option>
-              <option value="Otras">Otras</option>
+              <option>Central</option><option>Comunal</option><option value="Otras">Otras</option>
             </select>
             <input type="text" id="lf_otraSede" placeholder="Especifica la sede..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
           </div>
@@ -558,7 +556,7 @@ a[title]{cursor:pointer;}
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Nivel del puesto *</label>
+            <label>Nivel *</label>
             <select id="lf_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
               <option value="60">Gerente / Sub Gerente (60 días)</option>
@@ -577,22 +575,22 @@ a[title]{cursor:pointer;}
               <option value="nuevo">Nuevo puesto</option>
             </select>
           </div>
-          <div id="lf_reemplazoField" style="display:none;flex-direction:column;gap:10px;">
-            <div class="form-group">
-              <label>Nombre del colaborador a reemplazar *</label>
-              <input type="text" id="lf_reemplazo_nombre" placeholder="Ej: Juan Pérez García" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-            <div class="form-group">
-              <label>Fecha de cese *</label>
-              <input type="date" id="lf_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
+        </div>
+        <div id="lf_reemplazoField" style="display:none;flex-direction:column;gap:10px;">
+          <div class="form-group">
+            <label>Nombre del colaborador a reemplazar *</label>
+            <input type="text" id="lf_reemplazo_nombre" placeholder="Ej: Juan Pérez García" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Fecha de cese *</label>
+            <input type="date" id="lf_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
           </div>
         </div>
         <div class="form-group"><label>Descripción y requisitos *</label>
-          <textarea id="lf_desc" style="height:120px;" placeholder="Describe el perfil que necesitas: experiencia requerida, habilidades clave, responsabilidades..."></textarea>
+          <textarea id="lf_desc" style="height:100px;" placeholder="Describe el perfil que necesitas..."></textarea>
         </div>
         <div class="form-group"><label>Requisitos deseables</label>
-          <textarea id="lf_deseables" style="height:70px;" placeholder="Certificaciones, idiomas, experiencia adicional valorada..."></textarea>
+          <textarea id="lf_deseables" style="height:60px;" placeholder="Certificaciones, idiomas, experiencia adicional valorada..."></textarea>
         </div>
         <div class="form-group">
           <label>Fecha de inicio requerida *</label>
@@ -604,27 +602,35 @@ a[title]{cursor:pointer;}
         </div>
       </div>
 
-      <div style="margin-bottom:28px;">
-        <div style="margin-bottom:16px;"><div class="section-head">Mis procesos activos</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Estado y fechas de tus solicitudes</div></div>
-        <div id="liderProcesos"></div>
-      </div>
-      <div class="divider"></div>
-      <div style="margin-bottom:28px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-          <div><div class="section-head">Candidatos de mis puestos</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Prefiltro IA</div></div>
-          <button class="btn btn-secondary btn-sm" onclick="renderLiderCandidatos()" title="Recarga los candidatos evaluados de tus puestos">Actualizar</button>
+      <!-- Layout 2 columnas -->
+      <div style="display:flex;gap:0;border:0.5px solid var(--border2);border-radius:14px;overflow:hidden;min-height:600px;">
+
+        <!-- Columna izquierda: lista de procesos -->
+        <div style="width:260px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
+          <div style="padding:14px 16px;border-bottom:0.5px solid var(--border2);">
+            <div style="font-size:13px;font-weight:500;color:var(--text);">Mis procesos activos</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">Clic en un proceso para gestionar</div>
+          </div>
+          <div id="liderProcesosLista" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px;"></div>
         </div>
-        <div id="liderCandidatos"></div>
-      </div>
-      <div class="divider"></div>
-      <div style="margin-bottom:28px;">
-        <div style="margin-bottom:16px;"><div class="section-head">Feedback de entrevistas presenciales</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Califica candidatos que ya entrevistaste en persona</div></div>
-        <div id="feedbackPanel"></div>
+
+        <!-- Columna derecha: detalle del proceso seleccionado -->
+        <div style="flex:1;overflow-y:auto;background:var(--surface);">
+          <div id="liderDetallePanel" style="padding:20px;">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--muted);gap:12px;">
+              <div style="font-size:32px;">&#128196;</div>
+              <div style="font-size:14px;">Selecciona un proceso de la lista</div>
+              <div style="font-size:12px;">Verás aquí la línea de tiempo, candidatos y feedback</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>
   </div>
 </div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -816,8 +822,7 @@ poblarSelectPuestosDefault();
       faltantes.forEach(function(p){ jobs.push(Object.assign({},p,{emailLider:'',dniLider:''})); });
       localStorage.setItem('rjobs', JSON.stringify(jobs));
       syncJobsToServer(jobs);
-      console.log('[RecruitAI] Nuevos perfiles agregados:', faltantes.map(function(p){return p.titulo;}));
-    }
+      }
   } else if (!jobs.length) {
     cargarPuestosDefault();
     syncJobsToServer(jobs);
@@ -859,41 +864,21 @@ poblarSelectPuestosDefault();
     });
     if (matchJob) {
       repaired = true;
-      console.log('[RecruitAI] Reparando req:', r.puesto, '->', matchJob.titulo, '('+matchJob.id+')');
-      return Object.assign({}, r, {jobId: matchJob.id, puesto: matchJob.titulo});
+        return Object.assign({}, r, {jobId: matchJob.id, puesto: matchJob.titulo});
     }
     // Req huérfana — no tiene job correspondiente, loguear
-    console.warn('[RecruitAI] Req huérfana sin job:', r.puesto, 'jobId:', r.jobId);
     return r;
   });
   if (repaired) {
     localStorage.setItem('rreqs', JSON.stringify(requisiciones));
     syncReqsToServer(requisiciones);
-    console.log('[RecruitAI] Requisiciones reparadas y sincronizadas');
-  }
+    }
 
   // Ahora renderizar con todos los datos cargados
   renderJobsList();
   renderEnvioSelect();
   verificarAlertas();
   poblarSelectPuestosDefault();
-  console.log('[RecruitAI] Datos cargados — jobs:', jobs.length, 'reqs:', requisiciones.length, 'feedbacks:', feedbacks.length);
-  // Detectar puestos en candidatos sin job asociado
-  safeFetch('/api/jobs?type=results').then(function(rd){
-    var results = (rd&&rd.results)?rd.results:[];
-    var puestosEnCandidatos = results.map(function(r){return r.puesto;}).filter(function(v,i,a){return a.indexOf(v)===i;});
-    var jobTitulos = jobs.map(function(j){return j.titulo.toLowerCase().trim();});
-    var huerfanos = puestosEnCandidatos.filter(function(p){
-      return !jobTitulos.some(function(t){ return t===p.toLowerCase().trim()||t.includes(p.toLowerCase().trim())||p.toLowerCase().trim().includes(t); });
-    });
-    if (huerfanos.length) {
-      console.warn('[RecruitAI] Puestos con candidatos SIN job asociado:', huerfanos);
-    } else {
-      console.log('[RecruitAI] Todos los puestos con candidatos tienen job asociado ✓');
-    }
-  });
-  console.log('[RecruitAI] Job IDs:', jobs.map(function(j){return j.id+'='+j.titulo;}));
-  console.log('[RecruitAI] Req jobIds:', requisiciones.map(function(r){return r.jobId+'='+r.puesto;}));
 })();
 
 // ══════════════════════════════════
@@ -951,8 +936,6 @@ function accederLider() {
   document.getElementById('liderLoginView').style.display = 'none';
   document.getElementById('liderDashboard').style.display = 'block';
   renderLiderProcesos();
-  renderLiderCandidatos();
-  renderFeedbackPanel();
   renderLiderPerfilesPendientes();
 }
 
@@ -1052,72 +1035,128 @@ function avanzarEtapa(reqId, etapaId) {
 }
 
 function renderLiderProcesos() {
-  var panel = document.getElementById('liderProcesos');
+  var panel = document.getElementById('liderProcesosLista');
   if (!panel) return;
-  var misReqs = requisiciones.filter(function(r){ return r.dniLider === liderDni; });
+  var misPuestosIds = jobs.filter(function(j){ return j.dniLider===liderDni; }).map(function(j){ return j.id; });
+  var misReqs = requisiciones.filter(function(r){
+    return r.dniLider===liderDni || misPuestosIds.indexOf(r.jobId)!==-1;
+  }).filter(function(r){ return r.estado!=='Cubierto'; });
+
   if (!misReqs.length) {
-    panel.innerHTML = '<div class="empty-state" style="padding:20px 0;">No tienes procesos activos asignados.</div>'; return;
+    panel.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;">No tienes procesos activos</div>';
+    return;
   }
-  var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:{bg:'#EEEDFE',t:'#3C3489'}; };
+
   panel.innerHTML = misReqs.slice().reverse().map(function(r) {
-    var c = ec(r.estado);
+    var isSelected = window._liderProcesoSeleccionado === r.id;
+    var c = r.estado==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:r.estado==='Cubierto'?{bg:'#EEEDFE',t:'#3C3489'}:{bg:'#fef8ee',t:'#7a5000'};
     var hoy = new Date();
     var limite = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
     var dias = limite ? Math.ceil((limite-hoy)/(1000*60*60*24)) : null;
-    var diasStyle = dias !== null ? (dias<=7?'color:#c0392b;font-weight:600;':dias<=14?'color:#b8760a;':'color:var(--muted);') : '';
-    var html = '<div class="card" style="margin-bottom:12px;">';
-    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
-    html += '<div><div style="font-size:14px;font-weight:500;">' + r.puesto + '</div>';
-    html += '<div style="font-size:12px;color:var(--muted);">' + r.area + ' &middot; ' + r.sede + '</div></div>';
-    html += '<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;background:' + c.bg + ';color:' + c.t + ';">' + r.estado + '</span></div>';
-    // Línea de tiempo — capturar r en closure
-    (function(req){
-      safeFetch('/api/jobs?type=results').then(function(rd){
-        var cands = (rd&&rd.results)?rd.results:JSON.parse(localStorage.getItem('rresults')||'[]');
-        var fbs   = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
-        var ltEl  = document.getElementById('lt_'+req.id);
-        if (ltEl && typeof renderLineaTiempo === 'function') {
-          ltEl.innerHTML = renderLineaTiempo(req, cands, fbs, false);
-        }
-      }).catch(function(){ });
-    })(r);
-    html += '<div id="lt_'+r.id+'"><div style="font-size:11px;color:var(--muted);padding:8px 0;">Cargando etapas...</div></div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;margin-top:8px;">';
-    html += '<div style="color:var(--muted);">Inicio: <strong style="color:var(--text);">' + (r.fechaInicio||r.fecha) + '</strong></div>';
-    html += '<div style="color:var(--muted);">L&iacute;mite: <strong style="color:#c0392b;">' + r.fechaLimite + '</strong></div>';
-    if (dias !== null) html += '<div style="' + diasStyle + '">' + (dias>0 ? dias+' d&iacute;as restantes' : 'VENCIDO') + '</div>';
-    html += '</div>';
-    if (r.minimos) html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;"><strong style="color:var(--text);">M&iacute;nimos:</strong> ' + r.minimos.substring(0,150) + (r.minimos.length>150?'&hellip;':'') + '</div>';
-    if (r.deseables) html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Deseables:</strong> ' + r.deseables + '</div>';
-    // Historial de cambios al perfil
-    var histKey = 'rhist_' + (r.jobId||'');
-    var hist = JSON.parse(localStorage.getItem(histKey)||'[]');
-    if (hist.length) {
-      html += '<div style="margin-top:12px;border-top:0.5px solid var(--border2);padding-top:10px;">';
-      html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Historial de cambios al perfil</div>';
-      hist.slice().reverse().forEach(function(c){
-        html += '<div style="font-size:12px;color:var(--muted);line-height:1.6;display:flex;gap:8px;">';
-        html += '<span style="color:var(--text);font-weight:500;white-space:nowrap;">'+c.fecha+' '+c.hora+'</span>';
-        html += '<span>'+c.motivo+'</span></div>';
-      });
+    var vence = dias !== null ? (dias<=0?'<span style="font-size:10px;color:#c0392b;font-weight:600;">VENCIDO</span>':dias<=7?'<span style="font-size:10px;color:#c0392b;">'+dias+'d</span>':'<span style="font-size:10px;color:var(--muted);">'+dias+'d</span>') : '';
+    return '<div data-req-id="'+r.id+'" onclick="seleccionarProceso(this.dataset.reqId)" style="border-radius:8px;padding:10px 12px;cursor:pointer;border:0.5px solid '+(isSelected?'var(--accent2)':'transparent')+';background:'+(isSelected?'var(--surface)':'transparent')+';transition:background .1s;">'
+      + '<div style="font-size:13px;font-weight:500;margin-bottom:4px;color:var(--text);">'+r.puesto+'</div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">'
+        + '<span style="font-size:10px;color:var(--muted);">'+(r.area||'')+'</span>'
+        + '<div style="display:flex;align-items:center;gap:4px;">'
+          + vence
+          + '<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:5px;background:'+c.bg+';color:'+c.t+';">'+r.estado+'</span>'
+        + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function seleccionarProceso(reqId) {
+  window._liderProcesoSeleccionado = reqId;
+  renderLiderProcesos();
+  renderDetalleProcesoSeleccionado(reqId);
+}
+
+function renderDetalleProcesoSeleccionado(reqId) {
+  var panel = document.getElementById('liderDetallePanel');
+  if (!panel) return;
+  var r = requisiciones.find(function(x){ return x.id===reqId; });
+  if (!r) { panel.innerHTML='<div style="padding:20px;color:var(--muted);">Proceso no encontrado</div>'; return; }
+
+  safeFetch('/api/jobs?type=results').then(function(d){
+    var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    var fbs = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+
+    // Candidatos de este proceso
+    var misPuestos = [r.puesto];
+    var cands = results.filter(function(c){ return c.puesto===r.puesto && c.visibleLider!==false; });
+
+    // ── Header ──
+    var c = {bg:'#fef8ee',t:'#7a5000'};
+    if (r.estado==='Cubierto') c={bg:'#EEEDFE',t:'#3C3489'};
+    if (r.estado==='En proceso') c={bg:'#edf7f1',t:'#1e5c38'};
+
+    var html = '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">'
+      + '<div><div style="font-size:18px;font-weight:600;letter-spacing:-.02em;">'+r.puesto+'</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:3px;">'+(r.area||'')+(r.sede?' · '+r.sede:'')+' · Límite: '+r.fechaLimite+'</div></div>'
+      + '<span style="font-size:12px;font-weight:500;padding:4px 12px;border-radius:8px;background:'+c.bg+';color:'+c.t+';">'+r.estado+'</span>'
+      + '</div>';
+
+    // ── Línea de tiempo ──
+    html += renderLineaTiempo(r, results, fbs, false);
+
+    // ── Candidatos ──
+    if (cands.length) {
+      html += '<div style="margin-top:20px;">'
+        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Candidatos ('+cands.length+')</div>';
+      cands.sort(function(a,b){return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);});
+      html += cands.map(function(cand, ci){
+        var badge = ci===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
+          :ci===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
+          :ci===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>':'';
+        var fb = fbs.find(function(f){ return f.candidato===cand.candidato&&f.puesto===cand.puesto; });
+        var aptoTag = fb&&fb.apto===true?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:5px;">Apto</span>'
+          :fb&&fb.apto===false?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:5px;">No apto</span>':'';
+        var elegidoTag = fb&&fb.elegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:5px;">?? Elegido</span>':'';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;">'
+          + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
+          + '<div style="flex:1;"></div>'
+          + renderStars(cand.estrellas||cand.puntaje, starsColor(cand.estrellas||cand.puntaje))
+          + '<span style="font-size:11px;color:var(--muted);">'+cand.recomendacion+'</span>'
+          + aptoTag + elegidoTag
+          + '</div>';
+      }).join('');
       html += '</div>';
+    } else {
+      html += '<div style="margin-top:16px;font-size:13px;color:var(--muted);">Aún no hay candidatos visibles para este proceso.</div>';
     }
-    // Bitácora del proceso
+
+    // ── Feedback ──
+    var candsFeedback = results.filter(function(c){ return c.puesto===r.puesto && c.recomendacion==='Avanzar'; });
+    if (candsFeedback.length) {
+      html += '<div style="margin-top:20px;border-top:0.5px solid var(--border2);padding-top:16px;">'
+        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Feedback de entrevistas presenciales</div>'
+        + '<div id="feedbackPanel"></div>'
+        + '</div>';
+    }
+
+    // ── Bitácora ──
     var bita = Array.isArray(r.bitacora) ? r.bitacora : [];
     if (bita.length) {
-      html += '<div style="margin-top:12px;border-top:0.5px solid var(--border2);padding-top:10px;">';
-      html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Bitácora del proceso</div>';
+      html += '<div style="margin-top:16px;border-top:0.5px solid var(--border2);padding-top:12px;">';
+      html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Bitácora del proceso</div>';
       bita.slice().reverse().forEach(function(b){
-        html += '<div style="font-size:12px;line-height:1.7;display:flex;gap:8px;align-items:flex-start;">';
-        html += '<span style="color:var(--muted);white-space:nowrap;">'+b.fecha+' '+b.hora+'</span>';
-        html += '<span style="color:var(--text);">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+b.msg+'</span>';
-        html += '</div>';
+        html += '<div style="font-size:12px;line-height:1.7;display:flex;gap:8px;align-items:flex-start;">'
+          + '<span style="color:var(--muted);white-space:nowrap;">'+b.fecha+' '+b.hora+'</span>'
+          + '<span style="color:var(--text);">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+b.msg+'</span>'
+          + '</div>';
       });
       html += '</div>';
     }
-    html += '</div>';
-    return html;
-  }).join('');
+
+    panel.innerHTML = html;
+
+    // Renderizar feedback dentro del panel
+    if (candsFeedback.length) {
+      renderFeedbackPanel();
+    }
+  });
 }
 
 function renderLiderCandidatos() {
@@ -1665,26 +1704,20 @@ function renderJobsList() {
   }
   empty.style.display='none'; filterBar.style.display='flex';
 
-  // Poblar filtros
   var areas = [...new Set(jobs.map(function(j){return j.area||'';}).filter(Boolean))];
-  var lideres = [...new Set(jobs.map(function(j){return j.emailLider||'';}).filter(Boolean))];
   var selArea = document.getElementById('filtroArea');
-  var selLider = document.getElementById('filtroLider');
-  var curArea = selArea.value; var curLider = selLider.value;
-  selArea.innerHTML = '<option value="">Todas las áreas</option>'+areas.map(function(a){return '<option value="'+a+'"'+(a===curArea?' selected':'')+'>'+a+'</option>';}).join('');
-  selLider.innerHTML = '<option value="">Todos los líderes</option>'+lideres.map(function(l){return '<option value="'+l+'"'+(l===curLider?' selected':'')+'>'+l+'</option>';}).join('');
+  var curArea = selArea ? selArea.value : '';
+  if (selArea) selArea.innerHTML = '<option value="">Todas las \u00e1reas</option>'+areas.map(function(a){return '<option value="'+a+'"'+(a===curArea?' selected':'')+'>'+a+'</option>';}).join('');
 
   var texto = (document.getElementById('filtroTexto').value||'').toLowerCase();
-  var filtroArea = selArea.value;
-  var filtroLider = selLider.value;
+  var filtroArea = selArea ? selArea.value : '';
   var mostrarCub = document.getElementById('mostrarCubiertos') && document.getElementById('mostrarCubiertos').checked;
+
   var filtered = jobs.filter(function(j){
-    if (texto && !(j.titulo+' '+(j.area||'')+' '+(j.emailLider||'')).toLowerCase().includes(texto)) return false;
+    if (texto && !(j.titulo+' '+(j.area||'')+' '+(j.gerencia||'')).toLowerCase().includes(texto)) return false;
     if (filtroArea && j.area!==filtroArea) return false;
-    if (filtroLider && j.emailLider!==filtroLider) return false;
-    // Filtrar cubiertos por defecto
     if (!mostrarCub) {
-      var jReqs = requisiciones.filter(function(r){ return r.jobId===j.id; });
+      var jReqs = getReqsForJob(j.id, j.titulo);
       var lastR = jReqs.length ? jReqs[jReqs.length-1] : null;
       if (lastR && lastR.estado==='Cubierto') return false;
     }
@@ -1693,49 +1726,61 @@ function renderJobsList() {
 
   if (!filtered.length) { list.innerHTML='<div class="empty-state">No hay puestos que coincidan.</div>'; return; }
 
-  // ── Tabla compacta ──
-  var html = '<div style="overflow-x:auto;border:0.5px solid var(--border2);border-radius:12px;">'+
-    '<table style="width:100%;border-collapse:collapse;font-size:13px;">'+
-    '<thead><tr style="background:var(--surface2);">'+
-      '<th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;">Puesto</th>'+
-      '<th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Área</th>'+
-      '<th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Líder</th>'+
-      '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Estado</th>'+
-      '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Límite</th>'+
-      '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;"></th>'+
-    '</tr></thead><tbody>';
-
-  filtered.forEach(function(j, idx) {
-    var jobReqs = getReqsForJob(j.id, j.titulo);
-    var lastReq = jobReqs.length ? jobReqs[jobReqs.length-1] : null;
-    var estadoReq = lastReq ? lastReq.estado : 'Sin solicitud';
-    var sBg = estadoReq==='Cubierto'?'#EEEDFE':estadoReq==='En proceso'?'#edf7f1':'#fef8ee';
-    var sTx = estadoReq==='Cubierto'?'#3C3489':estadoReq==='En proceso'?'#1e5c38':'#7a5000';
-    var limite = lastReq && lastReq.fechaLimite ? lastReq.fechaLimite : '—';
-    var esCubierto = estadoReq === 'Cubierto';
-    var rowBg = esCubierto ? 'var(--surface2)' : (idx%2===0 ? 'var(--surface)' : 'var(--bg)');
-    var rowOpacity = esCubierto ? 'opacity:0.6;' : '';
-
-    html += '<tr style="background:'+rowBg+';border-top:0.5px solid var(--border2);cursor:pointer;'+rowOpacity+'" onclick="abrirDetalleJob('+j.id+')">'+
-      '<td style="padding:11px 14px;font-weight:500;color:var(--accent2);">'+j.titulo+' <span style="font-size:11px;color:var(--muted);">&#8594;</span></td>'+
-      '<td style="padding:11px 14px;color:var(--muted);font-size:12px;">'+( j.area||'—')+'</td>'+
-      '<td style="padding:11px 14px;color:var(--muted);font-size:12px;">'+( j.emailLider||'—')+'</td>'+
-      '<td style="padding:11px 14px;text-align:center;"><span style="font-size:11px;background:'+sBg+';color:'+sTx+';padding:2px 10px;border-radius:6px;font-weight:500;white-space:nowrap;">'+estadoReq+'</span></td>'+
-      '<td style="padding:11px 14px;text-align:center;font-size:12px;color:'+(lastReq?'#c0392b':'var(--muted)')+';">'+limite+'</td>'+
-      '<td style="padding:11px 14px;text-align:center;" onclick="event.stopPropagation()">'+
-        '<div style="display:flex;gap:4px;justify-content:center;">'+
-          '<button class="btn btn-secondary btn-sm" data-job-id="'+j.id+'" onclick="editJob(this.dataset.jobId*1)" title="Editar perfil">Editar</button>'+
-          '<button class="btn btn-accent btn-sm" data-job-id="'+j.id+'" onclick="abrirNuevaSolicitud(this.dataset.jobId*1)" title="Nueva solicitud">+ Solicitud</button>'+
-          '<button class="btn btn-danger btn-sm" data-job-id="'+j.id+'" onclick="deleteJob(this.dataset.jobId*1)" title="Eliminar">&#128465;</button>'+
-        '</div>'+
-      '</td>'+
-    '</tr>';
+  // Agrupar por gerencia
+  var byGerencia = {};
+  filtered.forEach(function(j){
+    var g = j.gerencia || 'Sin gerencia';
+    if (!byGerencia[g]) byGerencia[g] = [];
+    byGerencia[g].push(j);
   });
 
-  html += '</tbody></table></div>';
+  var BTN = 'style="font-size:12px;padding:5px 0;width:76px;text-align:center;white-space:nowrap;overflow:hidden;"';
+  var html = '';
+
+  Object.keys(byGerencia).sort().forEach(function(gerencia){
+    var gJobs = byGerencia[gerencia];
+    html += '<div style="margin-bottom:24px;">';
+    html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:6px 4px 6px;border-bottom:1.5px solid var(--border2);margin-bottom:0;">'+gerencia+'</div>';
+    html += '<div style="border:0.5px solid var(--border2);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+    html += '<thead><tr style="background:var(--surface2);">'
+      + '<th style="padding:8px 14px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Puesto</th>'
+      + '<th style="padding:8px 14px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">\u00c1rea</th>'
+      + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Estado</th>'
+      + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;width:220px;"></th>'
+      + '</tr></thead><tbody>';
+
+    gJobs.forEach(function(j, idx){
+      var jobReqs = getReqsForJob(j.id, j.titulo);
+      var lastReq = jobReqs.length ? jobReqs[jobReqs.length-1] : null;
+      var estadoReq = lastReq ? lastReq.estado : 'Sin solicitud';
+      var sBg = estadoReq==='Cubierto'?'#EEEDFE':estadoReq==='En proceso'?'#edf7f1':estadoReq==='Sin solicitud'?'var(--surface2)':'#fef8ee';
+      var sTx = estadoReq==='Cubierto'?'#3C3489':estadoReq==='En proceso'?'#1e5c38':estadoReq==='Sin solicitud'?'var(--muted)':'#7a5000';
+      var esCubierto = estadoReq === 'Cubierto';
+      var rowBg = esCubierto ? 'var(--surface2)' : (idx%2===0 ? 'var(--surface)' : 'var(--bg)');
+      var rowOp = esCubierto ? 'opacity:0.55;' : '';
+
+      html += '<tr style="background:'+rowBg+';border-top:0.5px solid var(--border2);cursor:pointer;'+rowOp+'" onclick="abrirDetalleJob('+j.id+')">'
+        + '<td style="padding:10px 14px;font-weight:500;color:var(--accent2);">'+j.titulo+' <span style="font-size:11px;color:var(--muted);">&#8594;</span></td>'
+        + '<td style="padding:10px 14px;color:var(--muted);font-size:12px;">'+(j.area||'\u2014')+'</td>'
+        + '<td style="padding:10px 14px;text-align:center;"><span style="font-size:11px;background:'+sBg+';color:'+sTx+';padding:2px 10px;border-radius:6px;font-weight:500;white-space:nowrap;">'+estadoReq+'</span></td>'
+        + '<td style="padding:10px 14px;text-align:center;" onclick="event.stopPropagation()">'
+          + '<div style="display:flex;gap:6px;justify-content:center;">'
+            + '<button class="btn btn-secondary btn-sm" '+BTN+' data-job-id="'+j.id+'" onclick="editJob(this.dataset.jobId*1)">Editar</button>'
+            + '<button class="btn btn-accent btn-sm" '+BTN+' data-job-id="'+j.id+'" onclick="abrirNuevaSolicitud(this.dataset.jobId*1)">+ Solicitud</button>'
+            + '<button class="btn btn-danger btn-sm" '+BTN+' data-job-id="'+j.id+'" onclick="deleteJob(this.dataset.jobId*1)" style="font-size:14px;padding:4px 10px;min-width:36px;">&#128465;</button>'
+          + '</div>'
+        + '</td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+  });
+
   list.innerHTML = html;
   renderEnvioSelect();
 }
+
 
 function abrirDetalleJob(id) {
   var j = jobs.find(function(x){ return x.id===id; });
@@ -3051,110 +3096,212 @@ function guardarSolicitudLider() {
 function renderDashboard() {
   var panel = document.getElementById('dashboardContent');
   if (!panel) return;
-  panel.innerHTML='<div style="font-size:13px;color:var(--muted);">Cargando...</div>';
+  panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px;">Cargando...</div>';
 
-  safeFetch('/api/jobs?type=results').then(function(d){
-    var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
-    var fbs = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+  safeFetch('/api/jobs?type=results').then(function(d) {
+    var results = (d&&d.results) ? d.results : JSON.parse(localStorage.getItem('rresults')||'[]');
+    var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
     var hoy = new Date();
 
-    // ── KPIs globales ──
-    var totalPuestos = jobs.length;
-    var totalReqs = requisiciones.filter(function(r){return r.estado!=='Cubierto';}).length;
-    var cubiertos = requisiciones.filter(function(r){return r.estado==='Cubierto';}).length;
+    // ── Cálculos globales ──
+    var reqsActivas = requisiciones.filter(function(r){ return r.estado!=='Cubierto'; });
     var totalCands = results.length;
-    var avanzar = results.filter(function(r){return r.recomendacion==='Avanzar';}).length;
+    var avanzar = results.filter(function(r){ return r.recomendacion==='Avanzar'; }).length;
     var tasaAvanzar = totalCands ? Math.round(avanzar/totalCands*100) : 0;
     var promedioEst = totalCands ? (results.reduce(function(s,r){return s+(r.estrellas||r.puntaje||0);},0)/totalCands).toFixed(1) : 0;
+    var cubiertos = requisiciones.filter(function(r){ return r.estado==='Cubierto'; }).length;
 
-    // Tiempo promedio de cobertura
+    // Tiempo promedio cobertura
     var tiemposCob = requisiciones.filter(function(r){
       return r.estado==='Cubierto' && r.fechaInicioRaw && r.etapas && r.etapas.tramites;
     }).map(function(r){
       try {
         var ini = new Date(r.fechaInicioRaw);
-        var partes = r.etapas.tramites.split('/');
-        var fin = new Date(partes[2]+'-'+partes[1]+'-'+partes[0]);
+        var pts = r.etapas.tramites.split('/');
+        var fin = new Date(pts[2]+'-'+pts[1]+'-'+pts[0]);
         return Math.ceil((fin-ini)/(1000*60*60*24));
       } catch(e){ return null; }
     }).filter(Boolean);
     var tiempoPromedio = tiemposCob.length ? Math.round(tiemposCob.reduce(function(s,v){return s+v;},0)/tiemposCob.length) : null;
 
-    // ── HTML ──
-    var kpiStyle = 'background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;text-align:center;';
-    var kpis =
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">'+
-        mkKpi('Puestos activos', totalPuestos, '', '#e8623a')+
-        mkKpi('Procesos abiertos', totalReqs, '', '#b8760a')+
-        mkKpi('Procesos cubiertos', cubiertos, '', '#2d7a4f')+
-        mkKpi('Total candidatos', totalCands, '', '#3C3489')+
-        mkKpi('Tasa "Avanzar"', tasaAvanzar, '%', '#e8623a')+
-        mkKpi('Estrellas promedio', promedioEst, '★', '#f4c430')+
-        (tiempoPromedio?mkKpi('Días de cobertura prom.', tiempoPromedio, ' días', '#2d7a4f'):'')+
-      '</div>';
+    // SLA vencidos
+    var slaAlerts = typeof calcularSLAAlerts==='function' ? calcularSLAAlerts() : [];
 
-    // ── Candidatos por puesto ──
-    var byPuesto = {};
-    results.forEach(function(r){
-      if (!byPuesto[r.puesto]) byPuesto[r.puesto]={total:0,avanzar:0,estrellas:[]};
-      byPuesto[r.puesto].total++;
-      if (r.recomendacion==='Avanzar') byPuesto[r.puesto].avanzar++;
-      byPuesto[r.puesto].estrellas.push(r.estrellas||r.puntaje||0);
+    // Candidatos elegidos por líder
+    var elegidos = fbs.filter(function(f){ return f.elegido; });
+
+    // ── SECCIÓN C: OPERACIONAL DEL DÍA ──
+    // Acciones urgentes
+    var acciones = [];
+
+    // 1. Procesos con SLA vencido
+    slaAlerts.forEach(function(a) {
+      acciones.push({ tipo: 'danger', titulo: 'SLA vencido: '+a.etapa, sub: a.puesto+' · '+a.dias+' días sin avance', jobId: (jobs.find(function(j){ return j.titulo===a.puesto; })||{}).id });
     });
 
-    var tablaRows = Object.keys(byPuesto).sort().map(function(p){
-      var d = byPuesto[p];
-      var prom = (d.estrellas.reduce(function(s,v){return s+v;},0)/d.estrellas.length).toFixed(1);
-      var tasa = Math.round(d.avanzar/d.total*100);
-      var barW = Math.min(tasa,100);
-      var barC = tasa>=60?'#2d7a4f':tasa>=30?'#b8760a':'#c0392b';
-      return '<tr style="border-top:0.5px solid var(--border2);">'+
-        '<td style="padding:10px 14px;font-weight:500;">'+p+'</td>'+
-        '<td style="padding:10px 14px;text-align:center;">'+d.total+'</td>'+
-        '<td style="padding:10px 14px;text-align:center;">'+d.avanzar+'</td>'+
-        '<td style="padding:10px 14px;min-width:120px;">'+
-          '<div style="display:flex;align-items:center;gap:6px;">'+
-            '<div style="flex:1;background:var(--surface2);border-radius:4px;height:6px;"><div style="width:'+barW+'%;background:'+barC+';border-radius:4px;height:6px;"></div></div>'+
-            '<span style="font-size:12px;color:'+barC+';font-weight:600;width:32px;">'+tasa+'%</span>'+
-          '</div>'+
-        '</td>'+
-        '<td style="padding:10px 14px;text-align:center;">'+renderStars(Math.round(parseFloat(prom)),starsColor(Math.round(parseFloat(prom))))+'</td>'+
-      '</tr>';
-    }).join('');
+    // 2. Candidatos listos para revisar (visibles al líder, sin feedback)
+    var puestosConCands = [...new Set(results.filter(function(r){ return r.recomendacion==='Avanzar' && r.visibleLider!==false; }).map(function(r){ return r.puesto; }))];
+    puestosConCands.forEach(function(p) {
+      var candsDelPuesto = results.filter(function(r){ return r.puesto===p && r.recomendacion==='Avanzar'; });
+      var sinFb = candsDelPuesto.filter(function(r){ return !fbs.find(function(f){ return f.candidato===r.candidato && f.puesto===r.puesto; }); });
+      if (sinFb.length) {
+        acciones.push({ tipo: 'warn', titulo: sinFb.length+' candidato'+(sinFb.length>1?'s':'')+' sin feedback del líder', sub: p });
+      }
+    });
 
-    var tabla = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'+
-      '<div style="padding:14px 16px;border-bottom:0.5px solid var(--border2);font-size:13px;font-weight:500;">Candidatos por puesto</div>'+
-      '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'+
-        '<thead><tr style="background:var(--surface2);">'+
-          '<th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Puesto</th>'+
-          '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Total</th>'+
-          '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Avanzan</th>'+
-          '<th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Tasa conversión</th>'+
-          '<th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Estrellas prom.</th>'+
-        '</tr></thead><tbody>'+tablaRows+'</tbody></table></div>'+
-    '</div>';
+    // 3. Elegidos sin tramites
+    elegidos.forEach(function(fb) {
+      var req = requisiciones.filter(function(r){ return r.puesto===fb.puesto && r.estado!=='Cubierto'; });
+      var lastReq = req.length ? req[req.length-1] : null;
+      if (lastReq && lastReq.etapas && lastReq.etapas.oferta && !lastReq.etapas.tramites) {
+        acciones.push({ tipo: 'ok', titulo: 'Iniciar trámites de ingreso', sub: fb.puesto+' · Elegido: '+fb.candidato });
+      }
+    });
 
-    // ── Distribución de estrellas ──
-    var dist = {1:0,2:0,3:0,4:0,5:0};
-    results.forEach(function(r){ var e=r.estrellas||r.puntaje||0; if(e>=1&&e<=5) dist[e]++; });
-    var maxDist = Math.max.apply(null,Object.values(dist))||1;
-    var distHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;margin-top:12px;">'+
-      '<div style="font-size:13px;font-weight:500;margin-bottom:16px;">Distribución de evaluaciones</div>'+
-      '<div style="display:flex;align-items:flex-end;gap:8px;height:80px;">'+
-      [1,2,3,4,5].map(function(n){
-        var h = Math.round((dist[n]/maxDist)*70);
-        var c = starsColor(n);
-        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">'+
-          '<span style="font-size:11px;color:var(--muted);">'+dist[n]+'</span>'+
-          '<div style="width:100%;height:'+h+'px;background:'+c+';border-radius:4px 4px 0 0;min-height:4px;"></div>'+
-          '<span style="font-size:12px;">'+'★'.repeat(n)+'</span>'+
-        '</div>';
-      }).join('')+
-      '</div></div>';
+    // 4. Procesos próximos a vencer (7 días)
+    reqsActivas.forEach(function(r) {
+      var lim = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
+      if (!lim) return;
+      var dias = Math.ceil((lim-hoy)/(1000*60*60*24));
+      if (dias >= 0 && dias <= 7) {
+        acciones.push({ tipo: 'warn', titulo: 'Proceso próximo a vencer', sub: r.puesto+' · '+dias+' día'+(dias===1?'':'s')+' restantes' });
+      }
+    });
 
-    panel.innerHTML = kpis + tabla + distHtml;
+    var accionesHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
+      + '<div style="padding:12px 16px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;">'
+        + '<div style="font-size:13px;font-weight:500;">Acciones urgentes del día</div>'
+        + '<span style="font-size:12px;background:'+(acciones.length?'#FCEBEB':'#edf7f1')+';color:'+(acciones.length?'#A32D2D':'#1e5c38')+';padding:2px 10px;border-radius:6px;font-weight:500;">'+(acciones.length ? acciones.length+' pendiente'+(acciones.length>1?'s':'') : 'Al día')+'</span>'
+      + '</div>';
+
+    if (!acciones.length) {
+      accionesHtml += '<div style="padding:20px 16px;font-size:13px;color:var(--muted);text-align:center;">Todo al día. No hay acciones urgentes.</div>';
+    } else {
+      acciones.forEach(function(a) {
+        var dotC = a.tipo==='danger'?'#E24B4A':a.tipo==='warn'?'#BA7517':'#3B6D11';
+        var bgC  = a.tipo==='danger'?'#FCEBEB':a.tipo==='warn'?'#FAEEDA':'#EAF3DE';
+        var txC  = a.tipo==='danger'?'#A32D2D':a.tipo==='warn'?'#633806':'#27500A';
+        accionesHtml += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;gap:10px;">'
+          + '<div style="width:8px;height:8px;border-radius:50%;background:'+dotC+';flex-shrink:0;"></div>'
+          + '<div style="flex:1;">'
+            + '<div style="font-size:13px;font-weight:500;">'+a.titulo+'</div>'
+            + '<div style="font-size:11px;color:var(--muted);margin-top:1px;">'+a.sub+'</div>'
+          + '</div>'
+          + '<span style="font-size:10px;background:'+bgC+';color:'+txC+';padding:2px 8px;border-radius:4px;white-space:nowrap;">'+
+            (a.tipo==='danger'?'Urgente':a.tipo==='warn'?'Atención':'Acción')+
+          '</span>'
+        + '</div>';
+      });
+    }
+    accionesHtml += '</div>';
+
+    // Progreso de procesos activos
+    var progresoHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
+      + '<div style="padding:12px 16px;border-bottom:0.5px solid var(--border2);font-size:13px;font-weight:500;">Progreso de procesos activos</div>';
+
+    if (!reqsActivas.length) {
+      progresoHtml += '<div style="padding:16px;font-size:13px;color:var(--muted);text-align:center;">No hay procesos activos.</div>';
+    } else {
+      var ETAPAS_N = ['HC','Convoc.','Eval.','Longlist','Entrevista','Oferta','Trámites'];
+      var ETAPAS_K = ['hc','convocatoria','evaluacion','longlist','entrevista','oferta','tramites'];
+      reqsActivas.slice(0,6).forEach(function(r) {
+        var etapas = r.etapas || {};
+        var completadas = ETAPAS_K.filter(function(k){ return !!etapas[k]; }).length;
+        var lim = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
+        var dias = lim ? Math.ceil((lim-hoy)/(1000*60*60*24)) : null;
+        var diasTxt = dias===null?'':dias<=0?'<span style="color:#A32D2D;font-weight:500;">VENCIDO</span>':dias<=7?'<span style="color:#c0392b;">'+dias+'d restantes</span>':'<span style="color:var(--muted);">'+dias+'d</span>';
+
+        progresoHtml += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--border2);">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+            + '<span style="font-size:12px;font-weight:500;">'+r.puesto+'</span>'
+            + '<span style="font-size:11px;">'+diasTxt+'</span>'
+          + '</div>'
+          + '<div style="display:flex;align-items:center;gap:0;">';
+
+        ETAPAS_K.forEach(function(k, i) {
+          var done = !!etapas[k];
+          var current = !done && (i===0 || !!etapas[ETAPAS_K[i-1]]);
+          var bg = done ? '#3B6D11' : current ? '#e8623a' : 'var(--surface2)';
+          var tc = done||current ? '#fff' : 'var(--muted)';
+          progresoHtml += '<div style="width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+tc+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0;">'+( done?'&#10003;':(i+1))+'</div>';
+          if (i < ETAPAS_K.length-1) {
+            progresoHtml += '<div style="flex:1;height:2px;background:'+(done?'#3B6D11':'var(--border2)')+';"></div>';
+          }
+        });
+
+        progresoHtml += '</div>'
+          + '<div style="display:flex;gap:4px;margin-top:4px;">'
+          + ETAPAS_N.map(function(n,i){ return '<div style="flex:1;text-align:center;font-size:8px;color:var(--muted);">'+n+'</div>'; }).join('')
+          + '</div>'
+        + '</div>';
+      });
+    }
+    progresoHtml += '</div>';
+
+    // ── SECCIÓN B: KPIs + POR GERENCIA ──
+    var kpisHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;">'
+      + mkKpi('Procesos abiertos', reqsActivas.length, '', '#b8760a')
+      + mkKpi('Procesos cubiertos', cubiertos, '', '#2d7a4f')
+      + mkKpi('Total candidatos', totalCands, '', '#3C3489')
+      + mkKpi('Tasa avance', tasaAvanzar, '%', '#e8623a')
+      + mkKpi('Estrellas prom.', promedioEst, '★', '#f4c430')
+      + (tiempoPromedio ? mkKpi('Días cobertura prom.', tiempoPromedio, 'd', '#2d7a4f') : '')
+    + '</div>';
+
+    // Tabla por gerencia
+    var byGer = {};
+    requisiciones.forEach(function(r) {
+      var job = jobs.find(function(j){ return getReqsForJob(j.id,j.titulo).some(function(x){ return x.id===r.id; }); });
+      var ger = (job&&job.gerencia) ? job.gerencia : (r.gerencia || 'Sin gerencia');
+      if (!byGer[ger]) byGer[ger] = { activos:0, cubiertos:0, sla:0, cands:0, estrellas:[] };
+      if (r.estado==='Cubierto') byGer[ger].cubiertos++;
+      else byGer[ger].activos++;
+      if (slaAlerts.some(function(a){ return a.puesto===r.puesto; })) byGer[ger].sla++;
+      var candsDePuesto = results.filter(function(c){ return c.puesto===r.puesto; });
+      byGer[ger].cands += candsDePuesto.length;
+      candsDePuesto.forEach(function(c){ byGer[ger].estrellas.push(c.estrellas||c.puntaje||0); });
+    });
+
+    var gerHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
+      + '<div style="padding:12px 16px;border-bottom:0.5px solid var(--border2);font-size:13px;font-weight:500;">Rendimiento por gerencia</div>'
+      + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
+      + '<thead><tr style="background:var(--surface2);">'
+        + '<th style="padding:8px 14px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Gerencia</th>'
+        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Activos</th>'
+        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Cubiertos</th>'
+        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidatos</th>'
+        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">SLA vencido</th>'
+        + '<th style="padding:8px 14px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Estrellas prom.</th>'
+      + '</tr></thead><tbody>';
+
+    Object.keys(byGer).sort().forEach(function(ger) {
+      var g = byGer[ger];
+      var promG = g.estrellas.length ? (g.estrellas.reduce(function(s,v){return s+v;},0)/g.estrellas.length).toFixed(1) : '—';
+      var barW = promG!=='—' ? Math.round(parseFloat(promG)/5*100) : 0;
+      var barC = parseFloat(promG)>=4?'#3B6D11':parseFloat(promG)>=3?'#b8760a':'#c0392b';
+      gerHtml += '<tr style="border-top:0.5px solid var(--border2);">'
+        + '<td style="padding:10px 14px;font-weight:500;">'+ger+'</td>'
+        + '<td style="padding:10px 14px;text-align:center;">'+(g.activos||'—')+'</td>'
+        + '<td style="padding:10px 14px;text-align:center;color:#2d7a4f;font-weight:500;">'+(g.cubiertos||'—')+'</td>'
+        + '<td style="padding:10px 14px;text-align:center;">'+g.cands+'</td>'
+        + '<td style="padding:10px 14px;text-align:center;">'+(g.sla?'<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:1px 8px;border-radius:4px;">'+g.sla+'</span>':'<span style="color:var(--muted);">—</span>')+'</td>'
+        + '<td style="padding:10px 14px;min-width:120px;">'
+          + (promG!=='—'
+            ? '<div style="display:flex;align-items:center;gap:6px;">'
+                + '<div style="flex:1;background:var(--surface2);border-radius:3px;height:5px;"><div style="width:'+barW+'%;background:'+barC+';border-radius:3px;height:5px;"></div></div>'
+                + '<span style="font-size:11px;color:'+barC+';font-weight:500;white-space:nowrap;">'+promG+'★</span>'
+              + '</div>'
+            : '<span style="color:var(--muted);">—</span>')
+        + '</td>'
+      + '</tr>';
+    });
+
+    gerHtml += '</tbody></table></div></div>';
+
+    panel.innerHTML = accionesHtml + progresoHtml + kpisHtml + gerHtml;
   });
 }
+
 
 function mkKpi(label, value, suffix, color) {
   return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;text-align:center;">'+
