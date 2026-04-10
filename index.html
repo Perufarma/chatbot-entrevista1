@@ -106,10 +106,35 @@ a[title]{cursor:pointer;}
     <div class="alert-banner" id="alertaVencimiento"></div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;">
       <div><div class="section-title">Puestos y solicitudes</div><div class="section-sub">Haz clic en el nombre de un puesto → para ver el detalle y gestionar el proceso</div></div>
-      <button class="btn btn-accent" onclick="toggleForm()" title="Crea un nuevo perfil de puesto y opcionalmente abre una solicitud de personal">+ Nuevo puesto</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="toggleCargaPDF()">&#128196; Cargar desde PDF</button>
+        <button class="btn btn-accent" onclick="toggleForm()" title="Crea un nuevo perfil de puesto">+ Nuevo puesto</button>
+      </div>
     </div>
 
     <!-- Formulario de puesto -->
+    <!-- Panel carga PDF -->
+    <div id="cargaPDFPanel" style="display:none;background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:24px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <div style="font-size:15px;font-weight:600;">Cargar perfiles desde PDF</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">La IA leer&aacute; el job description y crear&aacute; el perfil autom&aacute;ticamente</div>
+        </div>
+        <button onclick="toggleCargaPDF()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);">&times;</button>
+      </div>
+      <div id="pdfDropZone" style="border:2px dashed var(--border2);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;"
+        onclick="document.getElementById('pdfFileInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent2)';this.style.background='#fef2ee';"
+        ondragleave="this.style.borderColor='var(--border2)';this.style.background='';"
+        ondrop="event.preventDefault();this.style.borderColor='var(--border2)';this.style.background='';handlePDFDrop(event);">
+        <div style="font-size:32px;margin-bottom:8px;">&#128196;</div>
+        <div style="font-size:14px;font-weight:500;color:var(--text);">Arrastra PDFs aqu&iacute; o haz clic para seleccionar</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Soporta m&uacute;ltiples archivos PDF con job descriptions</div>
+        <input type="file" id="pdfFileInput" accept=".pdf" multiple style="display:none;" onchange="handlePDFFiles(this.files)">
+      </div>
+      <div id="pdfResultados" style="margin-top:16px;display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+
     <div class="add-job-form" id="addJobForm">
       <div id="formTitle" style="font-size:14px;font-weight:500;">Nuevo puesto</div>
 
@@ -753,16 +778,33 @@ poblarSelectPuestosDefault();
 
   // Reparar reqs con jobId null o desincronizado
   var repaired = false;
+  function fuzzyMatch(a, b) {
+    if (!a || !b) return false;
+    a = a.toLowerCase().trim().replace(/\s+/g,' ');
+    b = b.toLowerCase().trim().replace(/\s+/g,' ');
+    if (a === b) return true;
+    // Contener el uno al otro
+    if (a.includes(b) || b.includes(a)) return true;
+    // Match por primeras palabras
+    var wa = a.split(' '); var wb = b.split(' ');
+    var common = wa.filter(function(w){ return w.length>3 && wb.indexOf(w)!==-1; });
+    return common.length >= Math.min(2, Math.min(wa.length, wb.length));
+  }
   requisiciones = requisiciones.map(function(r) {
-    if (r.jobId && jobs.find(function(j){ return j.id===r.jobId; })) return r; // OK
-    // Buscar job por nombre
+    if (r.jobId && jobs.find(function(j){ return j.id===r.jobId; })) return r; // jobId válido
+    // Buscar job por nombre exacto primero, luego fuzzy
     var matchJob = jobs.find(function(j){
       return r.puesto && j.titulo && r.puesto.toLowerCase().trim()===j.titulo.toLowerCase().trim();
+    }) || jobs.find(function(j){
+      return fuzzyMatch(r.puesto, j.titulo);
     });
-    if (matchJob && r.jobId !== matchJob.id) {
+    if (matchJob) {
       repaired = true;
-      return Object.assign({}, r, {jobId: matchJob.id});
+      console.log('[RecruitAI] Reparando req:', r.puesto, '->', matchJob.titulo, '('+matchJob.id+')');
+      return Object.assign({}, r, {jobId: matchJob.id, puesto: matchJob.titulo});
     }
+    // Req huérfana — no tiene job correspondiente, loguear
+    console.warn('[RecruitAI] Req huérfana sin job:', r.puesto, 'jobId:', r.jobId);
     return r;
   });
   if (repaired) {
@@ -777,6 +819,20 @@ poblarSelectPuestosDefault();
   verificarAlertas();
   poblarSelectPuestosDefault();
   console.log('[RecruitAI] Datos cargados — jobs:', jobs.length, 'reqs:', requisiciones.length, 'feedbacks:', feedbacks.length);
+  // Detectar puestos en candidatos sin job asociado
+  safeFetch('/api/jobs?type=results').then(function(rd){
+    var results = (rd&&rd.results)?rd.results:[];
+    var puestosEnCandidatos = results.map(function(r){return r.puesto;}).filter(function(v,i,a){return a.indexOf(v)===i;});
+    var jobTitulos = jobs.map(function(j){return j.titulo.toLowerCase().trim();});
+    var huerfanos = puestosEnCandidatos.filter(function(p){
+      return !jobTitulos.some(function(t){ return t===p.toLowerCase().trim()||t.includes(p.toLowerCase().trim())||p.toLowerCase().trim().includes(t); });
+    });
+    if (huerfanos.length) {
+      console.warn('[RecruitAI] Puestos con candidatos SIN job asociado:', huerfanos);
+    } else {
+      console.log('[RecruitAI] Todos los puestos con candidatos tienen job asociado ✓');
+    }
+  });
   console.log('[RecruitAI] Job IDs:', jobs.map(function(j){return j.id+'='+j.titulo;}));
   console.log('[RecruitAI] Req jobIds:', requisiciones.map(function(r){return r.jobId+'='+r.puesto;}));
 })();
@@ -1855,6 +1911,160 @@ async function saveCandidatoManual() {
   renderCandidatosPorPuesto();
 }
 
+
+// ══════════════════════════════════
+// CARGA DE PERFILES DESDE PDF
+// ══════════════════════════════════
+function toggleCargaPDF() {
+  var panel = document.getElementById('cargaPDFPanel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function handlePDFDrop(event) {
+  var files = event.dataTransfer.files;
+  handlePDFFiles(files);
+}
+
+function handlePDFFiles(files) {
+  if (!files || !files.length) return;
+  var panel = document.getElementById('pdfResultados');
+  if (!panel) return;
+  Array.from(files).forEach(function(file) {
+    if (file.type !== 'application/pdf') {
+      toast('Solo se aceptan archivos PDF');
+      return;
+    }
+    procesarPDF(file);
+  });
+}
+
+function procesarPDF(file) {
+  var panel = document.getElementById('pdfResultados');
+  var cardId = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+
+  // Card de progreso
+  var card = document.createElement('div');
+  card.id = cardId;
+  card.style.cssText = 'background:var(--surface2);border:0.5px solid var(--border2);border-radius:10px;padding:16px;';
+  card.innerHTML = '<div style="display:flex;align-items:center;gap:10px;">'
+    + '<div style="font-size:20px;">&#128196;</div>'
+    + '<div><div style="font-size:13px;font-weight:500;">' + file.name + '</div>'
+    + '<div style="font-size:12px;color:var(--muted);" id="' + cardId + '_status">Leyendo PDF...</div></div>'
+    + '</div>';
+  panel.appendChild(card);
+
+  // Leer PDF como base64
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    var statusEl = document.getElementById(cardId + '_status');
+    if (statusEl) statusEl.textContent = 'Analizando con IA...';
+
+    // Llamar a la API de Claude con el PDF
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: base64 }
+            },
+            {
+              type: 'text',
+              text: 'Analiza este job description y extrae la información en formato JSON exacto, sin markdown ni texto adicional:\n{"titulo":"nombre del puesto","area":"área o departamento","gerencia":"gerencia o unidad de negocio","desc":"descripción completa del puesto incluyendo misión, funciones principales, resultados esperados, formación requerida, competencias y relaciones. Máximo 800 palabras."}'
+            }
+          ]
+        }]
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var text = data.content && data.content[0] ? data.content[0].text : '';
+      var perfil;
+      try {
+        var clean = text.replace(/```json|```/g,'').trim();
+        perfil = JSON.parse(clean);
+      } catch(e) {
+        if (statusEl) statusEl.textContent = 'Error al parsear respuesta de IA';
+        return;
+      }
+
+      // Mostrar resultado para revisión
+      var card = document.getElementById(cardId);
+      if (!card) return;
+      card.innerHTML =
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;">'
+          + '<div>'
+            + '<div style="font-size:14px;font-weight:600;">' + (perfil.titulo||'Sin título') + '</div>'
+            + '<div style="font-size:12px;color:var(--muted);">' + (perfil.area||'') + (perfil.gerencia?' · '+perfil.gerencia:'') + '</div>'
+          + '</div>'
+          + '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:3px 10px;border-radius:8px;">&#10003; IA procesó</span>'
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;max-height:80px;overflow:hidden;">' + (perfil.desc||'').substring(0,200) + '...</div>'
+        + '<div style="display:flex;gap:8px;">'
+          + '<button class="btn btn-primary btn-sm" onclick="guardarPerfilPDF(' + JSON.stringify(JSON.stringify(perfil)) + ')">Guardar perfil</button>'
+          + '<button class="btn btn-secondary btn-sm" onclick="editarPerfilPDF(' + JSON.stringify(JSON.stringify(perfil)) + ')">Revisar y editar</button>'
+          + '<button class="btn btn-secondary btn-sm" data-card-id="'+cardId+'" onclick="document.getElementById(this.dataset.cardId).remove()">Descartar</button>'
+        + '</div>';
+    })
+    .catch(function(e) {
+      if (statusEl) statusEl.textContent = 'Error al conectar con la IA: ' + e.message;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function guardarPerfilPDF(perfilStr) {
+  try {
+    var perfil = JSON.parse(perfilStr);
+    var jobData = {
+      id: Date.now(),
+      titulo: perfil.titulo || 'Sin título',
+      area: perfil.area || '',
+      gerencia: perfil.gerencia || '',
+      desc: perfil.desc || '',
+      instrucciones: '',
+      emailLider: '',
+      dniLider: ''
+    };
+    jobs.push(jobData);
+    localStorage.setItem('rjobs', JSON.stringify(jobs));
+    syncJobsToServer(jobs);
+    renderJobsList();
+    toast('Perfil "' + jobData.titulo + '" creado ✓');
+    document.getElementById('cargaPDFPanel').style.display = 'none';
+    document.getElementById('pdfResultados').innerHTML = '';
+  } catch(e) {
+    toast('Error al guardar perfil');
+  }
+}
+
+function editarPerfilPDF(perfilStr) {
+  try {
+    var perfil = JSON.parse(perfilStr);
+    // Abrir formulario de nuevo puesto precargado
+    toggleForm();
+    setTimeout(function() {
+      var tSel = document.getElementById('f_titulo_sel');
+      if (tSel) { tSel.value = '__otro__'; seleccionarPuestoDefault('__otro__'); }
+      var tInp = document.getElementById('f_titulo'); if (tInp) { tInp.value = perfil.titulo||''; tInp.style.display='block'; }
+      var aEl = document.getElementById('f_area'); if (aEl) aEl.value = perfil.area||'';
+      var dEl = document.getElementById('f_desc'); if (dEl) dEl.value = perfil.desc||'';
+      var gEl = document.getElementById('f_gerencia'); if (gEl) gEl.value = perfil.gerencia||'';
+      document.getElementById('cargaPDFPanel').style.display = 'none';
+      document.getElementById('pdfResultados').innerHTML = '';
+    }, 300);
+  } catch(e) {
+    toast('Error al abrir formulario');
+  }
+}
+
 // ══════════════════════════════════
 // COMPARADOR DE CANDIDATOS
 // ══════════════════════════════════
@@ -2790,10 +3000,12 @@ function mkKpi(label, value, suffix, color) {
 function getReqsForJob(jobId, jobTitulo) {
   var byId = requisiciones.filter(function(r){ return r.jobId===jobId; });
   if (byId.length) return byId;
-  // Fallback: buscar por nombre de puesto (para reqs con jobId desincronizado)
+  // Fallback: buscar por nombre de puesto (exacto o fuzzy)
   return requisiciones.filter(function(r){
-    return !r.jobId && r.puesto && jobTitulo &&
-      r.puesto.toLowerCase().trim() === jobTitulo.toLowerCase().trim();
+    if (!r.puesto || !jobTitulo) return false;
+    var a = r.puesto.toLowerCase().trim();
+    var b = jobTitulo.toLowerCase().trim();
+    return a === b || a.includes(b) || b.includes(a);
   });
 }
 function toggleInstrucciones() {
