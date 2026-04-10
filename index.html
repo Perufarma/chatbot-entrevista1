@@ -751,6 +751,26 @@ poblarSelectPuestosDefault();
     feedbacks = df.feedbacks; localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
   }
 
+  // Reparar reqs con jobId null o desincronizado
+  var repaired = false;
+  requisiciones = requisiciones.map(function(r) {
+    if (r.jobId && jobs.find(function(j){ return j.id===r.jobId; })) return r; // OK
+    // Buscar job por nombre
+    var matchJob = jobs.find(function(j){
+      return r.puesto && j.titulo && r.puesto.toLowerCase().trim()===j.titulo.toLowerCase().trim();
+    });
+    if (matchJob && r.jobId !== matchJob.id) {
+      repaired = true;
+      return Object.assign({}, r, {jobId: matchJob.id});
+    }
+    return r;
+  });
+  if (repaired) {
+    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+    syncReqsToServer(requisiciones);
+    console.log('[RecruitAI] Requisiciones reparadas y sincronizadas');
+  }
+
   // Ahora renderizar con todos los datos cargados
   renderJobsList();
   renderEnvioSelect();
@@ -1187,7 +1207,8 @@ function editJob(id) {
   var mcw2 = document.getElementById('motivoCambioWrap'); if(mcw2) mcw2.style.display='block';
   var mc2 = document.getElementById('f_motivoCambio'); if(mc2) mc2.value='';
   // Precargar campos de solicitud desde la última requisición
-  var jobReqsEdit = requisiciones.filter(function(r){ return r.jobId===id; });
+  var jobForEdit = jobs.find(function(x){ return x.id===id; });
+  var jobReqsEdit = getReqsForJob(id, jobForEdit ? jobForEdit.titulo : '');
   var lastReqEdit = jobReqsEdit.length ? jobReqsEdit[jobReqsEdit.length-1] : null;
   if (lastReqEdit) {
     var sedeEl = document.getElementById('f_sede'); if(sedeEl) sedeEl.value = lastReqEdit.sede||'';
@@ -1411,7 +1432,8 @@ function saveJobAndCreateReq() {
 
 // Renderiza historial de solicitudes de un puesto con su snapshot
 function renderHistorialSolicitudes(jobId) {
-  var reqs = requisiciones.filter(function(r){ return r.jobId === jobId; });
+  var jobObj = jobs.find(function(j){ return j.id===jobId; });
+  var reqs = getReqsForJob(jobId, jobObj ? jobObj.titulo : '');
   if (!reqs.length) return '';
   var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:{bg:'#EEEDFE',t:'#3C3489'}; };
   var html = '<div style="margin-top:14px;border-top:0.5px solid var(--border2);padding-top:12px;">';
@@ -1569,7 +1591,7 @@ function renderJobsList() {
     '</tr></thead><tbody>';
 
   filtered.forEach(function(j, idx) {
-    var jobReqs = requisiciones.filter(function(r){ return r.jobId===j.id; });
+    var jobReqs = getReqsForJob(j.id, j.titulo);
     var lastReq = jobReqs.length ? jobReqs[jobReqs.length-1] : null;
     var estadoReq = lastReq ? lastReq.estado : 'Sin solicitud';
     var sBg = estadoReq==='Cubierto'?'#EEEDFE':estadoReq==='En proceso'?'#edf7f1':'#fef8ee';
@@ -1603,7 +1625,8 @@ function renderJobsList() {
 function abrirDetalleJob(id) {
   var j = jobs.find(function(x){ return x.id===id; });
   if (!j) return;
-  var jobReqs = requisiciones.filter(function(r){ return r.jobId===id; });
+  var job = jobs.find(function(x){ return x.id===id; });
+  var jobReqs = getReqsForJob(id, job ? job.titulo : '');
   var lastReq = jobReqs.length ? jobReqs[jobReqs.length-1] : null;
 
   var html =
@@ -2762,6 +2785,17 @@ function mkKpi(label, value, suffix, color) {
 // ══════════════════════════════════
 // HELPERS UI
 // ══════════════════════════════════
+
+// Buscar requisiciones de un job por jobId o por nombre de puesto (fallback)
+function getReqsForJob(jobId, jobTitulo) {
+  var byId = requisiciones.filter(function(r){ return r.jobId===jobId; });
+  if (byId.length) return byId;
+  // Fallback: buscar por nombre de puesto (para reqs con jobId desincronizado)
+  return requisiciones.filter(function(r){
+    return !r.jobId && r.puesto && jobTitulo &&
+      r.puesto.toLowerCase().trim() === jobTitulo.toLowerCase().trim();
+  });
+}
 function toggleInstrucciones() {
   var panel = document.getElementById('instrPanel');
   var chev  = document.getElementById('instrChevron');
