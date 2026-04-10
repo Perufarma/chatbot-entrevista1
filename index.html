@@ -2343,9 +2343,15 @@ function renderTablaByPuesto(results) {
           var etC = lastR && lastR.etapas ? lastR.etapas : {};
           var ofOk = !!etC.oferta; var trOk = !!etC.tramites;
           var cEnc = encodeURIComponent(c.candidato); var pEnc = encodeURIComponent(c.puesto);
-          var ofBtn = '<button class="btn btn-sm '+(ofOk?'btn-secondary':'btn-primary')+'" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleOferta(this)" style="font-size:11px;padding:3px 8px;'+(ofOk?'opacity:0.7;':'')+'">'+( ofOk?'\u2713 Oferta':'\u25cb Oferta')+'</button>';
-          var trBtn = ofOk ? '<button class="btn btn-sm '+(trOk?'btn-secondary':'btn-primary')+'" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;padding:3px 8px;'+(trOk?'opacity:0.7;':'')+'">'+( trOk?'\u2713 Ingreso':'\u25cb Ingreso')+'</button>' : '<span style="color:var(--muted);font-size:12px;">\u2014</span>';
-          return '<td style="padding:9px 12px;text-align:center;">'+ofBtn+'</td>'
+          var fbCand = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto && f.elegido; });
+          var esElegidoRec = !!fbCand;
+          var elegidoBadge = esElegidoRec
+            ? '<span style="font-size:11px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 8px;border-radius:6px;">🏆 Elegido</span>'
+            : '<span style="font-size:11px;color:var(--muted);">&#8212;</span>';
+          var trBtn = (esElegidoRec||etC.oferta)
+            ? '<button class="btn btn-sm '+(trOk?'btn-secondary':'btn-primary')+'" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;padding:3px 8px;'+(trOk?'opacity:0.7;':'')+'">'+(trOk?'\u2713 Ingreso':'\u25cb Ingreso')+'</button>'
+            : '<span style="color:var(--muted);font-size:12px;">&#8212;</span>';
+          return '<td style="padding:9px 12px;text-align:center;">'+elegidoBadge+'</td>'
                + '<td style="padding:9px 12px;text-align:center;">'+trBtn+'</td>';
         })()
         +'<td style="padding:9px 12px;text-align:center;"><button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;">&#128465;</button></td>'
@@ -2369,7 +2375,7 @@ function renderTablaByPuesto(results) {
           +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Recomendaci&oacute;n</th>'
           +'<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Resumen</th>'
           +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">L\u00edder</th>'
-          +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Oferta</th>'
+          +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Elegido</th>'
           +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Ingreso</th>'
           +'<th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;"></th>'
         +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
@@ -2500,6 +2506,17 @@ function renderFeedbackPanel() {
               '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="saveFeedbackBtn(this)">Guardar feedback</button>'+
               (fb?'<button class="btn btn-secondary btn-sm" data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="deleteFeedbackBtn(this)">Borrar</button>':'')+
             '</div>':'')+
+            (fb?(function(){
+              var cEnc2=encodeURIComponent(c.candidato); var pEnc2=encodeURIComponent(c.puesto);
+              var aptoOk=fb.apto===true; var noAptoOk=fb.apto===false; var esElegido=fb.elegido===true;
+              return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border2);">'+
+                '<span style="font-size:11px;color:var(--muted);font-weight:500;">¿Es apto?</span>'+
+                '<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="font-size:11px;padding:3px 10px;">'+(aptoOk?'✓ Apto':'Apto')+'</button>'+
+                '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="font-size:11px;padding:3px 10px;">'+(noAptoOk?'✗ No apto':'No apto')+'</button>'+
+                (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">🏆 Elegir</button>':'')+
+                (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>':'')+
+              '</div>';
+            })():'')+ 
           '</div>'+
         '</div>';
       }).join('');
@@ -2527,6 +2544,55 @@ function renderFeedbackPanel() {
   });
 }
 
+
+// ── Marcar candidato como Apto / No apto ──
+function marcarApto(cand, puesto, valor) {
+  var cDec = decodeURIComponent(cand);
+  var pDec = decodeURIComponent(puesto);
+  var idx = feedbacks.findIndex(function(f){ return f.candidato===cDec && f.puesto===pDec; });
+  if (idx === -1) { toast('Guarda el feedback primero'); return; }
+  feedbacks[idx].apto = valor; // true=Apto, false=No apto
+  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+  safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
+  renderFeedbackPanel();
+  toast(valor ? 'Candidato marcado como Apto ✓' : 'Candidato marcado como No apto');
+}
+
+// ── Elegir candidato final ──
+function elegirCandidato(cand, puesto) {
+  var cDec = decodeURIComponent(cand);
+  var pDec = decodeURIComponent(puesto);
+  // Solo uno puede ser elegido por puesto
+  feedbacks = feedbacks.map(function(f){
+    if (f.puesto !== pDec) return f;
+    return Object.assign({}, f, {elegido: f.candidato===cDec});
+  });
+  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+  safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
+
+  // Activar etapa 6 (oferta) automáticamente en la requisición del puesto
+  var reqsDePuesto = requisiciones.filter(function(r){ return r.puesto===pDec && r.estado!=='Cubierto'; });
+  if (reqsDePuesto.length) {
+    var lastReqId = reqsDePuesto[reqsDePuesto.length-1].id;
+    requisiciones = requisiciones.map(function(r){
+      if (r.id !== lastReqId) return r;
+      var etapas = Object.assign({}, r.etapas||{});
+      etapas.oferta = new Date().toLocaleDateString('es-PE');
+      var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
+      bita.push({
+        fecha: new Date().toLocaleDateString('es-PE'),
+        hora: new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+        msg: 'Candidato elegido por el líder: ' + cDec,
+        candidato: cDec
+      });
+      return Object.assign({},r,{etapas:etapas,bitacora:bita,candidatoElegido:cDec});
+    });
+    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+    syncReqsToServer(requisiciones);
+  }
+  renderFeedbackPanel();
+  toast('🏆 ' + cDec + ' seleccionado como candidato elegido');
+}
 
 function toggleFbCard(keyOrEl) {
   var key = typeof keyOrEl === 'string' ? keyOrEl : keyOrEl.dataset && keyOrEl.dataset.key;
@@ -2563,7 +2629,7 @@ function deleteFeedbackBtn(el) {
 
 function saveFeedback(candidato,puesto,key){
   var comentario=document.getElementById('fb_'+key)?document.getElementById('fb_'+key).value:'';
-  var fb=Object.assign({candidato:candidato,puesto:puesto,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now()},fbTemp[key]||{});
+  var fb=Object.assign({candidato:candidato,puesto:puesto,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false},fbTemp[key]||{});
   feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto===puesto);});
   feedbacks.push(fb);
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
