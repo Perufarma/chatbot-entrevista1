@@ -1047,8 +1047,15 @@ function renderLiderProcesos() {
     return;
   }
 
-  panel.innerHTML = misReqs.slice().reverse().map(function(r) {
-    var isSelected = window._liderProcesoSeleccionado === r.id;
+  // Agrupar por puesto — mostrar solo la req más reciente por puesto
+  var byPuesto = {};
+  misReqs.forEach(function(r){
+    if (!byPuesto[r.puesto] || r.id > byPuesto[r.puesto].id) byPuesto[r.puesto] = r;
+  });
+  var reqsUnicas = Object.values(byPuesto).sort(function(a,b){ return b.id-a.id; });
+
+  panel.innerHTML = reqsUnicas.map(function(r) {
+    var isSelected = window._liderProcesoSeleccionado === r.id || String(window._liderProcesoSeleccionado) === String(r.id);
     var c = r.estado==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:r.estado==='Cubierto'?{bg:'#EEEDFE',t:'#3C3489'}:{bg:'#fef8ee',t:'#7a5000'};
     var hoy = new Date();
     var limite = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
@@ -1068,15 +1075,18 @@ function renderLiderProcesos() {
 }
 
 function seleccionarProceso(reqId) {
-  window._liderProcesoSeleccionado = reqId;
+  // Intentar convertir a número para match con r.id numérico
+  var numId = parseInt(reqId);
+  var id = isNaN(numId) ? reqId : numId;
+  window._liderProcesoSeleccionado = id;
   renderLiderProcesos();
-  renderDetalleProcesoSeleccionado(reqId);
+  renderDetalleProcesoSeleccionado(id);
 }
 
 function renderDetalleProcesoSeleccionado(reqId) {
   var panel = document.getElementById('liderDetallePanel');
   if (!panel) return;
-  var r = requisiciones.find(function(x){ return x.id===reqId; });
+  var r = requisiciones.find(function(x){ return x.id===reqId || x.id===parseInt(reqId) || String(x.id)===String(reqId); });
   if (!r) { panel.innerHTML='<div style="padding:20px;color:var(--muted);">Proceso no encontrado</div>'; return; }
 
   safeFetch('/api/jobs?type=results').then(function(d){
@@ -1782,49 +1792,118 @@ function renderJobsList() {
 }
 
 
+// ── Historial de solicitudes con HC integrado por solicitud ──
+function renderHistorialConHC(jobId) {
+  var jobObj = jobs.find(function(j){ return j.id===jobId; });
+  var reqs = getReqsForJob(jobId, jobObj ? jobObj.titulo : '');
+
+  if (!reqs.length) {
+    return '<div style="background:var(--surface2);border-radius:8px;padding:14px 16px;border:0.5px solid var(--border2);">'
+      + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Acciones del proceso</div>'
+      + '<div style="font-size:12px;color:var(--muted);">Crea una solicitud para gestionar las etapas del proceso</div>'
+      + '</div>';
+  }
+
+  var ec = function(e){ return e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:e==='Cubierto'?{bg:'#EEEDFE',t:'#3C3489'}:{bg:'#fef8ee',t:'#7a5000'}; };
+  var revsReqs = reqs.slice().reverse();
+  var activaId = revsReqs[0].id; // La más reciente es la activa
+
+  var html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+
+  revsReqs.forEach(function(r, idx) {
+    var esActiva = r.id === activaId;
+    var c = ec(r.estado);
+    var etapas = r.etapas || {};
+    var hcOk = !!etapas.hc;
+    var snap = r.perfilSnapshot || {};
+    var snapId = 'snap_'+r.id;
+
+    html += '<div style="border:0.5px solid '+(esActiva?'var(--accent2)':'var(--border2)')+';border-radius:10px;overflow:hidden;">';
+
+    // Header de la solicitud
+    html += '<div style="padding:10px 14px;background:'+(esActiva?'#fef2ee':'var(--surface2)')+';display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">';
+    html += '<div style="font-size:12px;font-weight:500;color:'+(esActiva?'var(--accent2)':'var(--muted)')+';">';
+    html += (esActiva ? 'Solicitud activa' : 'Solicitud anterior')+' &mdash; '+r.fecha;
+    html += '</div>';
+    html += '<div style="display:flex;align-items:center;gap:6px;">';
+    html += '<span style="font-size:10px;background:'+c.bg+';color:'+c.t+';padding:2px 8px;border-radius:5px;font-weight:500;">'+r.estado+'</span>';
+    if (snap.fechaSnapshot || r.fecha) {
+      html += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:10px;background:none;border:0.5px solid var(--border2);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--muted);">Ver perfil usado</button>';
+    }
+    html += '</div></div>';
+
+    // Datos de la solicitud
+    html += '<div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;border-bottom:0.5px solid var(--border2);">';
+    html += '<div>Inicio: <strong>'+(r.fechaInicio||'—')+'</strong></div>';
+    html += '<div style="color:#c0392b;">Límite: <strong>'+(r.fechaLimite||'—')+'</strong></div>';
+    html += '<div>Sede: <strong>'+(r.sede||'—')+'</strong></div>';
+    html += '<div>Nivel: <strong>'+(r.nivel||'—')+'</strong></div>';
+    if (r.motivo) html += '<div>Motivo: <strong>'+(r.motivo==='reemplazo'?'Reemplazo':'Nuevo puesto')+'</strong></div>';
+    if (r.diasPlazo) html += '<div>Plazo: <strong>'+r.diasPlazo+' días</strong></div>';
+    html += '</div>';
+
+    // Perfil snapshot colapsable
+    html += '<div id="'+snapId+'" style="display:none;padding:10px 14px;font-size:12px;color:var(--muted);line-height:1.6;border-bottom:0.5px solid var(--border2);background:var(--bg);">';
+    html += '<div style="font-size:10px;font-weight:500;color:var(--accent2);margin-bottom:6px;">Perfil exacto usado en esta solicitud ('+( snap.fechaSnapshot||r.fecha)+')</div>';
+    if (snap.desc || r.minimos) html += '<div><strong style="color:var(--text);">Requisitos mínimos:</strong> '+(r.minimos||snap.desc||'')+'</div>';
+    if (r.deseables) html += '<div><strong style="color:var(--text);">Deseables:</strong> '+r.deseables+'</div>';
+    if (snap.instrucciones) html += '<div><strong style="color:var(--text);">Instrucciones IA:</strong> '+snap.instrucciones+'</div>';
+    html += '</div>';
+
+    // Botón HC — solo para la solicitud activa
+    if (esActiva) {
+      html += '<div style="padding:10px 14px;background:var(--surface2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+      html += '<div style="font-size:11px;color:var(--muted);font-weight:500;">Headcount y presupuesto:</div>';
+      var btnLabel = hcOk ? '✓ HC Confirmado' : '✓ Confirmar HC y Presupuesto';
+      var btnClass = hcOk ? 'btn-secondary' : 'btn-primary';
+      var btnStyle = hcOk ? 'opacity:0.7;' : '';
+      html += '<button class="btn btn-sm '+btnClass+'" data-req-id="'+r.id+'" data-job-id="'+r.jobId+'" onclick="toggleHC(this)" style="'+btnStyle+'">'+btnLabel+'</button>';
+      if (!hcOk) html += '<span style="font-size:11px;color:var(--muted);">Valida antes de iniciar la convocatoria</span>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+
 function abrirDetalleJob(id) {
   var j = jobs.find(function(x){ return x.id===id; });
   if (!j) return;
-  var job = jobs.find(function(x){ return x.id===id; });
-  var jobReqs = getReqsForJob(id, job ? job.titulo : '');
+  var jobReqs = getReqsForJob(id, j.titulo);
   var lastReq = jobReqs.length ? jobReqs[jobReqs.length-1] : null;
+  var estadoReq = lastReq ? lastReq.estado : 'Sin solicitud';
+  var sBg = estadoReq==='Cubierto'?'#EEEDFE':estadoReq==='En proceso'?'#edf7f1':'#fef8ee';
+  var sTx = estadoReq==='Cubierto'?'#3C3489':estadoReq==='En proceso'?'#1e5c38':'#7a5000';
+  var descId = 'desc_'+id;
 
   var html =
     '<div style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" id="jobDetailOverlay" onclick="if(event.target===this)this.remove()">'+
-    '<div style="background:var(--surface);border-radius:16px;padding:28px;max-width:600px;width:100%;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;">'+
+    '<div style="background:var(--surface);border-radius:16px;padding:28px;max-width:620px;width:100%;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;">'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">'+
         '<div>'+
           '<div style="font-size:18px;font-weight:600;letter-spacing:-.02em;">'+j.titulo+'</div>'+
-          '<div style="font-size:13px;color:var(--muted);margin-top:2px;">'+(j.area||'—')+' · '+(j.gerencia||'')+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:3px;">'+(j.area||'\u2014')+(j.gerencia?' \u00b7 '+j.gerencia:'')+'</div>'+
         '</div>'+
-        '<button onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>'+
+        '<div style="display:flex;align-items:center;gap:8px;">'+
+          '<span style="font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;background:'+sBg+';color:'+sTx+';">'+estadoReq+'</span>'+
+          '<button onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>'+
+        '</div>'+
       '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;background:var(--surface2);border-radius:8px;padding:12px;">'+
-        '<div>Sede: <strong>'+(lastReq&&lastReq.sede?lastReq.sede:'—')+'</strong></div>'+
-        '<div>Horario: <strong>'+(lastReq&&lastReq.horario?lastReq.horario:'—')+'</strong></div>'+
-        '<div>Nivel: <strong>'+(lastReq&&lastReq.nivel?lastReq.nivel:'—')+'</strong></div>'+
-        '<div>Motivo: <strong>'+(lastReq?(lastReq.motivo==='reemplazo'?'Reemplazo':'Nuevo puesto'):'—')+'</strong></div>'+
-        '<div>Inicio: <strong>'+(lastReq&&lastReq.fechaInicio?lastReq.fechaInicio:'—')+'</strong></div>'+
-        '<div style="color:#c0392b;">Límite: <strong>'+(lastReq&&lastReq.fechaLimite?lastReq.fechaLimite:'—')+'</strong></div>'+
-        '<div>Líder: <strong>'+(j.emailLider||'—')+'</strong></div>'+
-        '<div>DNI líder: <strong>'+(j.dniLider||'—')+'</strong></div>'+
-      '</div>'+
-      '<div>'+
-        '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Descripción</div>'+
-        '<div style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;">'+j.desc+'</div>'+
-      '</div>'+
-      renderHistorialSolicitudes(id)+
-      renderHCBoton(lastReq)+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:0.5px solid var(--border2);padding-top:14px;">'+
-        '<button class="btn btn-secondary btn-sm" data-job-id="'+id+'" onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove();editJob(this.dataset.jobId*1)">Editar perfil</button>'+
-        '<button class="btn btn-accent btn-sm" data-job-id="'+id+'" onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove();abrirNuevaSolicitud(this.dataset.jobId*1)">+ Nueva solicitud</button>'+
-        '<button class="btn btn-danger btn-sm" data-job-id="'+id+'" onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove();deleteJob(this.dataset.jobId*1)">Eliminar</button>'+
+      renderHistorialConHC(id)+
+      '<div style="border:0.5px solid var(--border2);border-radius:8px;overflow:hidden;">'+
+        '<button onclick="var el=document.getElementById(this.dataset.descId);el.style.display=el.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'span\').textContent=el.style.display===\'none\'?\'\u25bc\':\'\u25b2\';" data-desc-id="'+descId+'" style="width:100%;background:var(--surface2);border:none;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);">'+
+          'Ver descripci\u00f3n del puesto <span style="font-size:10px;">\u25bc</span>'+
+        '</button>'+
+        '<div id="'+descId+'" style="display:none;padding:14px;font-size:12px;color:var(--text);line-height:1.7;white-space:pre-wrap;border-top:0.5px solid var(--border2);">'+j.desc+'</div>'+
       '</div>'+
     '</div></div>';
 
   document.body.insertAdjacentHTML('beforeend', html);
 }
-
 // ── Renderizar sección HC en modal ──
 function renderHCBoton(lastReq) {
   var seccion = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;border:0.5px solid var(--border2);">'
@@ -3045,6 +3124,10 @@ function guardarSolicitudLider() {
     syncJobsToServer(jobs);
   }
 
+  var gerenciaLf = document.getElementById('lf_gerencia') ? document.getElementById('lf_gerencia').value : '';
+  var ceseLf = motivo==='reemplazo' ? (document.getElementById('lf_cese') ? document.getElementById('lf_cese').value : '') : '';
+  var reemplazoNombreLf = motivo==='reemplazo' ? (document.getElementById('lf_reemplazo_nombre') ? document.getElementById('lf_reemplazo_nombre').value.trim() : '') : '';
+
   var req = {
     id: Date.now() + 1,
     jobId: jobIdLf,
@@ -3053,15 +3136,16 @@ function guardarSolicitudLider() {
     fechaInicioRaw: fechaInicio,
     fechaLimite: fechaLimiteDate.toLocaleDateString('es-PE'),
     fechaLimiteRaw: fechaLimiteDate.toISOString(),
-    puesto: puesto, area: area, gerencia: (document.getElementById('lf_gerencia')?document.getElementById('lf_gerencia').value:''), sede: sede, horario: horario,
-    reemplazoNombre: motivo==='reemplazo'?(document.getElementById('lf_reemplazo_nombre')?document.getElementById('lf_reemplazo_nombre').value.trim():''):'',
-    cese: motivo==='reemplazo'?(document.getElementById('lf_cese')?document.getElementById('lf_cese').value:''):'',
+    puesto: puesto, area: area, gerencia: gerenciaLf,
+    sede: sede, horario: horario,
     nivelVal: nivel, nivel: PLAZOS[nivel] ? PLAZOS[nivel].label : nivel,
-    diasPlazo: diasPlazo, motivo: motivo, cese: '',
+    diasPlazo: diasPlazo, motivo: motivo,
+    cese: ceseLf, reemplazoNombre: reemplazoNombreLf,
     minimos: desc, deseables: deseables,
     emailLider: '', dniLider: liderDni || '',
-    estado: 'Pendiente', desiderablesCompletados: deseables ? true : false,
-    origenLider: true  // Marca que fue creada por el líder
+    estado: 'Pendiente',
+    desiderablesCompletados: deseables ? true : false,
+    origenLider: true
   };
 
   requisiciones.push(req);
