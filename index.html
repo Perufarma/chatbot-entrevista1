@@ -1798,17 +1798,18 @@ function renderHistorialConHC(jobId) {
   var reqs = getReqsForJob(jobId, jobObj ? jobObj.titulo : '');
 
   if (!reqs.length) {
-    return '<div style="background:var(--surface2);border-radius:8px;padding:14px 16px;border:0.5px solid var(--border2);">'
-      + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Acciones del proceso</div>'
-      + '<div style="font-size:12px;color:var(--muted);">Crea una solicitud para gestionar las etapas del proceso</div>'
+    return '<div style="border:0.5px solid var(--border2);border-radius:10px;padding:14px 16px;">'
+      + '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Sin solicitudes</div>'
+      + '<div style="font-size:12px;color:var(--muted);">Crea una solicitud para gestionar este proceso</div>'
       + '</div>';
   }
 
   var ec = function(e){ return e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:e==='Cubierto'?{bg:'#EEEDFE',t:'#3C3489'}:{bg:'#fef8ee',t:'#7a5000'}; };
   var revsReqs = reqs.slice().reverse();
-  var activaId = revsReqs[0].id; // La más reciente es la activa
+  var activaId = revsReqs[0].id;
+  var BTN_STYLE = 'font-size:11px;padding:5px 14px;min-width:120px;text-align:center;';
 
-  var html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  var html = '<div style="border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;">';
 
   revsReqs.forEach(function(r, idx) {
     var esActiva = r.id === activaId;
@@ -1817,58 +1818,73 @@ function renderHistorialConHC(jobId) {
     var hcOk = !!etapas.hc;
     var snap = r.perfilSnapshot || {};
     var snapId = 'snap_'+r.id;
+    var bodyId = 'body_'+r.id;
+    var hcBadge = hcOk
+      ? '<span style="font-size:10px;background:#edf7f1;color:#27500A;padding:1px 7px;border-radius:4px;font-weight:500;">HC \u2713</span>'
+      : '<span style="font-size:10px;background:#FAEEDA;color:#633806;padding:1px 7px;border-radius:4px;">HC pendiente</span>';
 
-    html += '<div style="border:0.5px solid '+(esActiva?'var(--accent2)':'var(--border2)')+';border-radius:10px;overflow:hidden;">';
+    // Header del acordeón — siempre visible
+    html += '<div style="border-bottom:0.5px solid var(--border2);">';
+    html += '<div onclick="(function(b,a){b.style.display=b.style.display===\'none\'?\'block\':\'none\';a.textContent=b.style.display===\'none\'?\'\u25bc\':\'\u25b2\';})(document.getElementById(\''+bodyId+'\'),document.getElementById(\'arr_'+r.id+'\'))"'
+      + ' style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:'+(esActiva?'#fef2ee':'var(--surface2)')+';gap:8px;">';
 
-    // Header de la solicitud
-    html += '<div style="padding:10px 14px;background:'+(esActiva?'#fef2ee':'var(--surface2)')+';display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">';
-    html += '<div style="font-size:12px;font-weight:500;color:'+(esActiva?'var(--accent2)':'var(--muted)')+';">';
-    html += (esActiva ? 'Solicitud activa' : 'Solicitud anterior')+' &mdash; '+r.fecha;
-    html += '</div>';
-    html += '<div style="display:flex;align-items:center;gap:6px;">';
-    html += '<span style="font-size:10px;background:'+c.bg+';color:'+c.t+';padding:2px 8px;border-radius:5px;font-weight:500;">'+r.estado+'</span>';
-    if (snap.fechaSnapshot || r.fecha) {
-      html += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:10px;background:none;border:0.5px solid var(--border2);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--muted);">Ver perfil usado</button>';
-    }
+    // Izquierda: número + título
+    html += '<div style="display:flex;align-items:center;gap:10px;">';
+    html += '<div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;background:'+(esActiva?'#e8623a':'var(--border2)')+';color:'+(esActiva?'#fff':'var(--muted)')+';">'+(idx+1)+'</div>';
+    html += '<div>';
+    html += '<div style="font-size:12px;font-weight:500;color:'+(esActiva?'var(--accent2)':'var(--muted)')+';">'+(esActiva?'Solicitud activa':'Solicitud anterior')+' &mdash; '+r.fecha+'</div>';
+    html += '<div style="font-size:10px;color:var(--muted);margin-top:1px;">L\u00edmite: '+r.fechaLimite+'</div>';
     html += '</div></div>';
 
-    // Datos de la solicitud
-    html += '<div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;border-bottom:0.5px solid var(--border2);">';
-    html += '<div>Inicio: <strong>'+(r.fechaInicio||'—')+'</strong></div>';
-    html += '<div style="color:#c0392b;">Límite: <strong>'+(r.fechaLimite||'—')+'</strong></div>';
-    html += '<div>Sede: <strong>'+(r.sede||'—')+'</strong></div>';
-    html += '<div>Nivel: <strong>'+(r.nivel||'—')+'</strong></div>';
+    // Derecha: badges + flecha
+    html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">';
+    html += '<span style="font-size:10px;background:'+c.bg+';color:'+c.t+';padding:1px 7px;border-radius:4px;font-weight:500;">'+r.estado+'</span>';
+    html += hcBadge;
+    html += '<span id="arr_'+r.id+'" style="font-size:9px;color:var(--muted);">'+(esActiva?'\u25b2':'\u25bc')+'</span>';
+    html += '</div></div>';
+
+    // Cuerpo del acordeón — visible solo si activa por defecto
+    html += '<div id="'+bodyId+'" style="display:'+(esActiva?'block':'none')+';border-top:0.5px solid var(--border2);">';
+
+    // Datos
+    html += '<div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;background:var(--surface);">';
+    html += '<div>Inicio: <strong>'+(r.fechaInicio||'\u2014')+'</strong></div>';
+    html += '<div style="color:#c0392b;">L\u00edmite: <strong>'+(r.fechaLimite||'\u2014')+'</strong></div>';
+    html += '<div>Sede: <strong>'+(r.sede||'\u2014')+'</strong></div>';
+    html += '<div>Nivel: <strong>'+(r.nivel||'\u2014')+'</strong></div>';
     if (r.motivo) html += '<div>Motivo: <strong>'+(r.motivo==='reemplazo'?'Reemplazo':'Nuevo puesto')+'</strong></div>';
-    if (r.diasPlazo) html += '<div>Plazo: <strong>'+r.diasPlazo+' días</strong></div>';
+    if (r.diasPlazo) html += '<div>Plazo: <strong>'+r.diasPlazo+' d\u00edas</strong></div>';
     html += '</div>';
 
-    // Perfil snapshot colapsable
-    html += '<div id="'+snapId+'" style="display:none;padding:10px 14px;font-size:12px;color:var(--muted);line-height:1.6;border-bottom:0.5px solid var(--border2);background:var(--bg);">';
-    html += '<div style="font-size:10px;font-weight:500;color:var(--accent2);margin-bottom:6px;">Perfil exacto usado en esta solicitud ('+( snap.fechaSnapshot||r.fecha)+')</div>';
-    if (snap.desc || r.minimos) html += '<div><strong style="color:var(--text);">Requisitos mínimos:</strong> '+(r.minimos||snap.desc||'')+'</div>';
+    // Snapshot colapsable
+    html += '<div style="padding:8px 14px;border-top:0.5px solid var(--border2);background:var(--surface);">';
+    html += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;padding:4px 12px;background:none;border:0.5px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);">Ver perfil usado</button>';
+    html += '</div>';
+
+    // Snapshot body
+    html += '<div id="'+snapId+'" style="display:none;padding:10px 14px;font-size:12px;color:var(--muted);line-height:1.6;border-top:0.5px solid var(--border2);background:var(--bg);">';
+    html += '<div style="font-size:10px;font-weight:500;color:var(--accent2);margin-bottom:6px;">Perfil usado en esta solicitud ('+(snap.fechaSnapshot||r.fecha)+')</div>';
+    if (snap.desc || r.minimos) html += '<div><strong style="color:var(--text);">Requisitos m\u00ednimos:</strong> '+(r.minimos||snap.desc||'')+'</div>';
     if (r.deseables) html += '<div><strong style="color:var(--text);">Deseables:</strong> '+r.deseables+'</div>';
     if (snap.instrucciones) html += '<div><strong style="color:var(--text);">Instrucciones IA:</strong> '+snap.instrucciones+'</div>';
     html += '</div>';
 
-    // Botón HC — solo para la solicitud activa
-    if (esActiva) {
-      html += '<div style="padding:10px 14px;background:var(--surface2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
-      html += '<div style="font-size:11px;color:var(--muted);font-weight:500;">Headcount y presupuesto:</div>';
-      var btnLabel = hcOk ? '✓ HC Confirmado' : '✓ Confirmar HC y Presupuesto';
-      var btnClass = hcOk ? 'btn-secondary' : 'btn-primary';
-      var btnStyle = hcOk ? 'opacity:0.7;' : '';
-      html += '<button class="btn btn-sm '+btnClass+'" data-req-id="'+r.id+'" data-job-id="'+r.jobId+'" onclick="toggleHC(this)" style="'+btnStyle+'">'+btnLabel+'</button>';
-      if (!hcOk) html += '<span style="font-size:11px;color:var(--muted);">Valida antes de iniciar la convocatoria</span>';
-      html += '</div>';
-    }
-
+    // HC por solicitud
+    html += '<div style="padding:10px 14px;background:var(--surface2);border-top:0.5px solid var(--border2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+    html += '<span style="font-size:11px;color:var(--muted);font-weight:500;">Headcount y presupuesto:</span>';
+    var hcLabel = hcOk ? '\u2713 HC Confirmado' : '\u2713 Confirmar HC y Presupuesto';
+    var hcClass = hcOk ? 'btn-secondary' : 'btn-primary';
+    var hcSt    = hcOk ? 'opacity:0.7;' : '';
+    html += '<button class="btn btn-sm '+hcClass+'" data-req-id="'+r.id+'" data-job-id="'+r.jobId+'" onclick="toggleHC(this)" style="'+BTN_STYLE+hcSt+'">'+hcLabel+'</button>';
+    if (!hcOk) html += '<span style="font-size:11px;color:var(--muted);">Valida antes de iniciar la convocatoria</span>';
     html += '</div>';
+
+    html += '</div></div>'; // cierre body + item
   });
 
   html += '</div>';
   return html;
 }
-
 
 function abrirDetalleJob(id) {
   var j = jobs.find(function(x){ return x.id===id; });
@@ -1890,7 +1906,7 @@ function abrirDetalleJob(id) {
         '</div>'+
         '<div style="display:flex;align-items:center;gap:8px;">'+
           '<span style="font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;background:'+sBg+';color:'+sTx+';">'+estadoReq+'</span>'+
-          '<button onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>'+
+          '<button onclick="document.getElementById(&quot;jobDetailOverlay&quot;).remove()" style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0;">&times;</button>'+
         '</div>'+
       '</div>'+
       renderHistorialConHC(id)+
