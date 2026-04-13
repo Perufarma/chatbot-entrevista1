@@ -291,6 +291,8 @@ a[title]{cursor:pointer;}
       </div>
       <div id="slaPanelContent"></div>
     </div>
+    <!-- Banner SLA compacto en Puestos -->
+    <div id="slaBannerPuestos" style="display:none;margin-bottom:12px;"></div>
     <div id="jobsList"></div>
     <div class="empty-state" id="emptyState" style="display:none;">No hay puestos configurados. Haz clic en <strong>+ Nuevo puesto</strong> para comenzar.</div>
   </div>
@@ -1134,16 +1136,29 @@ function renderDetalleProcesoSeleccionado(reqId) {
         var badge = ci===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
           :ci===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
           :ci===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>':'';
-        var fb = fbs.find(function(f){ return f.candidato===cand.candidato&&f.puesto===cand.puesto; });
-        var aptoTag = fb&&fb.apto===true?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:5px;">Apto</span>'
-          :fb&&fb.apto===false?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:5px;">No apto</span>':'';
-        var elegidoTag = fb&&fb.elegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:5px;">?? Elegido</span>':'';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;">'
-          + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
-          + '<div style="flex:1;"></div>'
-          + renderStars(cand.estrellas||cand.puntaje, starsColor(cand.estrellas||cand.puntaje))
-          + '<span style="font-size:11px;color:var(--muted);">'+cand.recomendacion+'</span>'
-          + aptoTag + elegidoTag
+        var fb = fbs.find(function(f){ return f.candidato===cand.candidato && f.puesto && cand.puesto && f.puesto.toLowerCase().trim()===cand.puesto.toLowerCase().trim(); });
+        var aptoOk = fb&&fb.apto===true; var noAptoOk = fb&&fb.apto===false; var esElegido = fb&&fb.elegido;
+        var cEncL = encodeURIComponent(cand.candidato); var pEncL = encodeURIComponent(cand.puesto);
+        var aptoTag = aptoOk?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:5px;">✓ Apto</span>'
+          :noAptoOk?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:5px;">✗ No apto</span>':'';
+        var elegidoTag = esElegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:5px;">?? Elegido</span>':'';
+        var BTN = 'font-size:10px;padding:2px 8px;';
+        var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'✓ Apto':'Apto')+'</button>') : '';
+        var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">'+(noAptoOk?'✗ No apto':'No apto')+'</button>') : '';
+        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">?? Elegir</button>' : '';
+        return '<div style="padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;">'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+            + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
+            + '<div style="flex:1;"></div>'
+            + renderStars(cand.estrellas||cand.puntaje, starsColor(cand.estrellas||cand.puntaje))
+            + '<span style="font-size:11px;color:var(--muted);">'+cand.recomendacion+'</span>'
+            + aptoTag + elegidoTag
+          + '</div>'
+          + (cand.recomendacion==='Avanzar' && !esElegido
+            ? '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'
+                + btnApto + btnNoApto + btnElegir
+              + '</div>'
+            : '')
           + '</div>';
       }).join('');
       html += '</div>';
@@ -1151,12 +1166,12 @@ function renderDetalleProcesoSeleccionado(reqId) {
       html += '<div style="margin-top:16px;font-size:13px;color:var(--muted);">Aún no hay candidatos visibles para este proceso.</div>';
     }
 
-    // ── Feedback ──
+    // ── Feedback — renderizar directamente para este puesto ──
     var candsFeedback = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim() && c.recomendacion==='Avanzar'; });
     if (candsFeedback.length) {
       html += '<div style="margin-top:20px;border-top:0.5px solid var(--border2);padding-top:16px;">'
         + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Feedback de entrevistas presenciales</div>'
-        + '<div id="feedbackPanel"></div>'
+        + '<div id="feedbackPanelDetalle"></div>'
         + '</div>';
     }
 
@@ -1176,9 +1191,12 @@ function renderDetalleProcesoSeleccionado(reqId) {
 
     panel.innerHTML = html;
 
-    // Renderizar feedback dentro del panel
+    // Renderizar feedback dentro del panel para este puesto específico
     if (candsFeedback.length) {
-      renderFeedbackPanel();
+      var fbPanel = document.getElementById('feedbackPanelDetalle');
+      if (fbPanel && typeof renderFeedbackParaPuesto === 'function') {
+        fbPanel.innerHTML = renderFeedbackParaPuesto(r.puesto, candsFeedback, fbs);
+      }
     }
   });
 }
@@ -1306,14 +1324,25 @@ function verificarAlertas() {
   }).join('');
   var totalAlertas = proximas.length + slaAlerts.length;
 
-  // Badge en nav
-  if (badge) {
+  // Banner compacto en sección puestos
+  var bannerPuestos = document.getElementById('slaBannerPuestos');
+  if (bannerPuestos) {
     if (totalAlertas > 0) {
-      badge.style.display = 'inline-block';
-      badge.textContent = totalAlertas;
-      badge.title = totalAlertas + ' alerta' + (totalAlertas>1?'s':'') + ' de SLA';
+      var isOpen = bannerPuestos.dataset.open === '1';
+      bannerPuestos.style.display = 'block';
+      bannerPuestos.innerHTML = '<div style="background:#fef8ee;border:0.5px solid #f4c430;border-radius:10px;overflow:hidden;">'
+        + '<div onclick="var c=document.getElementById(\'slaBannerContent\');c.style.display=c.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'span\').textContent=c.style.display===\'none\'?\'▼\':\'▲\';" style="padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;">'
+          + '<span style="font-size:13px;">⏱</span>'
+          + '<span style="font-size:12px;font-weight:500;color:#7a5000;flex:1;">' + totalAlertas + ' alerta' + (totalAlertas>1?'s':'') + ' de SLA activa' + (totalAlertas>1?'s':'') + '</span>'
+          + '<span style="font-size:10px;color:#7a5000;">▼</span>'
+        + '</div>'
+        + '<div id="slaBannerContent" style="display:none;padding:0 14px 12px;font-size:12px;color:#7a5000;">'
+          + (proximas.length ? '<div style="margin-bottom:6px;font-weight:500;">Procesos próximos a vencer</div>'+items : '')
+          + (slaAlerts.length ? '<div style="margin-top:'+(proximas.length?'8':'0')+'px;font-weight:500;">SLA vencido por etapa</div>'+slaItems : '')
+        + '</div>'
+      + '</div>';
     } else {
-      badge.style.display = 'none';
+      bannerPuestos.style.display = 'none';
     }
   }
 
@@ -2591,6 +2620,62 @@ async function syncReqsToServer(r){ await safeFetch('/api/jobs?type=reqs',{metho
 // ══════════════════════════════════
 // FEEDBACK
 // ══════════════════════════════════
+// Renderiza feedback para un puesto específico (usado en portal líder detalle)
+function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
+  if (!candsFeedback || !candsFeedback.length) return '<div style="font-size:12px;color:var(--muted);">Sin candidatos para evaluar.</div>';
+  var BTN_ST = 'font-size:11px;padding:4px 12px;min-width:90px;text-align:center;';
+  return candsFeedback.map(function(c) {
+    var fb = fbs.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+    var key = encodeURIComponent(c.candidato)+'_'+encodeURIComponent(c.puesto);
+    var aptoOk = fb&&fb.apto===true; var noAptoOk = fb&&fb.apto===false; var esElegido = fb&&fb.elegido;
+    var cEnc = encodeURIComponent(c.candidato); var pEnc = encodeURIComponent(c.puesto);
+    var hcBadge = esElegido ? '<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:2px 8px;border-radius:4px;">?? Elegido</span>'
+      : aptoOk ? '<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:4px;">✓ Apto</span>'
+      : noAptoOk ? '<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:2px 8px;border-radius:4px;">✗ No apto</span>' : '';
+
+    // Estrellas por dimensión
+    var dims = [{k:'comunicacion',l:'Comunicación'},{k:'tecnico',l:'Técnico'},{k:'actitud',l:'Actitud'},{k:'resultados',l:'Resultados'}];
+    var starsHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;">';
+    dims.forEach(function(d) {
+      var val = fb ? (fb[d.k]||0) : (fbTemp&&fbTemp[key]&&fbTemp[key][d.k]||0);
+      starsHtml += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">'+d.l+'</div>';
+      starsHtml += '<div>';
+      for (var i=1;i<=5;i++) {
+        starsHtml += '<span data-key="'+key+'" data-dim="'+d.k+'" data-val="'+i+'" onclick="setCmStar(this)" style="font-size:18px;color:'+(i<=val?'#e8623a':'#e0ddd8')+';cursor:pointer;">&#9733;</span>';
+      }
+      starsHtml += '</div></div>';
+    });
+    starsHtml += '</div>';
+
+    return '<div style="border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:10px;">'
+      + '<div style="padding:10px 14px;background:var(--surface2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+        + '<div style="font-size:13px;font-weight:500;flex:1;">'+c.candidato+'</div>'
+        + renderStars(c.estrellas||c.puntaje, starsColor(c.estrellas||c.puntaje))
+        + hcBadge
+      + '</div>'
+      + '<div style="padding:12px 14px;">'
+        + starsHtml
+        + '<div class="form-group" style="margin-bottom:10px;"><label style="font-size:11px;">Comentarios</label>'
+          + '<textarea id="fb_'+key+'" style="height:60px;" placeholder="Observaciones...">'+(fb?fb.comentario||'':'')+'</textarea></div>'
+        + '<div style="background:var(--surface2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;">'
+          + '<div style="font-size:11px;color:var(--muted);">?? Puedes marcar varios como aptos y luego elegir uno como candidato final.</div>'
+          + '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
+            + '<span style="font-size:12px;font-weight:500;">¿Es apto?</span>'
+            + '<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN_ST+'">'+(aptoOk?'✓ Apto':'Apto')+'</button>'
+            + '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN_ST+'">'+(noAptoOk?'✗ No apto':'No apto')+'</button>'
+            + (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN_ST+'">?? Elegir</button>':'')
+            + (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">?? Candidato elegido</span>':'')
+          + '</div>'
+          + '<div style="display:flex;gap:6px;">'
+            + '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="saveFeedbackBtn(this)" style="'+BTN_ST+'">Guardar</button>'
+            + (fb?'<button class="btn btn-secondary btn-sm" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="deleteFeedbackBtn(this)" style="'+BTN_ST+'">Borrar</button>':'')
+          + '</div>'
+        + '</div>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+}
+
 function renderFeedbackPanel() {
   var panel = document.getElementById('feedbackPanel');
   if (!panel) return;
@@ -3327,25 +3412,17 @@ function renderDashboard() {
     var ETAPAS_N = ['HC','Convocatoria','Evaluaci\u00f3n','Longlist','Entrevista','Oferta'];
     var ETAPAS_K = ['hc','convocatoria','evaluacion','longlist','entrevista','oferta'];
 
-    // Agrupar procesos por etapa actual
+    // Agrupar procesos por etapa actual (primera etapa NO completada)
     var byEtapa = {};
     ETAPAS_K.forEach(function(k){ byEtapa[k] = []; });
-    byEtapa['sin_hc'] = [];
     reqsActivas.forEach(function(r) {
       var etapas = r.etapas || {};
-      var etapaActual = 'sin_hc';
-      for (var i = ETAPAS_K.length-1; i >= 0; i--) {
-        if (etapas[ETAPAS_K[i]]) { etapaActual = ETAPAS_K[Math.min(i+1, ETAPAS_K.length-1)]; break; }
-        if (i===0 && !etapas[ETAPAS_K[0]]) etapaActual = 'sin_hc';
+      var etapaActual = ETAPAS_K[0]; // default: HC
+      for (var i = 0; i < ETAPAS_K.length; i++) {
+        if (!etapas[ETAPAS_K[i]]) { etapaActual = ETAPAS_K[i]; break; }
+        if (i === ETAPAS_K.length-1) etapaActual = ETAPAS_K[ETAPAS_K.length-1];
       }
-      if (!etapas[ETAPAS_K[0]]) etapaActual = 'hc';
-      else {
-        for (var j = 0; j < ETAPAS_K.length; j++) {
-          if (!etapas[ETAPAS_K[j]]) { etapaActual = ETAPAS_K[j]; break; }
-          if (j === ETAPAS_K.length-1) etapaActual = 'oferta';
-        }
-      }
-      if (byEtapa[etapaActual] !== undefined) byEtapa[etapaActual].push(r);
+      byEtapa[etapaActual].push(r);
     });
 
     var progresoHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
