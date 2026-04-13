@@ -333,8 +333,8 @@ a[title]{cursor:pointer;}
     </div>
     <!-- Filtros -->
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
-      <select id="filtroArea_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:140px;">
-        <option value="">Todas las áreas</option>
+      <select id="filtroGerencia_cand" onchange="filtrarGerenciaCand()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:160px;">
+        <option value="">Todas las gerencias</option>
       </select>
       <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:200px;">
         <option value="">Todos los puestos</option>
@@ -2478,21 +2478,41 @@ function poblarFiltrosCandidatos(results) {
     if (r.area && areas.indexOf(r.area)===-1) areas.push(r.area);
     if (r.puesto && puestos.indexOf(r.puesto)===-1) puestos.push(r.puesto);
   });
-  var selArea = document.getElementById('filtroArea_cand');
+  var selGer = document.getElementById('filtroGerencia_cand');
   var selPuesto = document.getElementById('filtroPuesto_cand');
-  if (!selArea||!selPuesto) return;
-  var curArea = selArea.value; var curPuesto = selPuesto.value;
-  selArea.innerHTML = '<option value="">Todas las áreas</option>'+areas.map(function(a){ return '<option value="'+a+'"'+(a===curArea?' selected':'')+'>'+a+'</option>'; }).join('');
+  if (!selGer||!selPuesto) return;
+  var gerencias = [...new Set(_allResults.map(function(r){return r.gerencia||'';}).filter(Boolean))].sort();
+  var curGer = selGer.value; var curPuesto = selPuesto.value;
+  selGer.innerHTML = '<option value="">Todas las gerencias</option>'+gerencias.map(function(g){ return '<option value="'+g+'"'+(g===curGer?' selected':'')+'>'+g+'</option>'; }).join('');
   selPuesto.innerHTML = '<option value="">Todos los puestos</option>'+puestos.map(function(p){ return '<option value="'+p+'"'+(p===curPuesto?' selected':'')+'>'+p+'</option>'; }).join('');
 }
 
+function toggleCandGroup(puestoId) {
+  var el = document.getElementById('cands_'+puestoId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function filtrarGerenciaCand() {
+  var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
+  var selPuesto = document.getElementById('filtroPuesto_cand');
+  if (selPuesto) {
+    var puestosFiltrados = _allResults
+      .filter(function(r){ return !gerencia || (r.gerencia && r.gerencia===gerencia); })
+      .map(function(r){ return r.puesto; })
+      .filter(function(v,i,a){ return a.indexOf(v)===i; });
+    selPuesto.innerHTML = '<option value="">Todos los puestos</option>'
+      + puestosFiltrados.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+  }
+  filtrarCandidatos();
+}
+
 function filtrarCandidatos() {
-  var area = (document.getElementById('filtroArea_cand')||{}).value||'';
+  var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
   var puesto = (document.getElementById('filtroPuesto_cand')||{}).value||'';
   var soloVis = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
   var filtered = _allResults.filter(function(r) {
-    if (area && r.area!==area) return false;
-    if (puesto && r.puesto!==puesto) return false;
+    if (gerencia && r.gerencia!==gerencia) return false;
+    if (puesto && r.puesto && puesto && r.puesto.toLowerCase().trim()!==puesto.toLowerCase().trim()) return false;
     if (soloVis && !r.visibleLider) return false;
     return true;
   });
@@ -2523,7 +2543,7 @@ function renderTablaByPuesto(results) {
         +'<td style="padding:9px 12px;text-align:center;">'+renderStars(c.estrellas||c.puntaje,starsColor(c.estrellas||c.puntaje))+'</td>'
         +'<td style="padding:9px 12px;text-align:center;"><span style="background:'+rBg(c.recomendacion)+';color:'+rTx(c.recomendacion)+';padding:2px 9px;border-radius:8px;font-size:11px;font-weight:500;">'+c.recomendacion+'</span></td>'
         +'<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:180px;">'+(c.resumen||'').substring(0,80)+'&hellip;</td>'
-        +'<td style="padding:9px 12px;text-align:center;"><input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onchange="toggleVisibilidad(this)" style="width:15px;height:15px;accent-color:var(--accent2);cursor:pointer;"></td>'
+
         +(function(){
           var reqC = requisiciones.filter(function(r){return r.puesto && c.puesto && r.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim();});
           var lastR = reqC.length ? reqC[reqC.length-1] : null;
@@ -2546,7 +2566,7 @@ function renderTablaByPuesto(results) {
         +'</tr>';
     }).join('');
     return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'
-      +'<div style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
+      +'<div data-puesto-id="'+encodeURIComponent(puesto)+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
         +'<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+encodeURIComponent(puesto)+'" onclick="compararTop(this.dataset.puesto)">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
@@ -2555,7 +2575,7 @@ function renderTablaByPuesto(results) {
           +'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>'
         +'</div>'
       +'</div>'
-      +'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
+      +'<div id="cands_'+encodeURIComponent(puesto)+'" style="display:none;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
         +'<thead><tr style="background:var(--bg);">'
           +'<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidato</th>'
           +'<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Fecha</th>'
@@ -2715,8 +2735,7 @@ function renderFeedbackPanel() {
         var key=(c.candidato+'_'+c.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
         var fbData=fbTemp[key]||fb||{};
         var campos=[{id:'comunicacion',label:'Comunicación'},{id:'tecnico',label:'Conocimiento técnico'},{id:'actitud',label:'Actitud y fit cultural'},{id:'resultados',label:'Orientación a resultados'}];
-        var vencido = false;
-        if (fb && fb.timestamp) { if ((Date.now()-fb.timestamp)/(1000*60*60)>24) vencido=true; }
+        var vencido = false; // Sin límite de tiempo
         var collapsed = !!fb;
         var estGen = fb ? Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4) : 0;
         var starsHtml=campos.map(function(campo){
@@ -2808,7 +2827,11 @@ function marcarApto(cand, puesto, valor) {
   feedbacks[idx].apto = valor; // true=Apto, false=No apto
   localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
-  renderFeedbackPanel();
+  if (window._liderProcesoSeleccionado) {
+    renderDetalleProcesoSeleccionado(window._liderProcesoSeleccionado);
+  } else {
+    renderFeedbackPanel();
+  }
   toast(valor ? 'Candidato marcado como Apto ✓' : 'Candidato marcado como No apto');
 }
 
@@ -2844,7 +2867,11 @@ function elegirCandidato(cand, puesto) {
     localStorage.setItem('rreqs', JSON.stringify(requisiciones));
     syncReqsToServer(requisiciones);
   }
-  renderFeedbackPanel();
+  if (window._liderProcesoSeleccionado) {
+    renderDetalleProcesoSeleccionado(window._liderProcesoSeleccionado);
+  } else {
+    renderFeedbackPanel();
+  }
   toast('🏆 ' + cDec + ' seleccionado como candidato elegido');
 }
 
@@ -3312,7 +3339,7 @@ function renderDashboard() {
     var totalCands = results.length;
     var avanzar = results.filter(function(r){ return r.recomendacion==='Avanzar'; }).length;
     var tasaAvanzar = totalCands ? Math.round(avanzar/totalCands*100) : 0;
-    var promedioEst = totalCands ? (results.reduce(function(s,r){return s+(r.estrellas||r.puntaje||0);},0)/totalCands).toFixed(1) : 0;
+    var promedioEst = totalCands ? Math.min(5, (results.reduce(function(s,r){return s+(r.estrellas||r.puntaje||0);},0)/totalCands)).toFixed(1) : 0;
     var cubiertos = requisiciones.filter(function(r){ return r.estado==='Cubierto'; }).length;
 
     // Tiempo promedio cobertura
@@ -3412,17 +3439,13 @@ function renderDashboard() {
     var ETAPAS_N = ['HC','Convocatoria','Evaluaci\u00f3n','Longlist','Entrevista','Oferta'];
     var ETAPAS_K = ['hc','convocatoria','evaluacion','longlist','entrevista','oferta'];
 
-    // Agrupar procesos por etapa actual (primera etapa NO completada)
+    // Agrupar procesos por etapa actual usando calcularEtapaActual
     var byEtapa = {};
     ETAPAS_K.forEach(function(k){ byEtapa[k] = []; });
     reqsActivas.forEach(function(r) {
-      var etapas = r.etapas || {};
-      var etapaActual = ETAPAS_K[0]; // default: HC
-      for (var i = 0; i < ETAPAS_K.length; i++) {
-        if (!etapas[ETAPAS_K[i]]) { etapaActual = ETAPAS_K[i]; break; }
-        if (i === ETAPAS_K.length-1) etapaActual = ETAPAS_K[ETAPAS_K.length-1];
-      }
-      byEtapa[etapaActual].push(r);
+      var etapaIdx = calcularEtapaActual(r, results, feedbacks);
+      var etapaKey = ETAPAS_K[Math.min(etapaIdx, ETAPAS_K.length-1)];
+      byEtapa[etapaKey].push(r);
     });
 
     var progresoHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
@@ -3442,7 +3465,7 @@ function renderDashboard() {
       progresoHtml += '</div>';
 
       // Procesos en esta etapa
-      progresoHtml += '<div id="'+etapaId+'" style="display:block;">';
+      progresoHtml += '<div id="'+etapaId+'" style="display:none;">';
       if (!procs.length) {
         progresoHtml += '<div style="padding:12px 10px;text-align:center;font-size:11px;color:var(--muted);">\u2014</div>';
       } else {
@@ -3570,15 +3593,10 @@ function toggleOtraSede(inputId, val) {
 }
 
 // ══════════════════════════════════
-// TOAST
+// HELPERS Y TOAST
 // ══════════════════════════════════
 function chevronSvg() {
   return '<svg style="display:inline-block;vertical-align:middle;margin-left:4px;" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#e8623a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,2 9,6 4,10"/></svg>';
-}
-
-function toggleEtapaCol(id) {
-  var el = document.getElementById(id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function toggleAcordeon(el) {
@@ -3589,10 +3607,19 @@ function toggleAcordeon(el) {
   a.textContent = b.style.display === 'none' ? '▼' : '▲';
 }
 
-function toast(msg){
-  var t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2500);
+function toggleEtapaCol(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toast(msg) {
+  var t = document.getElementById('toastMsg');
+  if (!t) { t = document.createElement('div'); t.id='toastMsg'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:99999;opacity:0;transition:opacity .3s;pointer-events:none;'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.style.opacity='0'; t.classList.remove('show'); }, 2500);
 }
 </script>
 </body>
