@@ -1141,11 +1141,11 @@ function renderDetalleProcesoSeleccionado(reqId) {
         var cEncL = encodeURIComponent(cand.candidato); var pEncL = encodeURIComponent(cand.puesto);
         var aptoTag = aptoOk?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:5px;">✓ Apto</span>'
           :noAptoOk?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:5px;">✗ No apto</span>':'';
-        var elegidoTag = esElegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:5px;">?? Elegido</span>':'';
+        var elegidoTag = esElegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:5px;">🏆 Elegido</span>':'';
         var BTN = 'font-size:10px;padding:2px 8px;';
         var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'✓ Apto':'Apto')+'</button>') : '';
         var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">'+(noAptoOk?'✗ No apto':'No apto')+'</button>') : '';
-        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">?? Elegir</button>' : '';
+        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">🏆 Elegir</button>' : '';
         return '<div style="padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;">'
           + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
             + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
@@ -1320,7 +1320,15 @@ function verificarAlertas() {
     var jobMatch = a.jobId ? jobs.find(function(j){ return j.id===a.jobId; }) : jobs.find(function(j){ return j.titulo===a.puesto || j.titulo.toLowerCase()===a.puesto.toLowerCase(); });
     var jid = jobMatch ? jobMatch.id : 0;
     var linkHtml = jobMatch ? '<span onclick="irAPuesto('+jid+')" style="font-size:11px;color:var(--accent2);cursor:pointer;"> Ver puesto '+chevronSvg()+'</span>' : '';
-    return '<div style="font-size:12px;line-height:1.8;">&bull; <strong>'+a.puesto+'</strong> &mdash; etapa <em>'+a.etapa+'</em> lleva <span style="color:#c0392b;font-weight:600;" title="SLA de esta etapa: '+a.sla+' días">'+a.dias+' d&iacute;as</span> (SLA: '+a.sla+')'+linkHtml+'</div>';
+    var exceso = a.dias - a.sla;
+    return '<div style="font-size:12px;line-height:2;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+      + '&bull; <strong>'+a.puesto+'</strong> &mdash; etapa <em>'+a.etapa+'</em>'
+      + '<span style="display:inline-flex;align-items:center;gap:4px;">'
+        + '<span style="background:#fbeaea;color:#c0392b;font-weight:600;padding:1px 7px;border-radius:4px;font-size:11px;">'+a.dias+' días</span>'
+        + '<span style="background:#f0ede7;color:#7a5000;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:500;">SLA: '+a.sla+'d &middot; +'+exceso+'d</span>'
+      + '</span>'
+      + linkHtml
+      + '</div>';
   }).join('');
   var totalAlertas = proximas.length + slaAlerts.length;
 
@@ -2556,8 +2564,9 @@ function renderTablaByPuesto(results) {
           var elegidoBadge = esElegidoRec
             ? '<span style="font-size:11px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 8px;border-radius:6px;">🏆 Elegido</span>'
             : '<span style="font-size:11px;color:var(--muted);">&#8212;</span>';
-          var trBtn = (esElegidoRec||etC.oferta)
-            ? '<button class="btn btn-sm '+(trOk?'btn-secondary':'btn-primary')+'" data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;padding:3px 8px;'+(trOk?'opacity:0.7;':'')+'">'+(trOk?'\u2713 Ingreso':'\u25cb Ingreso')+'</button>'
+          // Ingreso solo para el candidato elegido, estilo discreto
+          var trBtn = esElegidoRec
+            ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:3px 10px;border-radius:6px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--text)')+';white-space:nowrap;">'+(trOk?'\u2713 Ingreso':'\u25cb Ingreso')+'</button>'
             : '<span style="color:var(--muted);font-size:12px;">&#8212;</span>';
           return '<td style="padding:9px 12px;text-align:center;">'+elegidoBadge+'</td>'
                + '<td style="padding:9px 12px;text-align:center;">'+trBtn+'</td>';
@@ -2649,7 +2658,7 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
     var key = encodeURIComponent(c.candidato)+'_'+encodeURIComponent(c.puesto);
     var aptoOk = fb&&fb.apto===true; var noAptoOk = fb&&fb.apto===false; var esElegido = fb&&fb.elegido;
     var cEnc = encodeURIComponent(c.candidato); var pEnc = encodeURIComponent(c.puesto);
-    var hcBadge = esElegido ? '<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:2px 8px;border-radius:4px;">?? Elegido</span>'
+    var hcBadge = esElegido ? '<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:2px 8px;border-radius:4px;">🏆 Elegido</span>'
       : aptoOk ? '<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:4px;">✓ Apto</span>'
       : noAptoOk ? '<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:2px 8px;border-radius:4px;">✗ No apto</span>' : '';
 
@@ -2678,13 +2687,13 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
         + '<div class="form-group" style="margin-bottom:10px;"><label style="font-size:11px;">Comentarios</label>'
           + '<textarea id="fb_'+key+'" style="height:60px;" placeholder="Observaciones...">'+(fb?fb.comentario||'':'')+'</textarea></div>'
         + '<div style="background:var(--surface2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;">'
-          + '<div style="font-size:11px;color:var(--muted);">?? Puedes marcar varios como aptos y luego elegir uno como candidato final.</div>'
+          + '<div style="font-size:11px;color:var(--muted);">💡 Puedes marcar varios como aptos y luego elegir uno como candidato final.</div>'
           + '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
             + '<span style="font-size:12px;font-weight:500;">¿Es apto?</span>'
             + '<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN_ST+'">'+(aptoOk?'✓ Apto':'Apto')+'</button>'
             + '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN_ST+'">'+(noAptoOk?'✗ No apto':'No apto')+'</button>'
-            + (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN_ST+'">?? Elegir</button>':'')
-            + (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">?? Candidato elegido</span>':'')
+            + (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN_ST+'">🏆 Elegir</button>':'')
+            + (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>':'')
           + '</div>'
           + '<div style="display:flex;gap:6px;">'
             + '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="saveFeedbackBtn(this)" style="'+BTN_ST+'">Guardar</button>'
@@ -2775,8 +2784,8 @@ function renderFeedbackPanel() {
               bodyHtml += '<span style="font-size:12px;font-weight:500;color:var(--text);">¿Es apto?</span>';
               bodyHtml += '<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="font-size:11px;padding:4px 12px;">'+(aptoOk?'✓ Apto':'Apto')+'</button>';
               bodyHtml += '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="font-size:11px;padding:4px 12px;">'+(noAptoOk?'✗ No apto':'No apto')+'</button>';
-              if (aptoOk && !esElegido) bodyHtml += '<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:4px 12px;">?? Elegir como candidato final</button>';
-              if (esElegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">?? Candidato elegido</span>';
+              if (aptoOk && !esElegido) bodyHtml += '<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:4px 12px;">🏆 Elegir como candidato final</button>';
+              if (esElegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>';
               bodyHtml += '</div>';
               bodyHtml += '<div style="display:flex;gap:8px;">';
               bodyHtml += '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="saveFeedbackBtn(this)">Guardar</button>';
@@ -2786,7 +2795,7 @@ function renderFeedbackPanel() {
               // Solo lectura
               if (fb.apto===true) bodyHtml += '<span style="font-size:12px;background:#edf7f1;color:#1e5c38;padding:3px 10px;border-radius:6px;">✓ Apto</span>';
               if (fb.apto===false) bodyHtml += '<span style="font-size:12px;background:#fbeaea;color:#8b1f1f;padding:3px 10px;border-radius:6px;">✗ No apto</span>';
-              if (fb.elegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:3px 10px;border-radius:6px;">?? Candidato elegido</span>';
+              if (fb.elegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:3px 10px;border-radius:6px;">🏆 Candidato elegido</span>';
             }
             bodyHtml += '</div>';
             bodyHtml += '</div></div>';
@@ -3361,80 +3370,24 @@ function renderDashboard() {
     // Candidatos elegidos por líder
     var elegidos = fbs.filter(function(f){ return f.elegido; });
 
-    // ── SECCIÓN C: OPERACIONAL DEL DÍA ──
-    // Acciones urgentes
-    var acciones = [];
-
-    // 1. Procesos con SLA vencido
-    slaAlerts.forEach(function(a) {
-      acciones.push({ tipo: 'danger', titulo: 'SLA vencido: '+a.etapa, sub: a.puesto+' · '+a.dias+' días sin avance', jobId: (jobs.find(function(j){ return j.titulo===a.puesto; })||{}).id });
-    });
-
-    // 2. Candidatos listos para revisar (visibles al líder, sin feedback)
+    // Puestos con candidatos sin feedback del líder
+    var puestosSinFb = {};
     var puestosConCands = [...new Set(results.filter(function(r){ return r.recomendacion==='Avanzar' && r.visibleLider!==false; }).map(function(r){ return r.puesto; }))];
     puestosConCands.forEach(function(p) {
       var candsDelPuesto = results.filter(function(r){ return r.puesto && p && r.puesto.toLowerCase().trim()===p.toLowerCase().trim() && r.recomendacion==='Avanzar'; });
       var sinFb = candsDelPuesto.filter(function(r){ return !fbs.find(function(f){ return f.candidato===r.candidato && f.puesto===r.puesto; }); });
-      if (sinFb.length) {
-        acciones.push({ tipo: 'warn', titulo: sinFb.length+' candidato'+(sinFb.length>1?'s':'')+' sin feedback del líder', sub: p });
-      }
+      if (sinFb.length) puestosSinFb[p.toLowerCase().trim()] = sinFb.length;
     });
 
-    // 3. Elegidos sin tramites
+    // Puestos con trámites pendientes (elegido pero sin tramites)
+    var puestosTramites = {};
     elegidos.forEach(function(fb) {
       var req = requisiciones.filter(function(r){ return r.puesto && fb.puesto && r.puesto.toLowerCase().trim()===fb.puesto.toLowerCase().trim() && r.estado!=='Cubierto'; });
       var lastReq = req.length ? req[req.length-1] : null;
       if (lastReq && lastReq.etapas && lastReq.etapas.oferta && !lastReq.etapas.tramites) {
-        acciones.push({ tipo: 'ok', titulo: 'Iniciar trámites de ingreso', sub: fb.puesto+' · Elegido: '+fb.candidato });
+        puestosTramites[fb.puesto.toLowerCase().trim()] = true;
       }
     });
-
-    // 4. Procesos próximos a vencer (7 días)
-    reqsActivas.forEach(function(r) {
-      var lim = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
-      if (!lim) return;
-      var dias = Math.ceil((lim-hoy)/(1000*60*60*24));
-      if (dias >= 0 && dias <= 7) {
-        acciones.push({ tipo: 'warn', titulo: 'Proceso próximo a vencer', sub: r.puesto+' · '+dias+' día'+(dias===1?'':'s')+' restantes' });
-      }
-    });
-
-    // Agrupar acciones por tipo/título
-    var grupos = {};
-    acciones.forEach(function(a) {
-      if (!grupos[a.titulo]) grupos[a.titulo] = { tipo: a.tipo, subs: [] };
-      grupos[a.titulo].subs.push(a.sub);
-    });
-
-    var accionesHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
-      + '<div style="padding:12px 16px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;">'
-        + '<div style="font-size:13px;font-weight:500;">Acciones urgentes del día</div>'
-        + '<span style="font-size:12px;background:'+(acciones.length?'#FCEBEB':'#edf7f1')+';color:'+(acciones.length?'#A32D2D':'#1e5c38')+';padding:2px 10px;border-radius:6px;font-weight:500;">'+(acciones.length ? acciones.length+' pendiente'+(acciones.length>1?'s':'') : 'Al día')+'</span>'
-      + '</div>';
-
-    if (!acciones.length) {
-      accionesHtml += '<div style="padding:20px 16px;font-size:13px;color:var(--muted);text-align:center;">Todo al día. No hay acciones urgentes.</div>';
-    } else {
-      Object.keys(grupos).forEach(function(titulo) {
-        var g = grupos[titulo];
-        var dotC = g.tipo==='danger'?'#E24B4A':g.tipo==='warn'?'#BA7517':'#3B6D11';
-        var bgC  = g.tipo==='danger'?'#FCEBEB':g.tipo==='warn'?'#FAEEDA':'#EAF3DE';
-        var txC  = g.tipo==='danger'?'#A32D2D':g.tipo==='warn'?'#633806':'#27500A';
-        var count = g.subs.length;
-        accionesHtml += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--border2);display:flex;align-items:flex-start;gap:10px;">'
-          + '<div style="width:8px;height:8px;border-radius:50%;background:'+dotC+';flex-shrink:0;margin-top:4px;"></div>'
-          + '<div style="flex:1;">'
-            + '<div style="font-size:13px;font-weight:500;">'+titulo+(count>1?' <span style="font-size:11px;font-weight:400;color:var(--muted);">('+count+' procesos)</span>':'')+'</div>'
-            + '<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+g.subs.join(' · ')+'</div>'
-          + '</div>'
-          + '<span style="font-size:10px;background:'+bgC+';color:'+txC+';padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;">'
-            + (g.tipo==='danger'?'Urgente':g.tipo==='warn'?'Atención':'Acción')
-          + '</span>'
-        + '</div>';
-      });
-    }
-    accionesHtml += '</div>';
-
     // Pipeline por etapa — una columna por etapa, procesos dentro
     var ETAPAS_N = ['HC','Convocatoria','Evaluaci\u00f3n','Longlist','Entrevista','Oferta'];
     var ETAPAS_K = ['hc','convocatoria','evaluacion','longlist','entrevista','oferta'];
@@ -3474,9 +3427,18 @@ function renderDashboard() {
           var dias = lim ? Math.ceil((lim-hoy)/(1000*60*60*24)) : null;
           var diasColor = dias===null?'var(--muted)':dias<=0?'#A32D2D':dias<=7?'#c0392b':'var(--muted)';
           var isSla = slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase()===r.puesto.toLowerCase(); });
+          var pKey = r.puesto ? r.puesto.toLowerCase().trim() : '';
+          var tieneSinFb = !!puestosSinFb[pKey];
+          var tieneTramites = !!puestosTramites[pKey];
           progresoHtml += '<div style="padding:8px 10px;border-bottom:0.5px solid var(--border2);background:'+(isSla?'#FCEBEB':'var(--surface)')+';cursor:pointer;" onclick="irAPuesto('+(jobs.find(function(j){return j.titulo&&r.puesto&&j.titulo.toLowerCase()===r.puesto.toLowerCase();})||{id:0}).id+')">';
           progresoHtml += '<div style="font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.puesto+'</div>';
           progresoHtml += '<div style="font-size:10px;color:'+diasColor+';margin-top:1px;">'+(dias!==null?(dias<=0?'VENCIDO':dias+'d restantes'):'\u2014')+'</div>';
+          if (tieneSinFb) {
+            progresoHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#BA7517;display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;color:var(--muted);">Sin feedback l&iacute;der</span></div>';
+          }
+          if (tieneTramites) {
+            progresoHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#2d7a4f;display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;color:var(--muted);">Tr&aacute;mites pendientes</span></div>';
+          }
           progresoHtml += '</div>';
         });
       }
@@ -3547,7 +3509,7 @@ function renderDashboard() {
 
     gerHtml += '</tbody></table></div></div>';
 
-    panel.innerHTML = accionesHtml + progresoHtml + kpisHtml + gerHtml;
+    panel.innerHTML = progresoHtml + kpisHtml + gerHtml;
   });
 }
 
