@@ -1570,6 +1570,7 @@ function saveJobOnly() {
   localStorage.setItem('rjobs', JSON.stringify(jobs));
   syncJobsToServer(jobs);
   renderJobsList();
+  verificarAlertas();
   document.getElementById('addJobForm').classList.remove('open');
 }
 
@@ -2401,6 +2402,7 @@ function toggleOferta(btn) {
     etapas.oferta = new Date().toLocaleDateString('es-PE');
     actualizarEtapasReq(reqId, etapas, 'Oferta Laboral enviada a '+cand, cand);
     renderCandidatosPorPuesto();
+    verificarAlertas();
     toast('Oferta marcada ✓');
   }
 }
@@ -2923,8 +2925,13 @@ function saveFeedback(candidato,puesto,key){
   feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto===puesto);});
   feedbacks.push(fb);
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
+  safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
   toast('Feedback guardado \u00b7 '+candidato);
-  renderFeedbackPanel();
+  if (window._liderProcesoSeleccionado) {
+    renderDetalleProcesoSeleccionado(window._liderProcesoSeleccionado);
+  } else {
+    renderFeedbackPanel();
+  }
 }
 
 function deleteFeedback(candidato,puesto){
@@ -3375,7 +3382,7 @@ function renderDashboard() {
     var puestosConCands = [...new Set(results.filter(function(r){ return r.recomendacion==='Avanzar' && r.visibleLider!==false; }).map(function(r){ return r.puesto; }))];
     puestosConCands.forEach(function(p) {
       var candsDelPuesto = results.filter(function(r){ return r.puesto && p && r.puesto.toLowerCase().trim()===p.toLowerCase().trim() && r.recomendacion==='Avanzar'; });
-      var sinFb = candsDelPuesto.filter(function(r){ return !fbs.find(function(f){ return f.candidato===r.candidato && f.puesto===r.puesto; }); });
+      var sinFb = candsDelPuesto.filter(function(r){ return !fbs.find(function(f){ return f.candidato===r.candidato && f.puesto && r.puesto && f.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); }); });
       if (sinFb.length) puestosSinFb[p.toLowerCase().trim()] = sinFb.length;
     });
 
@@ -3426,13 +3433,16 @@ function renderDashboard() {
           var lim = r.fechaLimiteRaw ? new Date(r.fechaLimiteRaw) : null;
           var dias = lim ? Math.ceil((lim-hoy)/(1000*60*60*24)) : null;
           var diasColor = dias===null?'var(--muted)':dias<=0?'#A32D2D':dias<=7?'#c0392b':'var(--muted)';
-          var isSla = slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase()===r.puesto.toLowerCase(); });
+          var isSla = slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); });
           var pKey = r.puesto ? r.puesto.toLowerCase().trim() : '';
           var tieneSinFb = !!puestosSinFb[pKey];
           var tieneTramites = !!puestosTramites[pKey];
-          progresoHtml += '<div style="padding:8px 10px;border-bottom:0.5px solid var(--border2);background:'+(isSla?'#FCEBEB':'var(--surface)')+';cursor:pointer;" onclick="irAPuesto('+(jobs.find(function(j){return j.titulo&&r.puesto&&j.titulo.toLowerCase()===r.puesto.toLowerCase();})||{id:0}).id+')">';
+          progresoHtml += '<div style="padding:8px 10px;border-bottom:0.5px solid var(--border2);background:'+(isSla?'#FCEBEB':'var(--surface)')+';cursor:pointer;" onclick="irAPuesto('+(jobs.find(function(j){return j.titulo&&r.puesto&&j.titulo.toLowerCase().trim()===r.puesto.toLowerCase().trim();})||{id:0}).id+')">';
           progresoHtml += '<div style="font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.puesto+'</div>';
           progresoHtml += '<div style="font-size:10px;color:'+diasColor+';margin-top:1px;">'+(dias!==null?(dias<=0?'VENCIDO':dias+'d restantes'):'\u2014')+'</div>';
+          if (isSla) {
+            progresoHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#c0392b;display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;color:var(--muted);">SLA vencido</span></div>';
+          }
           if (tieneSinFb) {
             progresoHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#BA7517;display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;color:var(--muted);">Sin feedback l&iacute;der</span></div>';
           }
@@ -3467,7 +3477,7 @@ function renderDashboard() {
       if (!byGer[ger]) byGer[ger] = { activos:0, cubiertos:0, sla:0, cands:0, estrellas:[] };
       if (r.estado==='Cubierto') byGer[ger].cubiertos++;
       else byGer[ger].activos++;
-      if (slaAlerts.some(function(a){ return a.puesto===r.puesto; })) byGer[ger].sla++;
+      if (slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); })) byGer[ger].sla++;
       var candsDePuesto = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); });
       byGer[ger].cands += candsDePuesto.length;
       candsDePuesto.forEach(function(c){ byGer[ger].estrellas.push(c.estrellas||c.puntaje||0); });
@@ -3499,7 +3509,7 @@ function renderDashboard() {
         + '<td style="padding:10px 14px;min-width:120px;">'
           + (promG!=='—'
             ? '<div style="display:flex;align-items:center;gap:6px;">'
-                + '<div style="flex:1;background:var(--surface2);border-radius:3px;height:5px;"><div style="width:'+barW+'%;background:'+barC+';border-radius:3px;height:5px;"></div></div>'
+                + '<div style="width:80px;flex-shrink:0;background:var(--surface2);border-radius:3px;height:5px;"><div style="width:'+barW+'%;background:'+barC+';border-radius:3px;height:5px;"></div></div>'
                 + '<span style="font-size:11px;color:'+barC+';font-weight:500;white-space:nowrap;">'+promG+'★</span>'
               + '</div>'
             : '<span style="color:var(--muted);">—</span>')
