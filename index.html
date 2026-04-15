@@ -2581,7 +2581,14 @@ function renderTablaByPuesto(results) {
       return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'
         +'<td style="padding:9px 12px;font-weight:500;">'+c.candidato+badge+fuente+'</td>'
         +'<td style="padding:9px 12px;color:var(--muted);font-size:12px;">'+(c.fecha||'')+(c.hora?' &middot; '+c.hora:'')+'</td>'
-        +'<td style="padding:9px 12px;text-align:center;">'+renderStars(c.estrellas||c.puntaje,starsColor(c.estrellas||c.puntaje))+'</td>'
+        +(function(){
+          var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+          if (fbL && (fbL.comunicacion||fbL.tecnico||fbL.actitud||fbL.resultados)) {
+            var promL = Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4);
+            return '<td style="padding:9px 12px;text-align:center;">'+renderStars(promL,starsColor(promL))+'</td>';
+          }
+          return '<td style="padding:9px 12px;text-align:center;font-size:12px;color:var(--muted);">&#8212;</td>';
+        })()
         +'<td style="padding:9px 12px;text-align:center;"><span style="background:'+rBg(c.recomendacion)+';color:'+rTx(c.recomendacion)+';padding:2px 9px;border-radius:8px;font-size:11px;font-weight:500;">'+c.recomendacion+'</span></td>'
         +'<td style="padding:9px 12px;font-size:12px;color:var(--muted);max-width:180px;">'+(c.resumen||'').substring(0,80)+'&hellip;</td>'
 
@@ -2751,11 +2758,6 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
             + '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN_ST+'">'+(noAptoOk?'✗ No apto':'No apto')+'</button>'
             + (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN_ST+'">🏆 Elegir</button>':'')
             + (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>':'')
-          + '</div>'
-          + '<div style="display:flex;gap:6px;">'
-            + '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="saveFeedbackBtn(this)" style="'+BTN_ST+'">Guardar</button>'
-
-          + '</div>'
         + '</div>'
       + '</div>'
     + '</div>';
@@ -2844,10 +2846,6 @@ function renderFeedbackPanel() {
               if (aptoOk && !esElegido) bodyHtml += '<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:4px 12px;">🏆 Elegir como candidato final</button>';
               if (esElegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>';
               bodyHtml += '</div>';
-              bodyHtml += '<div style="display:flex;gap:8px;">';
-              bodyHtml += '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="saveFeedbackBtn(this)">Guardar</button>';
-
-              bodyHtml += '</div>';
             } else if (fb) {
               // Solo lectura
               if (fb.apto===true) bodyHtml += '<span style="font-size:12px;background:#edf7f1;color:#1e5c38;padding:3px 10px;border-radius:6px;">✓ Apto</span>';
@@ -2888,9 +2886,16 @@ function renderFeedbackPanel() {
 function marcarApto(cand, puesto, valor) {
   var cDec = decodeURIComponent(cand);
   var pDec = decodeURIComponent(puesto);
-  var idx = feedbacks.findIndex(function(f){ return f.candidato===cDec && f.puesto===pDec; });
-  if (idx === -1) { toast('Guarda el feedback primero'); return; }
-  feedbacks[idx].apto = valor; // true=Apto, false=No apto
+  // Auto-guardar estrellas y comentario antes de marcar apto
+  var key = (cDec+'_'+pDec).replace(/[^a-zA-Z0-9_]/g,'_');
+  var comentEl = document.getElementById('fb_'+key);
+  var comentario = comentEl ? comentEl.value : '';
+  var existing = feedbacks.find(function(f){ return f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim(); });
+  var fb = Object.assign({candidato:cDec,puesto:pDec,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false}, fbTemp[key]||{});
+  if (existing) { fb.elegido = existing.elegido; }
+  fb.apto = valor;
+  feedbacks = feedbacks.filter(function(f){ return !(f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim()); });
+  feedbacks.push(fb);
   localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
   if (window._liderProcesoSeleccionado) {
@@ -2905,6 +2910,18 @@ function marcarApto(cand, puesto, valor) {
 function elegirCandidato(cand, puesto) {
   var cDec = decodeURIComponent(cand);
   var pDec = decodeURIComponent(puesto);
+  // Auto-guardar estrellas y comentario antes de elegir
+  var key = (cDec+'_'+pDec).replace(/[^a-zA-Z0-9_]/g,'_');
+  var comentEl = document.getElementById('fb_'+key);
+  var comentario = comentEl ? comentEl.value : '';
+  var existing = feedbacks.find(function(f){ return f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim(); });
+  if (!existing) {
+    var fb = Object.assign({candidato:cDec,puesto:pDec,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:true,elegido:false}, fbTemp[key]||{});
+    feedbacks.push(fb);
+  } else {
+    existing.comentario = comentario || existing.comentario;
+    existing.apto = existing.apto !== false ? true : existing.apto;
+  }
   // Solo uno puede ser elegido por puesto
   feedbacks = feedbacks.map(function(f){
     if (f.puesto !== pDec) return f;
