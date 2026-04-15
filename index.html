@@ -1154,7 +1154,7 @@ function renderDetalleProcesoSeleccionado(reqId) {
             + '<span style="font-size:11px;color:var(--muted);">'+cand.recomendacion+'</span>'
             + aptoTag + elegidoTag
           + '</div>'
-          + (cand.recomendacion==='Avanzar' && !esElegido
+          + (!esElegido
             ? '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'
                 + btnApto + btnNoApto + btnElegir
               + '</div>'
@@ -1167,7 +1167,7 @@ function renderDetalleProcesoSeleccionado(reqId) {
     }
 
     // ── Feedback — renderizar directamente para este puesto ──
-    var candsFeedback = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim() && c.recomendacion==='Avanzar'; });
+    var candsFeedback = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim() && c.visibleLider!==false; });
     if (candsFeedback.length) {
       html += '<div style="margin-top:20px;border-top:0.5px solid var(--border2);padding-top:16px;">'
         + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Feedback de entrevistas presenciales</div>'
@@ -2699,7 +2699,7 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
           + '</div>'
           + '<div style="display:flex;gap:6px;">'
             + '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="saveFeedbackBtn(this)" style="'+BTN_ST+'">Guardar</button>'
-            + (fb?'<button class="btn btn-secondary btn-sm" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="deleteFeedbackBtn(this)" style="'+BTN_ST+'">Borrar</button>':'')
+
           + '</div>'
         + '</div>'
       + '</div>'
@@ -2714,8 +2714,8 @@ function renderFeedbackPanel() {
   var misPuestos = liderDni ? jobs.filter(function(j){return j.dniLider===liderDni;}).map(function(j){return j.titulo;}) : [];
   safeFetch('/api/jobs?type=results').then(function(d){
     var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
-    var avanzar=results.filter(function(r){ return r.recomendacion==='Avanzar'&&(misPuestos.length===0||misPuestos.indexOf(r.puesto)!==-1); });
-    if (!avanzar.length){ panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos con recomendación "Avanzar" en tus puestos aún.</div>'; return; }
+    var avanzar=results.filter(function(r){ return r.visibleLider!==false&&(misPuestos.length===0||misPuestos.indexOf(r.puesto)!==-1); });
+    if (!avanzar.length){ panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos asignados a tus puestos aún.</div>'; return; }
 
     // Agrupar por puesto
     var byPuesto = {};
@@ -2791,7 +2791,7 @@ function renderFeedbackPanel() {
               bodyHtml += '</div>';
               bodyHtml += '<div style="display:flex;gap:8px;">';
               bodyHtml += '<button class="btn btn-primary btn-sm" data-key="'+key+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="saveFeedbackBtn(this)">Guardar</button>';
-              if (fb) bodyHtml += '<button class="btn btn-secondary btn-sm" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="deleteFeedbackBtn(this)">Borrar</button>';
+
               bodyHtml += '</div>';
             } else if (fb) {
               // Solo lectura
@@ -2921,8 +2921,11 @@ function deleteFeedbackBtn(el) {
 
 function saveFeedback(candidato,puesto,key){
   var comentario=document.getElementById('fb_'+key)?document.getElementById('fb_'+key).value:'';
+  // Preservar apto/elegido existentes para no resetearlos al guardar comentario
+  var existing=feedbacks.find(function(f){return f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim();});
   var fb=Object.assign({candidato:candidato,puesto:puesto,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false},fbTemp[key]||{});
-  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto===puesto);});
+  if(existing){fb.apto=existing.apto;fb.elegido=existing.elegido;}
+  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());});
   feedbacks.push(fb);
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
@@ -2935,10 +2938,15 @@ function saveFeedback(candidato,puesto,key){
 }
 
 function deleteFeedback(candidato,puesto){
-  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto===puesto);});
+  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());});
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
+  safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
   toast('Feedback eliminado');
-  renderFeedbackPanel();
+  if (window._liderProcesoSeleccionado) {
+    renderDetalleProcesoSeleccionado(window._liderProcesoSeleccionado);
+  } else {
+    renderFeedbackPanel();
+  }
 }
 
 // ══════════════════════════════════
@@ -3379,9 +3387,9 @@ function renderDashboard() {
 
     // Puestos con candidatos sin feedback del líder
     var puestosSinFb = {};
-    var puestosConCands = [...new Set(results.filter(function(r){ return r.recomendacion==='Avanzar' && r.visibleLider!==false; }).map(function(r){ return r.puesto; }))];
+    var puestosConCands = [...new Set(results.filter(function(r){ return r.visibleLider!==false; }).map(function(r){ return r.puesto; }))];
     puestosConCands.forEach(function(p) {
-      var candsDelPuesto = results.filter(function(r){ return r.puesto && p && r.puesto.toLowerCase().trim()===p.toLowerCase().trim() && r.recomendacion==='Avanzar'; });
+      var candsDelPuesto = results.filter(function(r){ return r.puesto && p && r.puesto.toLowerCase().trim()===p.toLowerCase().trim() && r.visibleLider!==false; });
       var sinFb = candsDelPuesto.filter(function(r){ return !fbs.find(function(f){ return f.candidato===r.candidato && f.puesto && r.puesto && f.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); }); });
       if (sinFb.length) puestosSinFb[p.toLowerCase().trim()] = sinFb.length;
     });
@@ -3474,13 +3482,17 @@ function renderDashboard() {
     requisiciones.forEach(function(r) {
       var job = jobs.find(function(j){ return getReqsForJob(j.id,j.titulo).some(function(x){ return x.id===r.id; }); });
       var ger = (job&&job.gerencia) ? job.gerencia : (r.gerencia || 'Sin gerencia');
-      if (!byGer[ger]) byGer[ger] = { activos:0, cubiertos:0, sla:0, cands:0, estrellas:[] };
+      if (!byGer[ger]) byGer[ger] = { activos:0, cubiertos:0, sla:0, cands:0, avances:[] };
       if (r.estado==='Cubierto') byGer[ger].cubiertos++;
-      else byGer[ger].activos++;
+      else {
+        byGer[ger].activos++;
+        // % avance del proceso activo (etapa 0-5 sobre 5)
+        var etapaIdx = calcularEtapaActual(r, results, feedbacks);
+        byGer[ger].avances.push(Math.round(etapaIdx / 5 * 100));
+      }
       if (slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); })) byGer[ger].sla++;
       var candsDePuesto = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); });
       byGer[ger].cands += candsDePuesto.length;
-      candsDePuesto.forEach(function(c){ byGer[ger].estrellas.push(c.estrellas||c.puntaje||0); });
     });
 
     var gerHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
@@ -3492,29 +3504,25 @@ function renderDashboard() {
         + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Cubiertos</th>'
         + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidatos</th>'
         + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">SLA vencido</th>'
-        + '<th style="padding:8px 14px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Estrellas prom.</th>'
+        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Avance prom.</th>'
       + '</tr></thead><tbody>';
 
     Object.keys(byGer).sort().forEach(function(ger) {
-      var g = byGer[ger];
-      var promG = g.estrellas.length ? (g.estrellas.reduce(function(s,v){return s+v;},0)/g.estrellas.length).toFixed(1) : '—';
-      var barW = promG!=='—' ? Math.round(parseFloat(promG)/5*100) : 0;
-      var barC = parseFloat(promG)>=4?'#3B6D11':parseFloat(promG)>=3?'#b8760a':'#c0392b';
-      gerHtml += '<tr style="border-top:0.5px solid var(--border2);">'
-        + '<td style="padding:10px 14px;font-weight:500;">'+ger+'</td>'
-        + '<td style="padding:10px 14px;text-align:center;">'+(g.activos||'—')+'</td>'
-        + '<td style="padding:10px 14px;text-align:center;color:#2d7a4f;font-weight:500;">'+(g.cubiertos||'—')+'</td>'
-        + '<td style="padding:10px 14px;text-align:center;">'+g.cands+'</td>'
-        + '<td style="padding:10px 14px;text-align:center;">'+(g.sla?'<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:1px 8px;border-radius:4px;">'+g.sla+'</span>':'<span style="color:var(--muted);">—</span>')+'</td>'
-        + '<td style="padding:10px 14px;min-width:120px;">'
-          + (promG!=='—'
-            ? '<div style="display:flex;align-items:center;gap:6px;">'
-                + '<div style="width:80px;flex-shrink:0;background:var(--surface2);border-radius:3px;height:5px;"><div style="width:'+barW+'%;background:'+barC+';border-radius:3px;height:5px;"></div></div>'
-                + '<span style="font-size:11px;color:'+barC+';font-weight:500;white-space:nowrap;">'+promG+'★</span>'
-              + '</div>'
-            : '<span style="color:var(--muted);">—</span>')
-        + '</td>'
-      + '</tr>';
+       var g = byGer[ger];
+       var promAvance = g.avances.length ? Math.round(g.avances.reduce(function(s,v){return s+v;},0)/g.avances.length) : null;
+       var avanceC = promAvance===null?'var(--muted)':promAvance>=66?'#2d7a4f':promAvance>=33?'#b8760a':'#c0392b';
+       gerHtml += '<tr style="border-top:0.5px solid var(--border2);">'
+         + '<td style="padding:10px 14px;font-weight:500;">'+ger+'</td>'
+         + '<td style="padding:10px 14px;text-align:center;">'+(g.activos||'—')+'</td>'
+         + '<td style="padding:10px 14px;text-align:center;color:#2d7a4f;font-weight:500;">'+(g.cubiertos||'—')+'</td>'
+         + '<td style="padding:10px 14px;text-align:center;">'+g.cands+'</td>'
+         + '<td style="padding:10px 14px;text-align:center;">'+(g.sla?'<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:1px 8px;border-radius:4px;">'+g.sla+'</span>':'<span style="color:var(--muted);">—</span>')+'</td>'
+         + '<td style="padding:10px 14px;text-align:center;">'
+           + (promAvance!==null
+             ? '<span style="font-size:12px;color:'+avanceC+';font-weight:500;">'+promAvance+'%</span>'
+             : '<span style="color:var(--muted);">—</span>')
+         + '</td>'
+       + '</tr>';
     });
 
     gerHtml += '</tbody></table></div></div>';
