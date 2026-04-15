@@ -2372,6 +2372,35 @@ function compararTop(puestoEnc) {
 // Estado global de resultados cargados
 var _allResults = [];
 
+
+function toggleEditCand(cand, puesto) {
+  var id = 'editrow_'+cand+'_'+puesto;
+  var row = document.getElementById(id);
+  if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+
+function guardarEditCand(cand, puesto) {
+  var candidato = decodeURIComponent(cand);
+  var puestoD = decodeURIComponent(puesto);
+  var recEl = document.getElementById('editRec_'+cand+'_'+puesto);
+  var resEl = document.getElementById('editRes_'+cand+'_'+puesto);
+  if (!recEl || !resEl) return;
+  var nuevaRec = recEl.value;
+  var nuevoRes = resEl.value.trim();
+  // Actualizar en _allResults
+  _allResults = _allResults.map(function(r) {
+    if (r.candidato === candidato && r.puesto && puestoD && r.puesto.toLowerCase().trim() === puestoD.toLowerCase().trim()) {
+      return Object.assign({}, r, { recomendacion: nuevaRec, resumen: nuevoRes });
+    }
+    return r;
+  });
+  localStorage.setItem('rresults', JSON.stringify(_allResults));
+  safeFetch('/api/jobs?type=results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ results: _allResults }) });
+  toast('Candidato actualizado · ' + candidato);
+  toggleEditCand(cand, puesto);
+  filtrarCandidatos();
+}
+
 function eliminarCandidato(el) {
   var candidato = decodeURIComponent(el.dataset.cand);
   var puesto    = decodeURIComponent(el.dataset.puesto);
@@ -2533,8 +2562,8 @@ function filtrarCandidatos() {
 }
 
 function renderTablaByPuesto(results) {
-  function rBg(r){return r==='Avanzar'?'#edf7f1':r==='Considerar'?'#fef8ee':'#fbeaea';}
-  function rTx(r){return r==='Avanzar'?'#1e5c38':r==='Considerar'?'#7a5000':'#8b1f1f';}
+  function rBg(r){return r==='Avanzar'?'#edf7f1':'#fbeaea';}
+  function rTx(r){return r==='Avanzar'?'#1e5c38':'#8b1f1f';}
   var byPuesto={};
   results.forEach(function(r){if(!byPuesto[r.puesto])byPuesto[r.puesto]=[];byPuesto[r.puesto].push(r);});
   return Object.keys(byPuesto).map(function(puesto){
@@ -2547,6 +2576,8 @@ function renderTablaByPuesto(results) {
         :cidx===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
         :cidx===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>':'';
       var fuente = c.fuente==='manual'?'<span style="font-size:10px;background:#EEEDFE;color:#3C3489;border-radius:4px;padding:1px 5px;margin-left:4px;">Manual</span>':'';
+      var cEncEdit = encodeURIComponent(c.candidato); var pEncEdit = encodeURIComponent(c.puesto);
+      var editRowId = 'editrow_'+cEncEdit+'_'+pEncEdit;
       return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'
         +'<td style="padding:9px 12px;font-weight:500;">'+c.candidato+badge+fuente+'</td>'
         +'<td style="padding:9px 12px;color:var(--muted);font-size:12px;">'+(c.fecha||'')+(c.hora?' &middot; '+c.hora:'')+'</td>'
@@ -2573,7 +2604,31 @@ function renderTablaByPuesto(results) {
           return '<td style="padding:9px 12px;text-align:center;">'+elegidoBadge+'</td>'
                + '<td style="padding:9px 12px;text-align:center;">'+trBtn+'</td>';
         })()
-        +'<td style="padding:9px 12px;text-align:center;"><button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;">&#128465;</button></td>'
+        +'<td style="padding:9px 12px;text-align:center;white-space:nowrap;">'
+          +'<button data-cand="'+cEncEdit+'" data-puesto="'+pEncEdit+'" onclick="toggleEditCand(this.dataset.cand,this.dataset.puesto)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:2px 6px;" title="Editar">&#9998;</button>'
+          +'<button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 6px;">&#128465;</button>'
+        +'</td>'
+        +'</tr>'
+        +'<tr id="'+editRowId+'" style="display:none;">'
+          +'<td colspan="9" style="padding:12px 16px;background:var(--bg);border-top:0.5px solid var(--border2);">'
+            +'<div style="display:flex;flex-direction:column;gap:10px;max-width:600px;">'
+              +'<div style="display:flex;gap:8px;align-items:center;">'
+                +'<span style="font-size:12px;font-weight:500;min-width:100px;">Recomendación</span>'
+                +'<select id="editRec_'+cEncEdit+'_'+pEncEdit+'" style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);">'
+                  +'<option value="Avanzar"'+(c.recomendacion==='Avanzar'?' selected':'')+'>Avanzar</option>'
+                  +'<option value="No avanzar"'+(c.recomendacion!=='Avanzar'?' selected':'')+'>No avanzar</option>'
+                +'</select>'
+              +'</div>'
+              +'<div style="display:flex;gap:8px;align-items:flex-start;">'
+                +'<span style="font-size:12px;font-weight:500;min-width:100px;padding-top:6px;">Resumen</span>'
+                +'<textarea id="editRes_'+cEncEdit+'_'+pEncEdit+'" style="flex:1;height:70px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;">'+( c.resumen||'')+'</textarea>'
+              +'</div>'
+              +'<div style="display:flex;gap:8px;">'
+                +'<button class="btn btn-primary btn-sm" data-cand="'+cEncEdit+'" data-puesto="'+pEncEdit+'" onclick="guardarEditCand(this.dataset.cand,this.dataset.puesto)">Guardar</button>'
+                +'<button class="btn btn-secondary btn-sm" data-cand="'+cEncEdit+'" data-puesto="'+pEncEdit+'" onclick="toggleEditCand(this.dataset.cand,this.dataset.puesto)">Cancelar</button>'
+              +'</div>'
+            +'</div>'
+          +'</td>'
         +'</tr>';
     }).join('');
     return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'
