@@ -2657,7 +2657,7 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
   var BTN_ST = 'font-size:11px;padding:4px 12px;min-width:90px;text-align:center;';
   return candsFeedback.map(function(c) {
     var fb = fbs.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
-    var key = encodeURIComponent(c.candidato)+'_'+encodeURIComponent(c.puesto);
+    var key = (c.candidato+'_'+c.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
     var aptoOk = fb&&fb.apto===true; var noAptoOk = fb&&fb.apto===false; var esElegido = fb&&fb.elegido;
     var cEnc = encodeURIComponent(c.candidato); var pEnc = encodeURIComponent(c.puesto);
     var hcBadge = esElegido ? '<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:2px 8px;border-radius:4px;">🏆 Elegido</span>'
@@ -2672,13 +2672,13 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
       starsHtml += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">'+d.l+'</div>';
       starsHtml += '<div>';
       for (var i=1;i<=5;i++) {
-        starsHtml += '<span data-key="'+key+'" data-dim="'+d.k+'" data-val="'+i+'" onclick="setCmStar(this)" style="font-size:18px;color:'+(i<=val?'#e8623a':'#e0ddd8')+';cursor:pointer;">&#9733;</span>';
+        starsHtml += '<span data-key="'+key+'" data-campo="'+d.k+'" data-n="'+i+'" onclick="setFbStar(this)" style="font-size:18px;color:'+(i<=val?'#e8623a':'#e0ddd8')+';cursor:pointer;">&#9733;</span>';
       }
       starsHtml += '</div></div>';
     });
     starsHtml += '</div>';
 
-    return '<div style="border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:10px;">'
+    return '<div style="border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:10px;" id="fbcard_'+key+'">'
       + '<div style="padding:10px 14px;background:var(--surface2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
         + '<div style="font-size:13px;font-weight:500;flex:1;">'+c.candidato+'</div>'
         + renderStars(c.estrellas||c.puntaje, starsColor(c.estrellas||c.puntaje))
