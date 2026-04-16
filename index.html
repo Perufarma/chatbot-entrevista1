@@ -525,6 +525,21 @@ a[title]{cursor:pointer;}
     <!-- Dashboard -->
     <div id="liderDashboard" style="display:none;">
 
+      <!-- Pestañas del portal líder -->
+      <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border2);margin-bottom:20px;">
+        <button id="liderTabDashboard" onclick="switchLiderTab('dashboard')" style="padding:10px 20px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--text);cursor:pointer;">Dashboard</button>
+        <button id="liderTabProcesos" onclick="switchLiderTab('procesos')" style="padding:10px 20px;font-size:13px;font-weight:400;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">Mis procesos</button>
+        <button id="liderTabCandidatos" onclick="switchLiderTab('candidatos')" style="padding:10px 20px;font-size:13px;font-weight:400;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">Candidatos</button>
+      </div>
+
+      <!-- Panel Dashboard -->
+      <div id="liderTabContentDashboard">
+        <div id="liderDashboardPanel"><div style="padding:40px;text-align:center;color:var(--muted);">Cargando...</div></div>
+      </div>
+
+      <!-- Panel Mis procesos -->
+      <div id="liderTabContentProcesos" style="display:none;">
+
       <!-- Nueva solicitud (formulario colapsable) -->
       <div class="add-job-form" id="addJobFormLider" style="margin-bottom:16px;border-left:3px solid var(--accent2);max-width:100%;">
         <div style="font-size:14px;font-weight:500;">Nueva solicitud de personal</div>
@@ -640,6 +655,14 @@ a[title]{cursor:pointer;}
         </div>
 
       </div>
+
+      </div><!-- /liderTabContentProcesos -->
+
+      <!-- Panel Candidatos -->
+      <div id="liderTabContentCandidatos" style="display:none;">
+        <div id="feedbackPanel"><div style="padding:40px;text-align:center;color:var(--muted);">Cargando...</div></div>
+      </div><!-- /liderTabContentCandidatos -->
+
 
     </div>
   </div>
@@ -949,7 +972,7 @@ function accederLider() {
   document.getElementById('liderNombreNav').textContent = 'Líder · ' + (ref.area || '');
   document.getElementById('liderLoginView').style.display = 'none';
   document.getElementById('liderDashboard').style.display = 'block';
-  renderLiderProcesos();
+  switchLiderTab('dashboard');
   renderLiderPerfilesPendientes();
 }
 
@@ -1046,6 +1069,219 @@ function avanzarEtapa(reqId, etapaId) {
   renderLiderProcesos();
   renderLiderCandidatos();
   toast('Etapa actualizada ✓');
+}
+
+
+// ══════════════════════════════════
+// LÍDER — tabs
+// ══════════════════════════════════
+function switchLiderTab(tab) {
+  var tabs = ['dashboard','procesos','candidatos'];
+  tabs.forEach(function(t) {
+    var btn = document.getElementById('liderTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    var panel = document.getElementById('liderTabContent'+t.charAt(0).toUpperCase()+t.slice(1));
+    if (btn) {
+      btn.style.borderBottom = t===tab ? '2px solid var(--accent)' : '2px solid transparent';
+      btn.style.color = t===tab ? 'var(--text)' : 'var(--muted)';
+      btn.style.fontWeight = t===tab ? '500' : '400';
+    }
+    if (panel) panel.style.display = t===tab ? 'block' : 'none';
+  });
+  if (tab === 'dashboard') renderLiderDashboard();
+  if (tab === 'procesos') { renderLiderProcesos(); }
+  if (tab === 'candidatos') { renderFeedbackPanel(); }
+}
+
+// ══════════════════════════════════
+// LÍDER — dashboard de gestión
+// ══════════════════════════════════
+function renderLiderDashboard() {
+  var panel = document.getElementById('liderDashboardPanel');
+  if (!panel) return;
+  var misPuestos = liderDni ? jobs.filter(function(j){return j.dniLider===liderDni;}).map(function(j){return j.titulo.toLowerCase().trim();}) : [];
+  var misReqs = requisiciones.filter(function(r){return r.dniLider===liderDni||(r.puesto&&misPuestos.indexOf(r.puesto.toLowerCase().trim())!==-1);});
+
+  safeFetch('/api/jobs?type=results').then(function(d){
+    var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+
+    // ── Datos base ──
+    var activos = misReqs.filter(function(r){return r.estado!=='Cubierto';});
+    var cubiertos = misReqs.filter(function(r){return r.estado==='Cubierto';});
+    var misCands = results.filter(function(c){return c.visibleLider!==false&&(misPuestos.length===0||misPuestos.indexOf((c.puesto||'').toLowerCase().trim())!==-1);});
+    var evaluados = misCands.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
+    var pendientes = misCands.filter(function(c){return !fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
+    var aptos = evaluados.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&f.apto===true;});});
+    var noAptos = evaluados.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&f.apto===false;});});
+
+    // % avance promedio procesos activos
+    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/5*100);});
+    var avanceProm = avances.length ? Math.round(avances.reduce(function(s,v){return s+v;},0)/avances.length) : 0;
+    var avanceColor = avanceProm>=66?'#2d7a4f':avanceProm>=33?'#b8760a':'#c0392b';
+
+    // Tasa de aprobación
+    var tasaAprobacion = evaluados.length ? Math.round(aptos.length/evaluados.length*100) : null;
+
+    // Promedio estrellas (feedback líder)
+    var estrellasSuma = 0; var estrellasCount = 0;
+    fbs.forEach(function(f){
+      if (misPuestos.length===0||misPuestos.indexOf((f.puesto||'').toLowerCase().trim())!==-1) {
+        if (f.comunicacion||f.tecnico||f.actitud||f.resultados) {
+          estrellasSuma += ((f.comunicacion||0)+(f.tecnico||0)+(f.actitud||0)+(f.resultados||0))/4;
+          estrellasCount++;
+        }
+      }
+    });
+    var promEstrellas = estrellasCount ? (estrellasSuma/estrellasCount).toFixed(1) : null;
+
+    // Procesos por vencer (≤7 días)
+    var hoy = new Date(); hoy.setHours(0,0,0,0);
+    var proxVencer = activos.filter(function(r){
+      if (!r.fechaLimite) return false;
+      var parts = r.fechaLimite.split('/'); if (parts.length<3) return false;
+      var fl = new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+      var dias = Math.ceil((fl-hoy)/(1000*60*60*24));
+      return dias>=0 && dias<=7;
+    }).sort(function(a,b){
+      var pa=a.fechaLimite.split('/'),pb=b.fechaLimite.split('/');
+      return new Date(parseInt(pa[2]),parseInt(pa[1])-1,parseInt(pa[0]))-new Date(parseInt(pb[2]),parseInt(pb[1])-1,parseInt(pb[0]));
+    });
+
+    // ── HTML ──
+    function mkKpi(label, value, suffix, color, clickFn) {
+      return '<div onclick="'+clickFn+'" style="background:var(--surface2);border-radius:10px;padding:14px 16px;cursor:pointer;" onmouseover="this.style.opacity=.85" onmouseout="this.style.opacity=1">'
+        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">'+label+'</div>'
+        +'<div style="font-size:26px;font-weight:600;color:'+(color||'var(--text)')+';">'+(value!==null&&value!==undefined?value:'—')+(value!==null&&value!==undefined&&suffix?'<span style="font-size:14px;font-weight:400;margin-left:2px;">'+suffix+'</span>':'')+'</div>'
+      +'</div>';
+    }
+
+    var html = '';
+
+    // KPIs fila 1
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">';
+    html += mkKpi('Procesos activos', activos.length, '', '#b8760a', 'liderDashClick("activos")');
+    html += mkKpi('Cubiertos', cubiertos.length, '', '#2d7a4f', 'liderDashClick("cubiertos")');
+    html += mkKpi('Avance prom.', avanceProm, '%', avanceColor, 'liderDashClick("avance")');
+    html += mkKpi('Candidatos asignados', misCands.length, '', '#3C3489', 'liderDashClick("candidatos")');
+    html += '</div>';
+
+    // KPIs fila 2
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">';
+    html += mkKpi('Evaluados', evaluados.length+'/'+misCands.length, '', evaluados.length===misCands.length&&misCands.length>0?'#2d7a4f':'#b8760a', 'liderDashClick("evaluados")');
+    html += mkKpi('Pendientes', pendientes.length, '', pendientes.length>0?'#c0392b':'#2d7a4f', 'liderDashClick("pendientes")');
+    html += mkKpi('Tasa aprobación', tasaAprobacion, '%', tasaAprobacion===null?'var(--muted)':tasaAprobacion>=50?'#2d7a4f':'#c0392b', 'liderDashClick("aprobacion")');
+    html += mkKpi('Prom. estrellas', promEstrellas, '★', promEstrellas===null?'var(--muted)':parseFloat(promEstrellas)>=4?'#2d7a4f':parseFloat(promEstrellas)>=3?'#b8760a':'#c0392b', 'liderDashClick("estrellas")');
+    html += '</div>';
+
+    // Alerta procesos por vencer
+    if (proxVencer.length > 0) {
+      html += '<div style="background:#fef8ee;border:0.5px solid #f4c430;border-radius:10px;padding:14px 16px;margin-bottom:20px;">';
+      html += '<div style="font-size:12px;font-weight:500;color:#7a5000;margin-bottom:8px;">&#9888; Procesos próximos a vencer</div>';
+      proxVencer.forEach(function(r){
+        var parts=r.fechaLimite.split('/'); var fl=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+        var dias=Math.ceil((fl-hoy)/(1000*60*60*24));
+        html += '<div onclick="seleccionarProceso('+r.id+')" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:0.5px solid rgba(184,118,23,.2);cursor:pointer;" onmouseover="this.style.opacity=.7" onmouseout="this.style.opacity=1">'
+          +'<span style="font-size:13px;font-weight:500;color:var(--text);">'+r.puesto+'</span>'
+          +'<span style="font-size:12px;color:#7a5000;background:#faeeda;padding:2px 10px;border-radius:6px;">'+(dias===0?'Vence hoy':dias===1?'1 día':dias+' días')+'</span>'
+          +'</div>';
+      });
+      html += '</div>';
+    }
+
+    // Detalle expandible (inicialmente oculto)
+    html += '<div id="liderDashDetail" style="display:none;background:var(--surface);border:0.5px solid var(--border2);border-radius:10px;padding:16px;margin-bottom:20px;"></div>';
+
+    panel.innerHTML = html;
+  });
+}
+
+function liderDashClick(tipo) {
+  var panel = document.getElementById('liderDashDetail');
+  if (!panel) return;
+  var misPuestos = liderDni ? jobs.filter(function(j){return j.dniLider===liderDni;}).map(function(j){return j.titulo.toLowerCase().trim();}) : [];
+  var misReqs = requisiciones.filter(function(r){return r.dniLider===liderDni||(r.puesto&&misPuestos.indexOf(r.puesto.toLowerCase().trim())!==-1);});
+
+  safeFetch('/api/jobs?type=results').then(function(d){
+    var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+    var misCands = results.filter(function(c){return c.visibleLider!==false&&(misPuestos.length===0||misPuestos.indexOf((c.puesto||'').toLowerCase().trim())!==-1);});
+    var evaluados = misCands.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
+    var pendientes = misCands.filter(function(c){return !fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
+    var aptos = evaluados.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&f.apto===true;});});
+    var noAptos = evaluados.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&f.apto===false;});});
+    var activos = misReqs.filter(function(r){return r.estado!=='Cubierto';});
+    var cubiertos = misReqs.filter(function(r){return r.estado==='Cubierto';});
+
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+    var titles = {activos:'Procesos activos',cubiertos:'Procesos cubiertos',avance:'Avance por proceso',candidatos:'Candidatos asignados',evaluados:'Candidatos evaluados',pendientes:'Pendientes de evaluación',aprobacion:'Distribución Apto / No apto',estrellas:'Estrellas por candidato'};
+    html += '<div style="font-size:13px;font-weight:500;color:var(--text);">'+(titles[tipo]||tipo)+'</div>';
+    html += '<button onclick="document.getElementById(\'liderDashDetail\').style.display=\'none\'" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);">&times;</button>';
+    html += '</div>';
+
+    if (tipo==='activos'||tipo==='cubiertos') {
+      var lista = tipo==='activos' ? activos : cubiertos;
+      if (!lista.length) { html += '<div style="color:var(--muted);font-size:13px;">Sin procesos.</div>'; }
+      lista.forEach(function(r){
+        var etapa = calcularEtapaActual(r,results,fbs);
+        var av = Math.round(etapa/5*100);
+        html += '<div onclick="switchLiderTab(&apos;procesos&apos;);setTimeout(function(){seleccionarProceso('+r.id+')},100)" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border2);cursor:pointer;">'
+          +'<span style="font-size:13px;color:var(--text);">'+r.puesto+'</span>'
+          +'<span style="font-size:12px;color:var(--muted);">'+av+'% avance</span>'
+          +'</div>';
+      });
+    } else if (tipo==='avance') {
+      activos.forEach(function(r){
+        var etapa=calcularEtapaActual(r,results,fbs); var av=Math.round(etapa/5*100);
+        var c=av>=66?'#2d7a4f':av>=33?'#b8760a':'#c0392b';
+        html += '<div onclick="switchLiderTab(&apos;procesos&apos;);setTimeout(function(){seleccionarProceso('+r.id+')},100)" style="padding:8px 0;border-bottom:0.5px solid var(--border2);cursor:pointer;">'
+          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text);">'+r.puesto+'</span><span style="font-size:12px;font-weight:500;color:'+c+';">'+av+'%</span></div>'
+          +'<div style="background:var(--surface2);border-radius:3px;height:4px;"><div style="width:'+av+'%;background:'+c+';border-radius:3px;height:4px;"></div></div>'
+          +'</div>';
+      });
+    } else if (tipo==='candidatos'||tipo==='evaluados'||tipo==='pendientes') {
+      var lista = tipo==='pendientes' ? pendientes : tipo==='evaluados' ? evaluados : misCands;
+      if (!lista.length) { html += '<div style="color:var(--muted);font-size:13px;">Sin candidatos.</div>'; }
+      lista.forEach(function(c){
+        var fb=fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim();});
+        var badge = fb&&fb.apto===true?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:5px;">✓ Apto</span>'
+          :fb&&fb.apto===false?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:5px;">✗ No apto</span>'
+          :'<span style="font-size:10px;background:var(--surface2);color:var(--muted);padding:1px 7px;border-radius:5px;">Sin evaluar</span>';
+        html += '<div onclick="switchLiderTab(&apos;candidatos&apos;)" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border2);cursor:pointer;">'
+          +'<div><div style="font-size:13px;color:var(--text);">'+c.candidato+'</div><div style="font-size:11px;color:var(--muted);">'+c.puesto+'</div></div>'
+          +badge+'</div>';
+      });
+    } else if (tipo==='aprobacion') {
+      html += '<div style="display:flex;gap:16px;margin-top:8px;">';
+      html += '<div style="flex:1;text-align:center;background:#edf7f1;border-radius:10px;padding:16px;">'
+        +'<div style="font-size:24px;font-weight:600;color:#2d7a4f;">'+aptos.length+'</div>'
+        +'<div style="font-size:12px;color:#2d7a4f;">Aptos</div></div>';
+      html += '<div style="flex:1;text-align:center;background:#fbeaea;border-radius:10px;padding:16px;">'
+        +'<div style="font-size:24px;font-weight:600;color:#8b1f1f;">'+noAptos.length+'</div>'
+        +'<div style="font-size:12px;color:#8b1f1f;">No aptos</div></div>';
+      html += '<div style="flex:1;text-align:center;background:var(--surface2);border-radius:10px;padding:16px;">'
+        +'<div style="font-size:24px;font-weight:600;color:var(--muted);">'+pendientes.length+'</div>'
+        +'<div style="font-size:12px;color:var(--muted);">Sin evaluar</div></div>';
+      html += '</div>';
+    } else if (tipo==='estrellas') {
+      var conEstrellas = misCands.filter(function(c){
+        var fb=fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim();});
+        return fb&&(fb.comunicacion||fb.tecnico||fb.actitud||fb.resultados);
+      }).map(function(c){
+        var fb=fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim();});
+        return {cand:c,prom:Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4)};
+      }).sort(function(a,b){return b.prom-a.prom;});
+      if (!conEstrellas.length) { html += '<div style="color:var(--muted);font-size:13px;">Aún no hay evaluaciones con estrellas.</div>'; }
+      conEstrellas.forEach(function(item){
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border2);">'
+          +'<div><div style="font-size:13px;color:var(--text);">'+item.cand.candidato+'</div><div style="font-size:11px;color:var(--muted);">'+item.cand.puesto+'</div></div>'
+          +renderStars(item.prom,starsColor(item.prom))+'</div>';
+      });
+    }
+
+    panel.innerHTML = html;
+    panel.style.display = 'block';
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
 }
 
 function renderLiderProcesos() {
