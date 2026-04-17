@@ -525,16 +525,41 @@ a[title]{cursor:pointer;}
     <!-- Dashboard -->
     <div id="liderDashboard" style="display:none;">
 
-      <!-- Pestañas del portal líder -->
-      <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border2);margin-bottom:20px;">
-        <button id="liderTabDashboard" onclick="switchLiderTab('dashboard')" style="padding:10px 20px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--text);cursor:pointer;">Dashboard</button>
-        <button id="liderTabProcesos" onclick="switchLiderTab('procesos')" style="padding:10px 20px;font-size:13px;font-weight:400;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">Mis procesos</button>
-        <button id="liderTabCandidatos" onclick="switchLiderTab('candidatos')" style="padding:10px 20px;font-size:13px;font-weight:400;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">Candidatos</button>
+      <!-- KPIs siempre visibles -->
+      <div id="liderKpisBar" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:14px;">
+        <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Procesos activos</div>
+          <div id="kpiActivos" style="font-size:20px;font-weight:500;color:var(--text);">—</div>
+        </div>
+        <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Candidatos</div>
+          <div id="kpiCandidatos" style="font-size:20px;font-weight:500;color:var(--text);">—</div>
+        </div>
+        <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Pendientes eval.</div>
+          <div id="kpiPendientes" style="font-size:20px;font-weight:500;color:var(--text);">—</div>
+        </div>
+        <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Avance prom.</div>
+          <div id="kpiAvance" style="font-size:20px;font-weight:500;color:var(--text);">—</div>
+        </div>
       </div>
 
-      <!-- Panel Dashboard -->
-      <div id="liderTabContentDashboard">
-        <div id="liderDashboardPanel"><div style="padding:40px;text-align:center;color:var(--muted);">Cargando...</div></div>
+      <!-- Pestañas Mis procesos / Candidatos -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <button id="liderTabProcesos" onclick="switchLiderTab('procesos')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;font-size:14px;font-weight:500;background:#fff3ed;border:1.5px solid #e8623a;border-radius:8px;color:#e8623a;cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="#e8623a"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="#e8623a" opacity=".35"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="#e8623a" opacity=".35"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="#e8623a" opacity=".35"/></svg>
+          Mis procesos
+        </button>
+        <button id="liderTabCandidatos" onclick="switchLiderTab('candidatos')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;font-size:14px;font-weight:400;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;color:var(--muted);cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><circle cx="8" cy="6" r="3.5" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-2.5 2.7-4 6-4s6 1.5 6 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Candidatos
+        </button>
+      </div>
+
+      <!-- Panel Dashboard (oculto, mantenido para compatibilidad) -->
+      <div id="liderTabContentDashboard" style="display:none;">
+        <div id="liderDashboardPanel"></div>
       </div>
 
       <!-- Panel Mis procesos -->
@@ -985,8 +1010,7 @@ function accederLider() {
 var ETAPAS = [
   { id:'hc',        label:'Validar HC y Presupuesto',          auto: false },
   { id:'convoc',    label:'Convocatoria Interna/Externa',       auto: true  },
-  { id:'eval',      label:'Evaluación de Postulantes GTH',      auto: true  },
-  { id:'longlist',  label:'Envío de Longlist',                  auto: true  },
+  { id:'evaluacion',label:'Evaluación y Longlist',              auto: true  },
   { id:'entrevista',label:'Entrevista Técnica y Feedback',      auto: true  },
   { id:'oferta',    label:'Envío de Oferta Laboral',            auto: false },
   { id:'tramites',  label:'Trámites de Ingreso',                auto: false }
@@ -996,21 +1020,22 @@ function calcularEtapaActual(req, candidatos, feedbacks) {
   if (!req) return 0;
   var etapasCompletadas = req.etapas || {};
 
-  // Etapa 1: HC — manual
+  // Etapa 0: HC — manual
   if (!etapasCompletadas.hc) return 0;
-  // Etapa 2: Convocatoria — automática (req existe)
-  // Etapa 3: Evaluación — hay candidatos
+  // Etapa 1: Convocatoria — automática cuando hay candidatos registrados
   var hayCandidatos = candidatos.some(function(c){ return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim(); });
   if (!hayCandidatos) return 1;
-  // Etapa 4: Longlist — hay candidatos visibles para el líder
+  // Etapa 2: Evaluación y Longlist — candidatos visibles para el líder
   var hayVisibles = candidatos.some(function(c){ return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim() && c.visibleLider; });
   if (!hayVisibles) return 2;
-  // Etapa 5: Feedback — hay feedback del líder
+  // Etapa 3: Entrevista/Feedback — hay feedback del líder
   var hayFeedback = feedbacks.some(function(f){ return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim(); });
   if (!hayFeedback) return 3;
+  // Etapa 4: Oferta — manual
   if (!etapasCompletadas.oferta) return 4;
+  // Etapa 5: Trámites — manual
   if (!etapasCompletadas.tramites) return 5;
-  return 6;
+  return 5;
 }
 
 function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
@@ -1076,20 +1101,55 @@ function avanzarEtapa(reqId, etapaId) {
 // LÍDER — tabs
 // ══════════════════════════════════
 function switchLiderTab(tab) {
-  var tabs = ['dashboard','procesos','candidatos'];
+  // Si llega 'dashboard', redirigir a 'procesos' (dashboard ya no es pestaña)
+  if (tab === 'dashboard') tab = 'procesos';
+
+  var tabs = ['procesos','candidatos'];
   tabs.forEach(function(t) {
     var btn = document.getElementById('liderTab'+t.charAt(0).toUpperCase()+t.slice(1));
     var panel = document.getElementById('liderTabContent'+t.charAt(0).toUpperCase()+t.slice(1));
+    var isActive = t === tab;
     if (btn) {
-      btn.style.borderBottom = t===tab ? '2px solid var(--accent)' : '2px solid transparent';
-      btn.style.color = t===tab ? 'var(--text)' : 'var(--muted)';
-      btn.style.fontWeight = t===tab ? '500' : '400';
+      btn.style.background = isActive ? '#fff3ed' : 'var(--surface2)';
+      btn.style.border = isActive ? '1.5px solid #e8623a' : '0.5px solid var(--border2)';
+      btn.style.color = isActive ? '#e8623a' : 'var(--muted)';
+      btn.style.fontWeight = isActive ? '500' : '400';
+      // Actualizar color del SVG dentro del botón
+      var svgs = btn.querySelectorAll('svg rect, svg circle, svg path');
+      svgs.forEach(function(el) {
+        if (el.tagName === 'rect') { el.setAttribute('fill', isActive ? '#e8623a' : 'currentColor'); }
+      });
     }
-    if (panel) panel.style.display = t===tab ? 'block' : 'none';
+    if (panel) panel.style.display = isActive ? 'block' : 'none';
   });
-  if (tab === 'dashboard') renderLiderDashboard();
+  renderLiderKpis();
   if (tab === 'procesos') { renderLiderProcesos(); }
   if (tab === 'candidatos') { renderFeedbackPanel(); }
+}
+
+function renderLiderKpis() {
+  var misPuestos = liderDni ? jobs.filter(function(j){return j.dniLider===liderDni;}).map(function(j){return j.titulo.toLowerCase().trim();}) : [];
+  var misReqs = requisiciones.filter(function(r){return r.dniLider===liderDni||(r.puesto&&misPuestos.indexOf(r.puesto.toLowerCase().trim())!==-1);});
+  var activos = misReqs.filter(function(r){return r.estado!=='Cubierto';});
+
+  safeFetch('/api/jobs?type=results').then(function(d){
+    var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+    var misCands = results.filter(function(c){return c.visibleLider!==false&&(misPuestos.length===0||misPuestos.indexOf((c.puesto||'').toLowerCase().trim())!==-1);});
+    var pendientes = misCands.filter(function(c){return !fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
+    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/5*100);});
+    var avanceProm = avances.length ? Math.round(avances.reduce(function(s,v){return s+v;},0)/avances.length) : 0;
+
+    var elActivos = document.getElementById('kpiActivos');
+    var elCands = document.getElementById('kpiCandidatos');
+    var elPend = document.getElementById('kpiPendientes');
+    var elAvance = document.getElementById('kpiAvance');
+
+    if (elActivos) elActivos.textContent = activos.length;
+    if (elCands) elCands.textContent = misCands.length;
+    if (elPend) { elPend.textContent = pendientes.length; elPend.style.color = pendientes.length > 0 ? '#c0392b' : '#2d7a4f'; }
+    if (elAvance) { elAvance.textContent = avanceProm + '%'; elAvance.style.color = avanceProm >= 66 ? '#2d7a4f' : avanceProm >= 33 ? '#b8760a' : '#c0392b'; }
+  });
 }
 
 // ══════════════════════════════════
@@ -1504,7 +1564,7 @@ function guardarDesiderablesLider(id) {
 // ══════════════════════════════════
 // ALERTAS VENCIMIENTO
 // ══════════════════════════════════
-var SLA_ETAPA = {hc:2,convoc:3,eval:5,longlist:3,entrevista:5,oferta:3,tramites:5};
+var SLA_ETAPA = {hc:2,convoc:3,evaluacion:8,entrevista:5,oferta:3,tramites:5};
 
 function calcularSLAAlerts() {
   var alerts = [];
@@ -1517,7 +1577,7 @@ function calcularSLAAlerts() {
         if (!r || r.estado==='Cubierto') return;
         var etapas = (r.etapas && typeof r.etapas==='object') ? r.etapas : {};
         var refMs = r.id && r.id > 1000000000000 ? r.id : hoy;
-        var etapasSLA = ['hc','convoc','eval','longlist','entrevista','oferta'];
+        var etapasSLA = ['hc','convoc','evaluacion','entrevista','oferta'];
         etapasSLA.forEach(function(e, i) {
           if (etapas[e]) return;
           var anteriorOk = i===0 || etapas[etapasSLA[i-1]];
@@ -1558,39 +1618,44 @@ function verificarAlertas() {
     var dias = Math.ceil((new Date(r.fechaLimiteRaw)-hoy)/(1000*60*60*24));
     return '<div style="font-size:12px;line-height:1.8;">&bull; <strong>'+r.puesto+'</strong> &mdash; '+(dias<=0?'<span style="color:#c0392b;font-weight:600;">VENCIDO</span>':'vence en <span style="color:#c0392b;font-weight:600;">'+dias+' d&iacute;a'+(dias!==1?'s':'')+'</span>')+' ('+r.area+')</div>';
   }).join('');
-  var slaItems = slaAlerts.map(function(a){
+  var SLA_MAX_VISIBLE = 6;
+  var slaItemsAll = slaAlerts.map(function(a){
     var jobMatch = a.jobId ? jobs.find(function(j){ return j.id===a.jobId; }) : jobs.find(function(j){ return j.titulo===a.puesto || j.titulo.toLowerCase()===a.puesto.toLowerCase(); });
     var jid = jobMatch ? jobMatch.id : 0;
-    var linkHtml = jobMatch ? '<span onclick="irAPuesto('+jid+')" style="font-size:11px;color:var(--accent2);cursor:pointer;"> Ver puesto '+chevronSvg()+'</span>' : '';
-    var exceso = a.dias - a.sla;
-    return '<div style="font-size:12px;line-height:2;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
-      + '&bull; <strong>'+a.puesto+'</strong> &mdash; etapa <em>'+a.etapa+'</em>'
-      + '<span style="display:inline-flex;align-items:center;gap:4px;">'
-        + '<span style="background:#fbeaea;color:#c0392b;font-weight:600;padding:1px 7px;border-radius:4px;font-size:11px;">'+a.dias+' días</span>'
-        + '<span style="background:#f0ede7;color:#7a5000;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:500;">SLA: '+a.sla+'d &middot; +'+exceso+'d</span>'
-      + '</span>'
+    var linkHtml = jobMatch ? '<span onclick="irAPuesto('+jid+')" style="font-size:12px;color:var(--accent2);cursor:pointer;font-weight:500;">Ver →</span>' : '';
+    var badgeColor = a.dias >= 10 ? '#8b1f1f' : '#7a4d0a';
+    var badgeBg   = a.dias >= 10 ? '#fbeaea' : '#fef3e0';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,.06);">'
+      + '<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">'
+      + '<span style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">'+a.puesto+'</span>'
+      + '<span style="font-size:11px;color:var(--muted);flex-shrink:0;">'+a.etapa+'</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'
+      + '<span style="background:'+badgeBg+';color:'+badgeColor+';font-weight:500;padding:2px 8px;border-radius:5px;font-size:12px;">'+a.dias+' días</span>'
       + linkHtml
-      + '</div>';
-  }).join('');
+      + '</div></div>';
+  });
+  var slaExtra = slaItemsAll.length > SLA_MAX_VISIBLE ? slaItemsAll.length - SLA_MAX_VISIBLE : 0;
+  var slaItems = slaItemsAll.slice(0, SLA_MAX_VISIBLE).join('') + (slaExtra > 0 ? '<div style="text-align:center;font-size:12px;color:var(--muted);padding-top:8px;cursor:pointer;">+ '+slaExtra+' más</div>' : '');
   var totalAlertas = proximas.length + slaAlerts.length;
 
   // Banner compacto en sección puestos
   var bannerPuestos = document.getElementById('slaBannerPuestos');
   if (bannerPuestos) {
     if (totalAlertas > 0) {
-      var isOpen = bannerPuestos.dataset.open === '1';
       bannerPuestos.style.display = 'block';
-      bannerPuestos.innerHTML = '<div style="background:#fef8ee;border:0.5px solid #f4c430;border-radius:10px;overflow:hidden;">'
-        + '<div onclick="var c=document.getElementById(\'slaBannerContent\');c.style.display=c.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'span\').textContent=c.style.display===\'none\'?\'▼\':\'▲\';" style="padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;">'
-          + '<span style="font-size:13px;">⏱</span>'
-          + '<span style="font-size:12px;font-weight:500;color:#7a5000;flex:1;">' + totalAlertas + ' alerta' + (totalAlertas>1?'s':'') + ' de SLA activa' + (totalAlertas>1?'s':'') + '</span>'
-          + '<span style="font-size:10px;color:#7a5000;">▼</span>'
+      var slaHeader = '<div style="background:#fef8ee;border:0.5px solid #f0997b;border-radius:10px;overflow:hidden;">'
+        + '<div onclick="var c=this.parentNode.querySelector(\'.sla-body\');c.style.display=c.style.display===\'none\'?\'block\':\'none\';" style="padding:12px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;">'
+        + '<span style="font-size:13px;font-weight:500;color:#8b1f1f;flex:1;">&#9888; '+totalAlertas+' alerta'+(totalAlertas>1?'s':'')+' de SLA activa'+(totalAlertas>1?'s':'')+'</span>'
+        + '<span style="font-size:12px;color:var(--muted);">Ver todas &#9660;</span>'
         + '</div>'
-        + '<div id="slaBannerContent" style="display:none;padding:0 14px 12px;font-size:12px;color:#7a5000;">'
-          + (proximas.length ? '<div style="margin-bottom:6px;font-weight:500;">Procesos próximos a vencer</div>'+items : '')
-          + (slaAlerts.length ? '<div style="margin-top:'+(proximas.length?'8':'0')+'px;font-weight:500;">SLA vencido por etapa</div>'+slaItems : '')
-        + '</div>'
-      + '</div>';
+        + '<div class="sla-body" style="display:none;padding:0 16px 14px;">'
+        + (proximas.length ? '<div style="margin-bottom:8px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Pr\u00f3ximos a vencer</div>'+items : '')
+        + (slaAlerts.length ? '<div style="margin-top:'+(proximas.length?'12':'0')+'px;">'
+            + (proximas.length ? '<div style="margin-bottom:8px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">SLA por etapa</div>' : '')
+            + slaItems + '</div>' : '')
+        + '</div></div>';
+      bannerPuestos.innerHTML = slaHeader;
     } else {
       bannerPuestos.style.display = 'none';
     }
@@ -3718,8 +3783,8 @@ function renderDashboard() {
       }
     });
     // Pipeline por etapa — una columna por etapa, procesos dentro
-    var ETAPAS_N = ['HC','Convocatoria','Evaluaci\u00f3n','Longlist','Entrevista','Oferta'];
-    var ETAPAS_K = ['hc','convocatoria','evaluacion','longlist','entrevista','oferta'];
+    var ETAPAS_N = ['HC','Convocatoria','Evaluación y Longlist','Entrevista','Oferta'];
+    var ETAPAS_K = ['hc','convoc','evaluacion','entrevista','oferta'];
 
     // Agrupar procesos por etapa actual usando calcularEtapaActual
     var byEtapa = {};
