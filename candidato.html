@@ -447,6 +447,27 @@ async function sendMsg() {
   var savedTxt=txt; inp.value='';
   stopTimer(); stopMic(); window.speechSynthesis.cancel(); window._startTimerAfterSpeak=false;
   addMsg('user',txt); chatHistory.push({role:'user',content:txt}); saveBackup();
+  // ── Código de prueba ──
+  if (txt.toLowerCase().trim() === 'prueba2026') {
+    inp.value=''; busy=true;
+    document.getElementById('sendBtn').disabled=true;
+    showTyping();
+    var job=jobs.find(function(j){return j.id===selectedJobId;});
+    // Generar respuesta de prueba rápida
+    var respPrueba = qNum < TOTAL_Q
+      ? '✓ [MODO PRUEBA] Respuesta registrada. Pasando a la pregunta '+(qNum+2)+' de '+TOTAL_Q+'...'
+      : '✓ [MODO PRUEBA] Última respuesta registrada. Puedes finalizar la entrevista.';
+    hideTyping();
+    chatHistory.push({role:'assistant',content:respPrueba});
+    addMsg('bot',respPrueba);
+    qNum=Math.min(qNum+1,TOTAL_Q+1); saveBackup(); updateProgress();
+    busy=false; document.getElementById('sendBtn').disabled=false;
+    if(qNum>TOTAL_Q){
+      inp.disabled=true; document.getElementById('sendBtn').disabled=true; document.getElementById('micBtn').disabled=true;
+    }
+    return;
+  }
+
   busy=true; document.getElementById('sendBtn').disabled=true;
   showTyping();
   var job=jobs.find(function(j){return j.id===selectedJobId;});
@@ -478,7 +499,7 @@ async function finishInterview() {
   rp.innerHTML='<p style="font-size:13px;color:var(--muted);padding:8px 0;">Generando tu reporte de evaluación...</p>';
   var job=jobs.find(function(j){return j.id===selectedJobId;});
   var transcript=chatHistory.filter(function(m,i){return i>0;}).map(function(m){return (m.role==='assistant'?'Estephanie':candName)+': '+m.content;}).join('\n\n');
-  var prompt='Analiza esta entrevista para el puesto de '+job.titulo+' y evalúa al candidato '+candName+'.\nPUESTO: '+job.titulo+'\n'+job.desc+'\n'+(job.skills?'HABILIDADES: '+job.skills+'\n':'')+'TRANSCRIPCIÓN:\n'+transcript+'\nResponde ÚNICAMENTE con JSON válido:\n{"puntaje_general":número,"nivel":"Excelente"|"Bueno"|"Regular"|"Bajo","recomendacion":"Avanzar"|"Considerar"|"No avanzar","dimensiones":[{"nombre":"Comunicación","puntaje":número},{"nombre":"Conocimiento técnico","puntaje":número},{"nombre":"Experiencia relevante","puntaje":número},{"nombre":"Motivación y fit","puntaje":número}],"fortalezas":"texto","areas_mejora":"texto","resumen":"texto"}';
+  var prompt='Analiza esta entrevista para el puesto de '+job.titulo+' y evalúa al candidato '+candName+'.\nPUESTO: '+job.titulo+'\n'+job.desc+'\n'+(job.skills?'HABILIDADES: '+job.skills+'\n':'')+'TRANSCRIPCIÓN:\n'+transcript+'\nEvalúa con estrellas del 1 al 5 (1=Muy bajo, 2=Bajo, 3=Regular, 4=Bueno, 5=Excelente).\nResponde ÚNICAMENTE con JSON válido sin texto adicional:\n{"estrellas_general":número_entero_1_a_5,"nivel":"Excelente"|"Bueno"|"Regular"|"Bajo","recomendacion":"Avanzar"|"Considerar"|"No avanzar","dimensiones":[{"nombre":"Comunicación","estrellas":número_1_a_5},{"nombre":"Conocimiento técnico","estrellas":número_1_a_5},{"nombre":"Experiencia relevante","estrellas":número_1_a_5},{"nombre":"Motivación y fit","estrellas":número_1_a_5}],"fortalezas":"texto","areas_mejora":"texto","resumen":"texto"}';
   try {
     var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     var d=await res.json();
@@ -494,7 +515,7 @@ async function saveResult(r,job) {
   var dni=dniMatch?dniMatch[1]:'';
   var nombreLimpio=candName.replace(/ [(]DNI: \d+[)]/,'');
   var transcript=chatHistory.filter(function(m,i){return i>0;}).map(function(m){return(m.role==='assistant'?'Estephanie':candName)+': '+m.content;}).join(' | ');
-  var entry={fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),candidato:nombreLimpio,dni,puesto:job.titulo,area:job.area||'',puntaje:r.puntaje_general,nivel:r.nivel,recomendacion:r.recomendacion,comunicacion:(r.dimensiones.find(function(d){return d.nombre==='Comunicación';})||{}).puntaje||'',conocimiento:(r.dimensiones.find(function(d){return d.nombre==='Conocimiento técnico';})||{}).puntaje||'',experiencia:(r.dimensiones.find(function(d){return d.nombre==='Experiencia relevante';})||{}).puntaje||'',motivacion:(r.dimensiones.find(function(d){return d.nombre==='Motivación y fit';})||{}).puntaje||'',fortalezas:r.fortalezas,areas_mejora:r.areas_mejora,resumen:r.resumen,transcripcion:transcript};
+  var entry={fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),candidato:nombreLimpio,dni:dni,puesto:job.titulo,area:job.area||'',estrellas:r.estrellas_general,puntaje:r.estrellas_general,nivel:r.nivel,recomendacion:r.recomendacion,comunicacion:(r.dimensiones.find(function(d){return d.nombre==='Comunicación';})||{}).estrellas||0,conocimiento:(r.dimensiones.find(function(d){return d.nombre==='Conocimiento técnico';})||{}).estrellas||0,experiencia:(r.dimensiones.find(function(d){return d.nombre==='Experiencia relevante';})||{}).estrellas||0,motivacion:(r.dimensiones.find(function(d){return d.nombre==='Motivación y fit';})||{}).estrellas||0,fortalezas:r.fortalezas,areas_mejora:r.areas_mejora,resumen:r.resumen,transcripcion:transcript};
   try {
     var existing=await fetch('/api/jobs?type=results');
     var data=await existing.json();
@@ -504,12 +525,14 @@ async function saveResult(r,job) {
   } catch(e) { var local=JSON.parse(localStorage.getItem('rresults')||'[]'); local.push(entry); localStorage.setItem('rresults',JSON.stringify(local)); }
 }
 
-function sCol(s){return s>=80?{b:'#2d7a4f',bg:'#edf7f1',bar:'#2d7a4f'}:s>=60?{b:'#b8760a',bg:'#fef8ee',bar:'#e09112'}:{b:'#c0392b',bg:'#fbeaea',bar:'#c0392b'};}
+function sCol(s){return s>=4?{b:'#2d7a4f',bg:'#edf7f1',bar:'#2d7a4f'}:s>=3?{b:'#b8760a',bg:'#fef8ee',bar:'#e09112'}:{b:'#c0392b',bg:'#fbeaea',bar:'#c0392b'};}
+function renderStars(n,color){var h='';for(var i=1;i<=5;i++)h+='<span style="font-size:20px;color:'+(i<=n?color:'#e0ddd8')+';">★</span>';return h;}
 function rCol(r){return r==='Avanzar'?{bg:'#edf7f1',t:'#1e5c38'}:r==='Considerar'?{bg:'#fef8ee',t:'#7a5000'}:{bg:'#fbeaea',t:'#8b1f1f'};}
 
 function renderReport(r,job) {
-  var c=sCol(r.puntaje_general),rc=rCol(r.recomendacion);
-  var dims=r.dimensiones.map(function(d){var dc=sCol(d.puntaje);return '<div class="dim-row"><span class="dim-label">'+d.nombre+'</span><div class="dim-track"><div class="dim-fill" style="width:'+d.puntaje+'%;background:'+dc.bar+'"></div></div><span class="dim-num">'+d.puntaje+'</span></div>';}).join('');
+  var estGen=r.estrellas_general||r.puntaje_general||3;
+  var c=sCol(estGen),rc=rCol(r.recomendacion);
+  var dims=r.dimensiones.map(function(d){var est=d.estrellas||d.puntaje||3;var dc=sCol(est);return '<div class="dim-row"><span class="dim-label">'+d.nombre+'</span><div style="flex:1;">'+renderStars(est,dc.bar)+'</div></div>';}).join('');
   document.getElementById('reportPanel').innerHTML=
     '<div style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:8px 0;text-align:center;">'+
     '<img src="data:image/png;base64,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" alt="Perufarma S.A." style="height:80px;width:auto;object-fit:contain;">'+
