@@ -3227,6 +3227,212 @@ function mostrarPopupMotivo(titulo, onConfirm) {
 // ── Actualizar etapas y bitácora ──
 
 
+
+
+// ══════════════════════════════════
+// MODAL PERFIL CANDIDATO
+// ══════════════════════════════════
+function abrirModalCandidato(td) {
+  var tr = td.closest ? td.closest('tr') : null;
+  var tableDiv = tr ? tr.parentElement.closest('[id^="cands_"]') : null;
+  var puesto = tableDiv ? decodeURIComponent(tableDiv.id.replace('cands_','')) : '';
+  // Limpiar texto del nombre (quitar badges)
+  var nombreRaw = td.innerText || td.textContent || '';
+  var nombre = nombreRaw.replace(/#\d+/g,'').replace(/Manual/g,'').replace(/⚠\s*Prev\.\s*/g,'').replace(/Prev\./g,'').trim();
+  var c = null;
+  if (puesto) {
+    c = _allResults.find(function(r){ return r.puesto===puesto && r.candidato===nombre; });
+  }
+  if (!c) {
+    c = _allResults.find(function(r){ return r.candidato===nombre; });
+  }
+  if (!c) { toast('No se encontró el perfil'); return; }
+  mostrarModalCandidato(c);
+}
+
+function mostrarModalCandidato(c) {
+  var cEnc = encodeURIComponent(c.candidato);
+  var pEnc = encodeURIComponent(c.puesto);
+
+  var overlay = document.createElement('div');
+  overlay.id = 'candidatoModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  overlay.onclick = function(e){ if(e.target===overlay) cerrarModalCandidato(); };
+
+  var cvAcciones = '';
+  if (c.cvBase64) {
+    cvAcciones = '<a href="'+c.cvBase64+'" download="CV_'+c.candidato.replace(/\s+/g,'_')+'.pdf" '
+      + 'style="font-size:12px;color:#3C3489;text-decoration:none;background:#EEEDFE;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;">&#128196; Descargar CV</a>&nbsp;&nbsp;';
+  }
+
+  overlay.innerHTML = '<div style="background:var(--surface);border-radius:16px;max-width:700px;width:100%;margin:auto;overflow:hidden;">'
+
+    // Header
+    + '<div style="background:var(--surface2);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border2);">'
+      + '<div>'
+        + '<div style="font-size:15px;font-weight:600;">'+c.candidato+'</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:2px;">'+c.puesto+'</div>'
+      + '</div>'
+      + '<button onclick="cerrarModalCandidato()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>'
+    + '</div>'
+
+    // Body
+    + '<div style="padding:20px;display:flex;flex-direction:column;gap:14px;">'
+
+      // Fila 1 — contacto
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+        + _mField('DNI','cmDni',c.dni||'')
+        + _mField('Celular','cmCelular',c.celular||'')
+        + _mField('Correo','cmCorreo',c.correo||'')
+      + '</div>'
+
+      // Fila 2 — personales
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+        + _mField('Distrito','cmDistrito',c.distrito||'')
+        + _mSel('Grado académico','cmGrado',c.gradoAcademico||'',
+            ['','Secundaria completa','Técnico incompleto','Técnico completo','Universitario incompleto','Universitario completo','Posgrado / Maestría'])
+        + _mField('Disponibilidad','cmDisponibilidad',c.disponibilidad||'')
+      + '</div>'
+
+      // Fila 3 — económicos
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+        + _mField('Rem. actual (S/)','cmRemActual',c.remActual||'')
+        + _mField('Pretensión (S/)','cmPretension',c.pretension||'')
+        + _mField('Experiencia','cmExpLaboral',c.expLaboral||'')
+      + '</div>'
+
+      // Fila 4 — recomendación + visible
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+        + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Recomendación</label>'
+          + '<select id="cmRecomendacion" style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);">'
+            + '<option value="Avanzar"'+(c.recomendacion==='Avanzar'?' selected':'')+'>Avanzar</option>'
+            + '<option value="No avanzar"'+(c.recomendacion!=='Avanzar'?' selected':'')+'>No avanzar</option>'
+          + '</select></div>'
+        + '<div style="display:flex;align-items:flex-end;padding-bottom:2px;">'
+          + '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;padding:7px 0;">'
+            + '<input type="checkbox" id="cmVisibleLider"'+(c.visibleLider?' checked':'')+' style="accent-color:var(--accent2);width:15px;height:15px;">'
+            + 'Visible para el líder'
+          + '</label>'
+        + '</div>'
+      + '</div>'
+
+      // Resumen
+      + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Resumen / Evaluación del reclutador</label>'
+        + '<textarea id="cmResumen" style="width:100%;height:65px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;box-sizing:border-box;">'+(c.resumen||'')+'</textarea></div>'
+
+      // Comentario para líder
+      + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Comentario para el líder <span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 5px;border-radius:4px;">Visible</span></label>'
+        + '<textarea id="cmComentRec" style="width:100%;height:50px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;box-sizing:border-box;">'+(c.comentarioReclutador||'')+'</textarea></div>'
+
+      // Nota interna
+      + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Nota interna <span style="font-size:10px;background:#fef3e0;color:#7a4d0a;padding:1px 5px;border-radius:4px;">Solo GTH</span></label>'
+        + '<textarea id="cmNotaInterna" style="width:100%;height:50px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:#fef9f4;resize:vertical;box-sizing:border-box;">'+(c.notaInterna||'')+'</textarea></div>'
+
+      // CV upload
+      + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;">CV del candidato <span style="font-size:10px;background:#EEEDFE;color:#3C3489;padding:1px 5px;border-radius:4px;">Visible al líder</span></label>'
+        + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;" id="cvPreviewArea">'
+          + cvAcciones
+          + '<label style="cursor:pointer;font-size:12px;color:var(--muted);background:var(--surface2);padding:5px 12px;border-radius:6px;border:0.5px solid var(--border2);display:inline-flex;align-items:center;gap:5px;">'
+            + '&#128196; '+(c.cvBase64?'Reemplazar CV':'Cargar CV (PDF/Word)')
+            + '<input type="file" id="cmCvFile" accept=".pdf,.doc,.docx" style="display:none;" onchange="procesarCvModal(this)">'
+          + '</label>'
+          + '<span style="font-size:11px;color:var(--muted);">o</span>'
+          + '<input type="text" id="cmCvUrl" placeholder="Link de Drive o externo" value="'+(c.cvUrl||'')+'" style="font-size:12px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);flex:1;min-width:160px;">'
+        + '</div></div>'
+
+      // Botones
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:0.5px solid var(--border2);">'
+        + '<button class="btn btn-secondary btn-sm" onclick="cerrarModalCandidato()">Cancelar</button>'
+        + '<button class="btn btn-primary" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="guardarModalCandidato(this.dataset.cand,this.dataset.puesto)">Guardar cambios</button>'
+      + '</div>'
+
+    + '</div>'
+  + '</div>';
+
+  document.body.appendChild(overlay);
+}
+
+function _mField(label, id, val) {
+  return '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">'+label+'</label>'
+    + '<input type="text" id="'+id+'" value="'+val.toString().replace(/"/g,'&quot;')+'" '
+    + 'style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);box-sizing:border-box;"></div>';
+}
+
+function _mSel(label, id, val, opts) {
+  return '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">'+label+'</label>'
+    + '<select id="'+id+'" style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);">'
+    + opts.map(function(o){ return '<option'+(val===o?' selected':'')+'>'+o+'</option>'; }).join('')
+    + '</select></div>';
+}
+
+function cerrarModalCandidato() {
+  var el = document.getElementById('candidatoModalOverlay');
+  if (el) el.remove();
+}
+
+function procesarCvModal(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) { toast('El archivo no puede superar 4 MB'); input.value=''; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result;
+    // Guardar en dataset del overlay para recuperarlo al guardar
+    var overlay = document.getElementById('candidatoModalOverlay');
+    if (overlay) {
+      overlay.dataset.cvBase64 = base64;
+      overlay.dataset.cvFileName = file.name;
+    }
+    // Actualizar preview
+    var prev = document.getElementById('cvPreviewArea');
+    if (prev) {
+      var link = prev.querySelector('a');
+      if (link) { link.href = base64; link.download = file.name; }
+      else {
+        var a = document.createElement('a');
+        a.href = base64; a.download = file.name;
+        a.style.cssText = 'font-size:12px;color:#3C3489;text-decoration:none;background:#EEEDFE;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;';
+        a.innerHTML = '&#128196; Descargar CV';
+        prev.insertBefore(a, prev.firstChild);
+      }
+    }
+    toast('CV listo — recuerda guardar');
+  };
+  reader.readAsDataURL(file);
+}
+
+function guardarModalCandidato(cand, puesto) {
+  var candidato = decodeURIComponent(cand);
+  var puestoD   = decodeURIComponent(puesto);
+  var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+  var gc = function(id){ var el=document.getElementById(id); return el?el.checked:false; };
+  var overlay = document.getElementById('candidatoModalOverlay');
+  var cvBase64 = overlay ? overlay.dataset.cvBase64 : null;
+  var cvFileName = overlay ? overlay.dataset.cvFileName : null;
+
+  _allResults = _allResults.map(function(r) {
+    if (r.candidato===candidato && r.puesto && puestoD && r.puesto.toLowerCase().trim()===puestoD.toLowerCase().trim()) {
+      var updates = {
+        dni:g('cmDni'), celular:g('cmCelular'), correo:g('cmCorreo'),
+        distrito:g('cmDistrito'), gradoAcademico:g('cmGrado'), disponibilidad:g('cmDisponibilidad'),
+        remActual:g('cmRemActual'), pretension:g('cmPretension'), expLaboral:g('cmExpLaboral'),
+        recomendacion:g('cmRecomendacion'), visibleLider:gc('cmVisibleLider'),
+        resumen:g('cmResumen'), comentarioReclutador:g('cmComentRec'),
+        notaInterna:g('cmNotaInterna'), cvUrl:g('cmCvUrl')
+      };
+      if (cvBase64) { updates.cvBase64 = cvBase64; updates.cvFileName = cvFileName; }
+      return Object.assign({}, r, updates);
+    }
+    return r;
+  });
+
+  localStorage.setItem('rresults', JSON.stringify(_allResults));
+  safeFetch('/api/jobs?type=results', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})})
+    .then(function(){ toast('Candidato actualizado ✓'); cerrarModalCandidato(); filtrarCandidatos(); })
+    .catch(function(){ toast('Error al guardar'); });
+}
+
+
 function toggleVisibilidad(el) {
   var candidato = decodeURIComponent(el.dataset.id);
   var puesto = decodeURIComponent(el.dataset.puesto);
@@ -3323,15 +3529,15 @@ function renderTablaByPuesto(results) {
       var alertaBadge = alertaPrev ? '<span title="Evaluado como No avanzar en '+alertaPrev.puesto+'" style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 5px;border-radius:4px;margin-left:4px;cursor:help;">&#9888; Prev.</span>' : '';
       var P = 'padding:6px 9px;font-size:12px;';
       return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'  
-        +'<td style="'+P+'font-weight:500;white-space:nowrap;">'+c.candidato+badge+fuente+alertaBadge+'</td>'
+        +'<td style="'+P+'font-weight:500;white-space:nowrap;cursor:pointer;color:var(--accent2);" title="Click para ver perfil completo" onclick="abrirModalCandidato(this)">'+c.candidato+badge+fuente+alertaBadge+'</td>'
         +'<td style="'+P+'color:var(--muted);">'+(c.dni||'&#8212;')+'</td>'
         +'<td style="'+P+'color:var(--muted);white-space:nowrap;">'+(c.celular||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;">'+(c.correo||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);">'+(c.distrito||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);">'+(c.gradoAcademico||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);max-width:120px;">'+(c.expLaboral||'&#8212;')+'</td>'
-        +'<td style="'+P+'text-align:center;color:var(--muted);">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</td>'
-        +'<td style="'+P+'text-align:center;color:var(--muted);">'+(c.pretension?'S/ '+c.pretension:'&#8212;')+'</td>'
+        +'<td style="'+P+'color:var(--muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(c.correo||'&#8212;')+'</td>'
+        +'<td style="'+P+'color:var(--muted);font-size:11px;">'+(c.distrito||'&#8212;')+'</td>'
+        +'<td style="'+P+'color:var(--muted);font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;">'+(c.gradoAcademico||'&#8212;')+'</td>'
+        +'<td style="'+P+'color:var(--muted);font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;">'+(c.expLaboral||'&#8212;')+'</td>'
+        +'<td style="'+P+'text-align:center;color:var(--muted);white-space:nowrap;">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</td>'
+        +'<td style="'+P+'text-align:center;color:var(--muted);white-space:nowrap;">'+(c.pretension?'S/ '+c.pretension:'&#8212;')+'</td>'
         +'<td style="'+P+'text-align:center;color:var(--muted);">'+(c.disponibilidad||'&#8212;')+'</td>'
         +(function(){
           var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
@@ -3359,7 +3565,14 @@ function renderTablaByPuesto(results) {
           var trBtn = esElegidoRec
             ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:3px 10px;border-radius:6px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--text)')+';white-space:nowrap;">'+(trOk?'\u2713 Ingreso':'\u25cb Ingreso')+'</button>'
             : '<span style="color:var(--muted);font-size:12px;">&#8212;</span>';
-          return '<td style="padding:9px 12px;text-align:center;">'+elegidoBadge+'</td>'
+          // Switch visible para el líder
+          var cEncV = encodeURIComponent(c.candidato); var pEncV = encodeURIComponent(c.puesto);
+          var switchVis = '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;justify-content:center;">'
+            +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEncV+'" data-puesto="'+pEncV+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:14px;height:14px;">'
+            +'<span style="font-size:10px;color:var(--muted);">'+(c.visibleLider?'Sí':'No')+'</span>'
+            +'</label>';
+          return '<td style="padding:6px 9px;text-align:center;">'+switchVis+'</td>'
+               + '<td style="padding:9px 12px;text-align:center;">'+elegidoBadge+'</td>'
                + '<td style="padding:9px 12px;text-align:center;">'+trBtn+'</td>';
         })()
         +'<td style="padding:6px 8px;text-align:center;white-space:nowrap;">'
@@ -3592,11 +3805,15 @@ function renderFeedbackPanel() {
             bodyHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'+starsHtml+'</div>';
             if (vencido) bodyHtml += '<div style="font-size:12px;color:#b8760a;background:#fef8ee;padding:8px 12px;border-radius:8px;">&#9200; Tiempo de edición vencido. Solo lectura.</div>';
             // CV link si existe
-            if (c.cvUrl) {
+            if (c.cvBase64 || c.cvUrl) {
               bodyHtml += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:2px;">';
               bodyHtml += '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#3C3489" stroke-width="1.1"/><line x1="4" y1="4.5" x2="10" y2="4.5" stroke="#3C3489" stroke-width="1"/><line x1="4" y1="7" x2="10" y2="7" stroke="#3C3489" stroke-width="1"/><line x1="4" y1="9.5" x2="7" y2="9.5" stroke="#3C3489" stroke-width="1"/></svg>';
               bodyHtml += '<span style="font-size:12px;font-weight:500;color:var(--text);">CV del candidato:</span>';
-              bodyHtml += '<a href="'+c.cvUrl+'" target="_blank" style="font-size:12px;color:#3C3489;text-decoration:underline;">Ver CV &#8599;</a>';
+              if (c.cvBase64) {
+                bodyHtml += '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:12px;color:#3C3489;text-decoration:none;background:#EEEDFE;padding:3px 9px;border-radius:5px;">&#128196; Descargar CV</a>';
+              } else {
+                bodyHtml += '<a href="'+c.cvUrl+'" target="_blank" style="font-size:12px;color:#3C3489;text-decoration:underline;">Ver CV &#8599;</a>';
+              }
               bodyHtml += '</div>';
             }
             bodyHtml += '<div class="form-group" style="margin-bottom:0;"><label>Comentarios de la entrevista presencial</label><textarea id="fb_'+key+'" style="height:65px;" placeholder="Observaciones..." '+(vencido?'disabled':'')+'>'+( fb?fb.comentario||'':'')+'</textarea></div>';
