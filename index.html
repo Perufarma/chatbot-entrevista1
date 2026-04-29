@@ -153,13 +153,19 @@ a[title]{cursor:pointer;}
   <!-- PUESTOS -->
   <div class="panel active" id="tab-puestos">
     <div class="alert-banner" id="alertaVencimiento"></div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;">
-      <div><div class="section-title">Puestos y solicitudes</div><div class="section-sub">Haz clic en el nombre de un puesto para ver el detalle y gestionar el proceso</div></div>
+    <!-- Sub-pestañas Procesos / Catálogo -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;border-bottom:2px solid var(--border2);gap:0;">
+        <button id="subTabProcesos" onclick="switchPuestosTab('procesos')" style="font-size:13px;font-weight:500;padding:8px 18px;border:none;background:transparent;cursor:pointer;border-bottom:2px solid var(--accent2);color:var(--accent2);margin-bottom:-2px;">Procesos activos</button>
+        <button id="subTabCatalogo" onclick="switchPuestosTab('catalogo')" style="font-size:13px;font-weight:500;padding:8px 18px;border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);margin-bottom:-2px;">Catálogo de puestos</button>
+      </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary" onclick="toggleCargaPDF()">&#128196; Cargar desde PDF</button>
-        <button class="btn btn-accent" onclick="toggleForm()" title="Crea un nuevo perfil de puesto">+ Nuevo puesto</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleCargaPDF()">&#128196; Cargar PDF</button>
+        <button class="btn btn-accent btn-sm" onclick="toggleForm()">+ Nuevo puesto</button>
       </div>
     </div>
+    <!-- Vista: Procesos activos -->
+    <div id="subPanelProcesos">
 
     <!-- Formulario de puesto -->
     <!-- Panel carga PDF -->
@@ -335,15 +341,32 @@ a[title]{cursor:pointer;}
     <!-- Panel flotante SLA -->
     <div id="slaPanel" style="display:none;position:absolute;top:48px;left:0;z-index:500;background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:16px;min-width:360px;max-width:500px;box-shadow:0 4px 20px rgba(0,0,0,0.12);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-size:13px;font-weight:500;color:#7a5000;">&#9201; Alertas SLA</div>
+        <div style="font-size:13px;font-weight:500;color:#7a5000;">&#9201; Alertas de demora</div>
         <button onclick="document.getElementById('slaPanel').style.display='none'" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);">&times;</button>
       </div>
       <div id="slaPanelContent"></div>
     </div>
-    <!-- Banner SLA compacto en Puestos -->
+    <!-- Banner demoras compacto en Puestos -->
     <div id="slaBannerPuestos" style="display:none;margin-bottom:12px;"></div>
     <div id="jobsList"></div>
-    <div class="empty-state" id="emptyState" style="display:none;">No hay puestos configurados. Haz clic en <strong>+ Nuevo puesto</strong> para comenzar.</div>
+    <div class="empty-state" id="emptyState" style="display:none;">No hay procesos activos. Ve al Catálogo para crear una solicitud.</div>
+    </div><!-- /subPanelProcesos -->
+
+    <!-- Vista: Catálogo de puestos -->
+    <div id="subPanelCatalogo" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <input type="text" id="buscarCatalogo" oninput="renderCatalogoPuestos()" placeholder="Buscar puesto..." style="font-size:12px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);outline:none;min-width:180px;">
+        <select id="filtroCatalogoArea" onchange="renderCatalogoPuestos()" style="font-size:12px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);outline:none;">
+          <option value="">Todas las áreas</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="catalogoMostrarCubiertos" onchange="renderCatalogoPuestos()" style="accent-color:var(--accent2);">
+          Mostrar cubiertos
+        </label>
+      </div>
+      <div id="catalogoLista"></div>
+    </div><!-- /subPanelCatalogo -->
+
   </div>
 
   <!-- ENVÍO MASIVO -->
@@ -376,8 +399,10 @@ a[title]{cursor:pointer;}
       <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="renderCandidatosPorPuesto()" title="Recarga la lista de candidatos desde el servidor">Actualizar</button>
-        <button class="btn btn-secondary btn-sm" onclick="exportCSV()" title="Descarga todos los resultados en formato Excel (.csv) incluyendo candidatos manuales y del chatbot">Descargar Excel (.csv)</button>
-        <button class="btn btn-accent btn-sm" onclick="toggleCandManualForm()" title="Agrega un candidato evaluado directamente en entrevista presencial, sin pasar por el chatbot">+ Candidato manual</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Descargar Excel</button>
+        <button class="btn btn-secondary btn-sm" onclick="abrirImportador('pandape')" title="Importar candidatos desde Excel de Pandapé / Computrabajo">&#8679; Pandapé</button>
+        <button class="btn btn-secondary btn-sm" onclick="abrirImportador('bumeran')" title="Importar candidatos desde Excel de Bumeran">&#8679; Bumeran</button>
+        <button class="btn btn-accent btn-sm" onclick="toggleCandManualForm()">+ Candidato manual</button>
       </div>
     </div>
     <!-- Filtros -->
@@ -446,13 +471,13 @@ a[title]{cursor:pointer;}
           <input type="hidden" id="cm_estrellas" value="0">
         </div>
         <div class="form-group">
-          <label>Recomendación *</label>
-          <select id="cm_recomendacion" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
+          <label>Avanza con el líder</label>
+          <select id="cm_visibleLider" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
             <option value="">Selecciona...</option>
-            <option value="Avanzar">Avanzar</option>
-            <option value="Considerar">Considerar</option>
-            <option value="No avanzar">No avanzar</option>
+            <option value="1">Sí — avanza con el líder</option>
+            <option value="0">No — no avanza</option>
           </select>
+        </div>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
@@ -466,8 +491,16 @@ a[title]{cursor:pointer;}
   <!-- DASHBOARD -->
   <div class="panel" id="tab-dashboard">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
-      <div><div class="section-title">Dashboard de reclutamiento</div><div class="section-sub">M&eacute;tricas del proceso en tiempo real</div></div>
-      <button class="btn btn-secondary btn-sm" onclick="renderDashboard()">Actualizar</button>
+      <div><div class="section-title">Dashboard de reclutamiento</div><div class="section-sub" id="dashboardSubtitulo">M&eacute;tricas del proceso en tiempo real</div></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;border:0.5px solid var(--border2);border-radius:8px;overflow:hidden;font-size:12px;">
+          <button id="dPer_mes" onclick="setDashPeriodo('mes')" style="padding:5px 12px;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;">Este mes</button>
+          <button id="dPer_trim" onclick="setDashPeriodo('trim')" style="padding:5px 12px;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;border-left:0.5px solid var(--border2);">Trimestre</button>
+          <button id="dPer_anio" onclick="setDashPeriodo('anio')" style="padding:5px 12px;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;border-left:0.5px solid var(--border2);">Este año</button>
+          <button id="dPer_todo" onclick="setDashPeriodo('todo')" style="padding:5px 12px;border:none;background:var(--accent2);color:white;cursor:pointer;border-left:0.5px solid var(--border2);">Todo</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="renderDashboard()">Actualizar</button>
+      </div>
     </div>
     <div id="dashboardContent"><div class="empty-state">Cargando métricas...</div></div>
   </div>
@@ -1224,13 +1257,12 @@ function guardarPerfilLider(reqId) {
   var sedeEl    = document.getElementById('liderEditSede_'+reqId);
   var horEl     = document.getElementById('liderEditHorario_'+reqId);
   var funcEl    = document.getElementById('liderEditFunciones_'+reqId);
-  var reqMinEl  = document.getElementById('liderEditRequisitos_'+reqId);
+  var reqMinEl  = null; // campo eliminado — minimos se sincroniza desde funciones
   var desEl     = document.getElementById('liderEditDeseables_'+reqId);
   var updates = {};
   if (sedeEl)   updates.sede = sedeEl.value.trim();
   if (horEl)    updates.horario = horEl.value.trim();
-  if (funcEl)   updates.funciones = funcEl.value.trim();
-  if (reqMinEl) updates.minimos = reqMinEl.value.trim();
+  if (funcEl) { updates.funciones = funcEl.value.trim(); updates.minimos = funcEl.value.trim(); }
   if (desEl)    updates.liderDeseables = desEl.value.trim();
   requisiciones = requisiciones.map(function(r) {
     if (r.id===numId || String(r.id)===String(reqId)) {
@@ -1298,25 +1330,72 @@ function enviarWhatsAppCandidato(candidato, puesto) {
 // BACKUP MENSUAL DE DATOS
 // ══════════════════════════════════
 function descargarBackup() {
-  var backup = {
-    fecha: new Date().toISOString(),
-    version: '1.0',
-    jobs: jobs,
-    requisiciones: requisiciones,
-    results: _allResults,
-    feedbacks: feedbacks
-  };
-  var blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+  var fechaStr = new Date().toLocaleDateString('es-PE').replace(/\//g,'-');
+  var fechaISO = new Date().toISOString();
+
+  // ── 1. JSON completo ──────────────────────────────────────
+  var backup = { fecha:fechaISO, version:'2.0', jobs:jobs,
+    requisiciones:requisiciones, results:_allResults, feedbacks:feedbacks };
+  _descargarArchivo(JSON.stringify(backup, null, 2), 'application/json',
+    'recruitai_backup_'+fechaStr+'.json');
+
+  // ── 2. Excel candidatos (.csv) ─────────────────────────────
+  var headersCand = ['Nombre','DNI','Celular','Correo','Distrito','Grado académico',
+    'Experiencia','Rem. actual','Pretensión','Disponibilidad','Puesto','Área',
+    'Gerencia','Estrellas GTH','Avanza con líder','CV link','Resumen','Fecha'];
+  var rowsCand = _allResults.map(function(r) {
+    return [
+      r.candidato||'', r.dni||'', r.celular||'', r.correo||'',
+      r.distrito||'', r.gradoAcademico||'', r.expLaboral||'',
+      r.remActual||'', r.pretension||'', r.disponibilidad||'',
+      r.puesto||'', r.area||'', r.gerencia||'',
+      r.estrellas||r.puntaje||'',
+      r.visibleLider ? 'Sí' : 'No',
+      r.cvUrl||'', (r.resumen||'').replace(/,/g,' ').replace(/\n/g,' '),
+      r.fecha||''
+    ].map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',');
+  });
+  var csvCand = '﻿' + headersCand.map(function(h){return '"'+h+'"';}).join(',') + '\n' + rowsCand.join('\n');
+  _descargarArchivo(csvCand, 'text/csv;charset=utf-8',
+    'recruitai_candidatos_'+fechaStr+'.csv');
+
+  // ── 3. Excel puestos y procesos (.csv) ─────────────────────
+  var headersPuestos = ['Puesto','Área','Gerencia','Nivel','Sede','Horario',
+    'Estado','Etapa actual','Candidatos','Con el líder','Líder (DNI)',
+    'Fecha límite','Fecha inicio','Días al límite'];
+  var hoy = new Date();
+  var rowsPuestos = requisiciones.map(function(r) {
+    var etapas = r.etapas || {};
+    var etapaActual = ['tramites','oferta','entrevista','evaluacion','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
+    var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria',evaluacion:'Evaluación',
+      entrevista:'Entrevista',oferta:'Oferta',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
+    var candPuesto = _allResults.filter(function(c){ return c.puesto&&r.puesto&&c.puesto.toLowerCase()===r.puesto.toLowerCase(); });
+    var conLider = candPuesto.filter(function(c){ return c.visibleLider; }).length;
+    var diasLimite = r.fechaLimiteRaw ? Math.ceil((new Date(r.fechaLimiteRaw)-hoy)/(1000*60*60*24)) : '';
+    return [
+      r.puesto||'', r.area||'', r.gerencia||'', r.nivel||'', r.sede||'', r.horario||'',
+      r.estado||'', etapaNombre, candPuesto.length, conLider,
+      r.liderDni||'', r.fechaLimite||'', r.fechaInicio||'',
+      diasLimite
+    ].map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',');
+  });
+  var csvPuestos = '﻿' + headersPuestos.map(function(h){return '"'+h+'"';}).join(',') + '\n' + rowsPuestos.join('\n');
+  _descargarArchivo(csvPuestos, 'text/csv;charset=utf-8',
+    'recruitai_puestos_'+fechaStr+'.csv');
+
+  localStorage.setItem('ultimoBackup', fechaISO);
+  setTimeout(function(){ toast('Backup completo ✓  3 archivos descargados — guárdalos en Google Drive'); }, 800);
+}
+
+function _descargarArchivo(contenido, tipo, nombre) {
+  var blob = new Blob([contenido], {type: tipo});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = url;
-  a.download = 'recruitai_backup_'+new Date().toLocaleDateString('es-PE').replace(/\//g,'-')+'.json';
+  a.href = url; a.download = nombre;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  localStorage.setItem('ultimoBackup', new Date().toISOString());
-  toast('Backup descargado ✓ — guárdalo en Google Drive o tu carpeta segura');
 }
 
 function verificarRecordatorioBackup() {
@@ -1808,9 +1887,7 @@ function renderDetalleProcesoSeleccionado(reqId) {
           + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">Horario</label><input type="text" id="liderEditHorario_'+r.id+'" value="'+(r.horario||'')+'" style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);"></div>'
         + '</div>'
         + '<div style="margin-bottom:10px;"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">Funciones y Requisitos</label>'
-          + '<textarea id="liderEditFunciones_'+r.id+'" style="width:100%;height:100px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;box-sizing:border-box;">'+descPuesto+'</textarea></div>'
-        + '<div style="margin-bottom:10px;"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">Requisitos mínimos</label>'
-          + '<textarea id="liderEditRequisitos_'+r.id+'" style="width:100%;height:70px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;box-sizing:border-box;">'+(r.minimos||r.minimoRequisitos||'')+'</textarea></div>'
+          + '<textarea id="liderEditFunciones_'+r.id+'" style="width:100%;height:120px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;box-sizing:border-box;">'+descPuesto+'</textarea></div>'
         + '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">Requisitos deseables</label>'
           + '<textarea id="liderEditDeseables_'+r.id+'" style="width:100%;height:60px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;box-sizing:border-box;">'+(r.liderDeseables||r.deseables||'')+'</textarea></div>'
         + '<div style="display:flex;gap:8px;">'
@@ -2045,13 +2122,13 @@ function verificarAlertas() {
       bannerPuestos.style.display = 'block';
       var slaHeader = '<div style="background:#fef8ee;border:0.5px solid #f0997b;border-radius:10px;overflow:hidden;">'
         + '<div onclick="var c=this.parentNode.querySelector(\'.sla-body\');c.style.display=c.style.display===\'none\'?\'block\':\'none\';" style="padding:12px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;">'
-        + '<span style="font-size:13px;font-weight:500;color:#8b1f1f;flex:1;">&#9888; '+totalAlertas+' alerta'+(totalAlertas>1?'s':'')+' de SLA activa'+(totalAlertas>1?'s':'')+'</span>'
+        + '<span style="font-size:13px;font-weight:500;color:#8b1f1f;flex:1;">&#9888; '+totalAlertas+' alerta'+(totalAlertas>1?'s':'')+' de demora activa'+(totalAlertas>1?'s':'')+'</span>'
         + '<span style="font-size:12px;color:var(--muted);">Ver todas &#9660;</span>'
         + '</div>'
         + '<div class="sla-body" style="display:none;padding:0 16px 14px;">'
         + (proximas.length ? '<div style="margin-bottom:8px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Pr\u00f3ximos a vencer</div>'+items : '')
         + (slaAlerts.length ? '<div style="margin-top:'+(proximas.length?'12':'0')+'px;">'
-            + (proximas.length ? '<div style="margin-bottom:8px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">SLA por etapa</div>' : '')
+            + (proximas.length ? '<div style="margin-bottom:8px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Días en etapa excedidos</div>' : '')
             + slaItems + '</div>' : '')
         + '</div></div>';
       bannerPuestos.innerHTML = slaHeader;
@@ -2067,7 +2144,7 @@ function verificarAlertas() {
       panelHtml += '<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Procesos pr\u00f3ximos a vencer</div>'+items+'</div>';
     }
     if (slaAlerts.length) {
-      panelHtml += '<div><div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">SLA vencido por etapa</div>'+slaItems+'</div>';
+      panelHtml += '<div><div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Días en etapa excedidos</div>'+slaItems+'</div>';
     }
     panelContent.innerHTML = panelHtml || '<div style="font-size:12px;color:var(--muted);">Sin alertas activas</div>';
   }
@@ -2364,7 +2441,7 @@ function saveJobAndCreateReq() {
     '• Motivo: '+(motivo==='reemplazo'?'Reemplazo':'Nuevo puesto')+'\n'+
     '• Fecha inicio: '+new Date(fechaInicio).toLocaleDateString('es-PE')+'\n'+
     '• Fecha límite: '+fechaLimiteDate.toLocaleDateString('es-PE')+'\n'+'• Link del portal líder: '+(window.location.origin+window.location.pathname+'?rol=lider')+'\n\n'+
-    'Requisitos mínimos:\n'+minimos+'\n\n'+
+    'Funciones y Requisitos:\n'+minimos+'\n\n'+
     'Ingresa a tu portal para completar los requisitos deseables:\n'+window.location.origin+'\n\n'+
     'Saludos,\nEquipo de Reclutamiento y Selección — Perufarma S.A.'
   );
@@ -2817,7 +2894,7 @@ function toggleCandManualForm() {
     poblarSelectPuestos('cm_puesto');
     ['cm_nombre','cm_dni','cm_comentarios'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
     setCmStar(0);
-    document.getElementById('cm_recomendacion').value='';
+    var cmVL=document.getElementById('cm_visibleLider'); if(cmVL) cmVL.value='';
     f.scrollIntoView({behavior:'smooth'});
   }
 }
@@ -2851,7 +2928,7 @@ async function saveCandidatoManual() {
   var puesto = document.getElementById('cm_puesto').value;
   var comentarios = document.getElementById('cm_comentarios').value.trim();
   var estrellas = parseInt(document.getElementById('cm_estrellas').value)||0;
-  var recomendacion = document.getElementById('cm_recomendacion').value;
+  var visibleLiderCM = (document.getElementById('cm_visibleLider')||{value:''}).value;
   var celular = (document.getElementById('cm_celular')||{value:''}).value.trim();
   var correo = (document.getElementById('cm_correo')||{value:''}).value.trim();
   var distrito = (document.getElementById('cm_distrito')||{value:''}).value.trim();
@@ -2860,14 +2937,14 @@ async function saveCandidatoManual() {
   var disponibilidad = (document.getElementById('cm_disponibilidad')||{value:''}).value.trim();
   var remActual = (document.getElementById('cm_remActual')||{value:''}).value.trim();
   var pretension = (document.getElementById('cm_pretension')||{value:''}).value.trim();
-  if (!nombre||!dni||!puesto||!comentarios||!estrellas||!recomendacion) { toast('Completa todos los campos obligatorios'); return; }
+  if (!nombre||!dni||!puesto||!comentarios||!estrellas) { toast('Completa todos los campos obligatorios'); return; }
   if (dni.length!==8) { toast('DNI debe tener 8 dígitos'); return; }
   // Alerta si candidato ya estuvo en procesos previos y no avanzó
   var prevNegativo = _allResults.find(function(r){
-    return r.dni && dni && r.dni === dni && r.recomendacion === 'No avanzar';
+    return r.dni && dni && r.dni === dni && r.visibleLider === false;
   });
   if (prevNegativo) {
-    if (!confirm('⚠ Este candidato (DNI '+dni+') fue evaluado previamente como "No avanzar" en el puesto '+prevNegativo.puesto+'. ¿Deseas agregarlo de todas formas?')) return;
+    if (!confirm('⚠ Este candidato (DNI '+dni+') no avanzó en un proceso previo ('+prevNegativo.puesto+'). ¿Deseas agregarlo de todas formas?')) return;
   }
   var job = jobs.find(function(j){ return j.titulo===puesto; });
   var entry = {
@@ -2877,7 +2954,7 @@ async function saveCandidatoManual() {
     expLaboral:expLaboral, disponibilidad:disponibilidad, remActual:remActual, pretension:pretension,
     estrellas:estrellas, puntaje:estrellas,
     nivel:estrellas>=4?'Excelente':estrellas>=3?'Bueno':estrellas>=2?'Regular':'Bajo',
-    recomendacion:recomendacion, comunicacion:'', conocimiento:'', experiencia:'', motivacion:'',
+    visibleLider: visibleLiderCM === '1', recomendacion:'', comunicacion:'', conocimiento:'', experiencia:'', motivacion:'',
     fortalezas:comentarios, areas_mejora:'', resumen:comentarios,
     comentarioReclutador:comentarios,
     transcripcion:'[Evaluación manual del reclutador]', fuente:'manual'
@@ -3049,6 +3126,124 @@ function editarPerfilPDF(perfilStr) {
 // ══════════════════════════════════
 // COMPARADOR DE CANDIDATOS
 // ══════════════════════════════════
+
+// ══════════════════════════════════
+// COMPARAR TOP 3 — PORTAL LÍDER
+// ══════════════════════════════════
+function compararTopLider(puestoEnc) {
+  var puesto = decodeURIComponent(puestoEnc);
+
+  // Candidatos visibles para este líder con feedback del líder
+  var candsPuesto = _allResults.filter(function(c){
+    return c.puesto && puesto && c.puesto.toLowerCase().trim()===puesto.toLowerCase().trim() && c.visibleLider;
+  });
+
+  // Calcular promedio combinado GTH + líder por candidato
+  var conProm = candsPuesto.map(function(c) {
+    var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto; });
+    var promedioLider = fbL ? Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4) : 0;
+    var estGTH = parseInt(c.estrellas||c.puntaje||0)||0;
+    // Promedio combinado: si líder evaluó, promediar ambos; si no, usar solo GTH
+    var promCombinado = promedioLider > 0 ? Math.round((promedioLider + estGTH) / 2) : estGTH;
+    return Object.assign({}, c, { _promedioLider: promedioLider, _estGTH: estGTH, _promCombinado: promCombinado, _fb: fbL });
+  }).filter(function(c){ return c._fb; }); // solo evaluados por el líder
+
+  conProm.sort(function(a,b){ return b._promCombinado - a._promCombinado; });
+  var top = conProm.slice(0,3);
+
+  if (!top.length) { toast('Aún no hay candidatos evaluados para comparar'); return; }
+
+  var dimLabels = [
+    {key:'comunicacion', label:'Comunicación'},
+    {key:'tecnico',      label:'Técnico'},
+    {key:'actitud',      label:'Actitud'},
+    {key:'resultados',   label:'Resultados'}
+  ];
+
+  var cols = top.map(function(c, i) {
+    var badgeColor = i===0?'#f4c430':i===1?'#c0c0c0':'#cd7f32';
+    var elegido = c._fb && c._fb.elegido;
+
+    // Header
+    var header = '<div style="text-align:center;padding-bottom:12px;border-bottom:0.5px solid var(--border2);">'
+      +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+badgeColor+';color:white;">#'+(i+1)+'</span>'
+      +(elegido?'<span style="font-size:10px;background:#edf7f1;color:#2d7a4f;padding:2px 7px;border-radius:5px;margin-left:4px;">&#127942; Elegido</span>':'')
+      +'<div style="font-size:13px;font-weight:600;margin-top:6px;">'+c.candidato+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);">'+c.puesto+'</div>'
+      // Promedio combinado
+      +'<div style="margin-top:8px;">'
+        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Promedio GTH + Tú</div>'
+        +renderStars(c._promCombinado, starsColor(c._promCombinado))
+      +'</div>'
+    +'</div>';
+
+    // Dimensiones del líder
+    var dimRows = dimLabels.map(function(d) {
+      var v = parseInt(c._fb[d.key]||0)||0;
+      return '<div style="margin-top:10px;">'
+        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">'+d.label+'</div>'
+        +'<div>'+renderStars(v, starsColor(v))+'</div>'
+      +'</div>';
+    }).join('');
+
+    // Estrellas GTH
+    var gthRow = c._estGTH > 0
+      ? '<div style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border2);">'
+          +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Eval. GTH</div>'
+          +'<div>'+renderStars(c._estGTH, starsColor(c._estGTH))+'</div>'
+        +'</div>'
+      : '';
+
+    // Disponibilidad
+    var dispRow = c.disponibilidad
+      ? '<div style="margin-top:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Disponibilidad</div>'
+          +'<div style="font-size:12px;">'+c.disponibilidad+'</div></div>'
+      : '';
+
+    // Comentario GTH (visible para el líder)
+    var comentRow = c.comentarioReclutador
+      ? '<div style="margin-top:10px;padding:8px;background:#edf7f1;border-radius:6px;">'
+          +'<div style="font-size:10px;color:#1e5c38;font-weight:500;margin-bottom:3px;">Comentario GTH</div>'
+          +'<div style="font-size:11px;color:var(--text);line-height:1.5;">'+c.comentarioReclutador+'</div>'
+        +'</div>'
+      : '';
+
+    // Botón elegir
+    var elegirBtn = !elegido
+      ? '<div style="margin-top:12px;text-align:center;">'
+          +'<button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="elegirDesdComparador(this)" style="font-size:12px;padding:5px 14px;border-radius:7px;border:none;background:var(--accent2);color:white;cursor:pointer;font-weight:500;">Elegir a este candidato</button>'
+        +'</div>'
+      : '';
+
+    return '<div style="flex:1;min-width:0;padding:0 12px;">'
+      +header+dimRows+gthRow+dispRow+comentRow+elegirBtn
+    +'</div>';
+  }).join('<div style="width:0.5px;background:var(--border2);flex-shrink:0;"></div>');
+
+  var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;" id="comparadorLiderOverlay" onclick="if(event.target===this)this.remove()">'
+    +'<div style="background:var(--surface);border-radius:16px;padding:28px;max-width:740px;width:100%;margin:auto;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+        +'<div style="font-size:16px;font-weight:600;">Comparar top '+top.length+' — '+puesto+'</div>'
+        +'<button onclick="document.getElementById(&quot;comparadorLiderOverlay&quot;).remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>'
+      +'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:16px;">Ordenados por promedio combinado de tu evaluación y la del equipo GTH</div>'
+      +'<div style="display:flex;gap:0;">'+cols+'</div>'
+    +'</div>'
+  +'</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function elegirDesdComparador(btn) {
+  var cand   = decodeURIComponent(btn.dataset.cand);
+  var puesto = decodeURIComponent(btn.dataset.puesto);
+  // Reusar la función de elegir candidato ya existente
+  if (typeof elegirCandidato === 'function') {
+    elegirCandidato(encodeURIComponent(cand), encodeURIComponent(puesto));
+    document.getElementById('comparadorLiderOverlay').remove();
+    renderFeedbackPanel();
+  }
+}
+
 function compararTop(puestoEnc) {
   var puesto = decodeURIComponent(puestoEnc);
   var results = JSON.parse(localStorage.getItem('rresults')||'[]');
@@ -3107,13 +3302,13 @@ function toggleEditCand(cand, puesto) {
 function guardarEditCand(cand, puesto) {
   var candidato = decodeURIComponent(cand);
   var puestoD = decodeURIComponent(puesto);
-  var recEl  = document.getElementById('editRec_'+cand+'_'+puesto);
-  var resEl  = document.getElementById('editRes_'+cand+'_'+puesto);
+  var visEl       = document.getElementById('editVis_'+cand+'_'+puesto);
+  var resEl       = document.getElementById('editRes_'+cand+'_'+puesto);
   var notaEl      = document.getElementById('editNota_'+cand+'_'+puesto);
   var comentRecEl = document.getElementById('editComentRec_'+cand+'_'+puesto);
   var cvUrlEl     = document.getElementById('editCvUrl_'+cand+'_'+puesto);
-  if (!recEl || !resEl) return;
-  var nuevaRec       = recEl.value;
+  if (!resEl) return;
+  var nuevoVis       = visEl ? visEl.checked : false;
   var nuevoRes       = resEl.value.trim();
   var nuevaNota      = notaEl ? notaEl.value.trim() : '';
   var nuevaComentRec = comentRecEl ? comentRecEl.value.trim() : '';
@@ -3121,7 +3316,7 @@ function guardarEditCand(cand, puesto) {
   // Actualizar en _allResults
   _allResults = _allResults.map(function(r) {
     if (r.candidato === candidato && r.puesto && puestoD && r.puesto.toLowerCase().trim() === puestoD.toLowerCase().trim()) {
-      return Object.assign({}, r, { recomendacion: nuevaRec, resumen: nuevoRes, notaInterna: nuevaNota, comentarioReclutador: nuevaComentRec, cvUrl: nuevoCvUrl });
+      return Object.assign({}, r, { visibleLider: nuevoVis, resumen: nuevoRes, notaInterna: nuevaNota, comentarioReclutador: nuevaComentRec, cvUrl: nuevoCvUrl });
     }
     return r;
   });
@@ -3232,20 +3427,22 @@ function mostrarPopupMotivo(titulo, onConfirm) {
 // ══════════════════════════════════
 // MODAL PERFIL CANDIDATO
 // ══════════════════════════════════
-function abrirModalCandidato(td) {
-  var tr = td.closest ? td.closest('tr') : null;
-  var tableDiv = tr ? tr.parentElement.closest('[id^="cands_"]') : null;
-  var puesto = tableDiv ? decodeURIComponent(tableDiv.id.replace('cands_','')) : '';
-  // Limpiar texto del nombre (quitar badges)
-  var nombreRaw = td.innerText || td.textContent || '';
-  var nombre = nombreRaw.replace(/#\d+/g,'').replace(/Manual/g,'').replace(/⚠\s*Prev\.\s*/g,'').replace(/Prev\./g,'').trim();
-  var c = null;
-  if (puesto) {
-    c = _allResults.find(function(r){ return r.puesto===puesto && r.candidato===nombre; });
+function abrirModalCandidato(el) {
+  // Caso 1: botón del panel expandido (tiene data-nombre y data-puesto-modal)
+  if (el.dataset && el.dataset.nombre) {
+    var c = _allResults.find(function(r){ return r.candidato===el.dataset.nombre && r.puesto===el.dataset.puestoModal; });
+    if (!c) c = _allResults.find(function(r){ return r.candidato===el.dataset.nombre; });
+    if (c) { mostrarModalCandidato(c); return; }
   }
-  if (!c) {
-    c = _allResults.find(function(r){ return r.candidato===nombre; });
-  }
+  // Caso 2: td o div del nombre en la fila compacta
+  var container = el.closest ? el.closest('[id^="cands_"]') : null;
+  var puesto = container ? decodeURIComponent(container.id.replace('cands_','')) : '';
+  var nombreRaw = el.innerText || el.textContent || '';
+  var nombre = nombreRaw.replace(/#\d+/g,'').replace(/Manual/g,'').replace(/⚠\s*Prev\.?\s*/g,'').trim();
+  var c = puesto
+    ? _allResults.find(function(r){ return r.puesto===puesto && r.candidato===nombre; })
+    : null;
+  if (!c) c = _allResults.find(function(r){ return r.candidato===nombre; });
   if (!c) { toast('No se encontró el perfil'); return; }
   mostrarModalCandidato(c);
 }
@@ -3302,18 +3499,10 @@ function mostrarModalCandidato(c) {
       + '</div>'
 
       // Fila 4 — recomendación + visible
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
-        + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Recomendación</label>'
-          + '<select id="cmRecomendacion" style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);">'
-            + '<option value="Avanzar"'+(c.recomendacion==='Avanzar'?' selected':'')+'>Avanzar</option>'
-            + '<option value="No avanzar"'+(c.recomendacion!=='Avanzar'?' selected':'')+'>No avanzar</option>'
-          + '</select></div>'
-        + '<div style="display:flex;align-items:flex-end;padding-bottom:2px;">'
-          + '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;padding:7px 0;">'
-            + '<input type="checkbox" id="cmVisibleLider"'+(c.visibleLider?' checked':'')+' style="accent-color:var(--accent2);width:15px;height:15px;">'
-            + 'Visible para el líder'
-          + '</label>'
-        + '</div>'
+      + '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;">'
+        + '<input type="checkbox" id="cmVisibleLider"'+(c.visibleLider?' checked':'')+' style="accent-color:var(--accent2);width:16px;height:16px;flex-shrink:0;">'
+        + '<label for="cmVisibleLider" style="font-size:13px;cursor:pointer;color:var(--text);font-weight:500;">Avanza con el líder</label>'
+        + '<span style="font-size:11px;color:var(--muted);margin-left:4px;">— el líder podrá ver a este candidato en su portal</span>'
       + '</div>'
 
       // Resumen
@@ -3416,7 +3605,7 @@ function guardarModalCandidato(cand, puesto) {
         dni:g('cmDni'), celular:g('cmCelular'), correo:g('cmCorreo'),
         distrito:g('cmDistrito'), gradoAcademico:g('cmGrado'), disponibilidad:g('cmDisponibilidad'),
         remActual:g('cmRemActual'), pretension:g('cmPretension'), expLaboral:g('cmExpLaboral'),
-        recomendacion:g('cmRecomendacion'), visibleLider:gc('cmVisibleLider'),
+        visibleLider:gc('cmVisibleLider'),
         resumen:g('cmResumen'), comentarioReclutador:g('cmComentRec'),
         notaInterna:g('cmNotaInterna'), cvUrl:g('cmCvUrl')
       };
@@ -3465,6 +3654,536 @@ function poblarFiltrosCandidatos(results) {
   selPuesto.innerHTML = '<option value="">Todos los puestos</option>'+puestos.map(function(p){ return '<option value="'+p+'"'+(p===curPuesto?' selected':'')+'>'+p+'</option>'; }).join('');
 }
 
+function toggleExpandCand(rowId) {
+  var el = document.getElementById(rowId);
+  var btn = document.getElementById('btnexp_'+rowId);
+  if (!el) return;
+  var isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if (btn) btn.innerHTML = isOpen ? 'Ver más &#9660;' : 'Cerrar &#9650;';
+}
+
+
+// ══════════════════════════════════
+// SUB-PESTAÑAS PUESTOS
+// ══════════════════════════════════
+var _puestosTab = 'procesos';
+
+function switchPuestosTab(tab) {
+  _puestosTab = tab;
+  var esProcesos = tab === 'procesos';
+  document.getElementById('subPanelProcesos').style.display = esProcesos ? 'block' : 'none';
+  document.getElementById('subPanelCatalogo').style.display = esProcesos ? 'none' : 'block';
+  var tP = document.getElementById('subTabProcesos');
+  var tC = document.getElementById('subTabCatalogo');
+  if (tP) { tP.style.borderBottomColor = esProcesos ? 'var(--accent2)' : 'transparent'; tP.style.color = esProcesos ? 'var(--accent2)' : 'var(--muted)'; }
+  if (tC) { tC.style.borderBottomColor = esProcesos ? 'transparent' : 'var(--accent2)'; tC.style.color = esProcesos ? 'var(--muted)' : 'var(--accent2)'; }
+  if (!esProcesos) renderCatalogoPuestos();
+}
+
+// ══════════════════════════════════
+// CATÁLOGO DE PUESTOS
+// ══════════════════════════════════
+function renderCatalogoPuestos() {
+  var panel = document.getElementById('catalogoLista');
+  if (!panel) return;
+
+  var buscar = ((document.getElementById('buscarCatalogo')||{}).value||'').toLowerCase().trim();
+  var area   = (document.getElementById('filtroCatalogoArea')||{}).value||'';
+  var mostrarCubiertos = document.getElementById('catalogoMostrarCubiertos') && document.getElementById('catalogoMostrarCubiertos').checked;
+
+  // Poblar select de áreas
+  var areasSel = document.getElementById('filtroCatalogoArea');
+  if (areasSel && areasSel.options.length <= 1) {
+    var areas = [...new Set(jobs.map(function(j){ return j.area||''; }).filter(Boolean))].sort();
+    areas.forEach(function(a){ var o=document.createElement('option'); o.value=a; o.textContent=a; areasSel.appendChild(o); });
+  }
+
+  // Filtrar jobs
+  var filtered = jobs.filter(function(j) {
+    if (buscar && !(j.titulo||'').toLowerCase().includes(buscar) && !(j.area||'').toLowerCase().includes(buscar)) return false;
+    if (area && j.area !== area) return false;
+    return true;
+  });
+
+  if (!filtered.length) { panel.innerHTML='<div class="empty-state">No hay puestos que coincidan con el filtro.</div>'; return; }
+
+  // Agrupar por gerencia
+  var byGer = {};
+  filtered.forEach(function(j) {
+    var ger = j.gerencia || 'Sin gerencia';
+    if (!byGer[ger]) byGer[ger] = [];
+    byGer[ger].push(j);
+  });
+
+  var html = '';
+  Object.keys(byGer).sort().forEach(function(ger) {
+    html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:12px 0 6px;">'+ger+'</div>';
+    html += '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:12px;">';
+
+    byGer[ger].forEach(function(j, idx) {
+      // Obtener proceso activo de este puesto
+      var reqs = getReqsForJob(j.id, j.titulo);
+      var reqActiva = reqs.find(function(r){ return r.estado !== 'Cubierto'; });
+      var reqCubierta = reqs.find(function(r){ return r.estado === 'Cubierto'; });
+
+      // Estado del puesto
+      var estado, estadoStyle;
+      if (reqActiva) {
+        estado = 'Proceso activo';
+        estadoStyle = 'background:#EAF3DE;color:#3B6D11;';
+      } else if (reqCubierta) {
+        if (!mostrarCubiertos) return;
+        estado = 'Cubierto';
+        estadoStyle = 'background:#EEEDFE;color:#3C3489;';
+      } else {
+        estado = 'Sin proceso';
+        estadoStyle = 'background:var(--surface2);color:var(--muted);border:0.5px solid var(--border2);';
+      }
+
+      var rowBg = idx % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
+      html += '<div style="display:flex;align-items:center;padding:10px 14px;gap:10px;background:'+rowBg+';border-top:'+(idx>0?'0.5px solid var(--border2)':'none')+';flex-wrap:wrap;">';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<div style="font-size:13px;font-weight:500;color:var(--text);">'+j.titulo+'</div>';
+      html += '<div style="font-size:11px;color:var(--muted);margin-top:1px;">'+(j.area||'')+(j.nivel?' · '+j.nivel:'')+'</div>';
+      html += '</div>';
+
+      // Badge estado
+      html += '<span style="font-size:10px;padding:2px 8px;border-radius:12px;white-space:nowrap;'+estadoStyle+'">'+estado+'</span>';
+
+      // Si tiene proceso activo: etapa y candidatos
+      if (reqActiva) {
+        var etapaIdx = calcularEtapaActual(reqActiva, _allResults, feedbacks);
+        var ETAPAS_N = ['Validar HC','Convocatoria','Evaluación','Entrevista','Oferta','Trámites'];
+        var etapaNombre = ETAPAS_N[Math.min(etapaIdx, ETAPAS_N.length-1)];
+        var candCount = _allResults.filter(function(c){ return c.puesto && j.titulo && c.puesto.toLowerCase()===j.titulo.toLowerCase(); }).length;
+        html += '<div style="display:flex;align-items:center;gap:6px;">';
+        html += '<span style="font-size:11px;color:var(--muted);">'+etapaNombre+'</span>';
+        html += '<span style="font-size:11px;color:var(--muted);">· '+candCount+' cand.</span>';
+        html += '</div>';
+      }
+
+      // Acciones
+      html += '<div style="display:flex;gap:5px;flex-shrink:0;">';
+      html += '<button onclick="verDetalleJobCatalogo('+j.id+')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Ver perfil</button>';
+      html += '<button onclick="editarJobCatalogo('+j.id+')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Editar</button>';
+      if (!reqActiva) {
+        html += '<button onclick="crearSolicitudDesdeCatalogo('+j.id+')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:none;background:var(--accent2);color:white;cursor:pointer;">+ Solicitud</button>';
+      } else {
+        html += '<button onclick="irAProcesoDesdeRRHH('+j.id+')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid #3C3489;color:#3C3489;background:transparent;cursor:pointer;">Ver proceso →</button>';
+      }
+      html += '</div>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  panel.innerHTML = html || '<div class="empty-state">No hay puestos que mostrar.</div>';
+}
+
+function verDetalleJobCatalogo(jobId) {
+  // Ir a pestaña Puestos y abrir el detalle
+  switchPuestosTab('procesos');
+  setTimeout(function(){ irAPuesto(jobId); }, 100);
+}
+
+function editarJobCatalogo(jobId) {
+  switchPuestosTab('procesos');
+  setTimeout(function(){
+    irAPuesto(jobId);
+    setTimeout(function(){
+      var editBtn = document.querySelector('[onclick="toggleEditJob('+jobId+')"]');
+      if (editBtn) editBtn.click();
+    }, 300);
+  }, 100);
+}
+
+function crearSolicitudDesdeCatalogo(jobId) {
+  // Ir a Puestos y hacer click en + Solicitud del job
+  switchPuestosTab('procesos');
+  setTimeout(function(){
+    irAPuesto(jobId);
+  }, 100);
+}
+
+function irAProcesoDesdeRRHH(jobId) {
+  switchPuestosTab('procesos');
+  setTimeout(function(){ irAPuesto(jobId); }, 100);
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// IMPORTADORES MASIVOS — PANDAPÉ Y BUMERAN
+// ══════════════════════════════════════════════════════════════════
+
+function abrirImportador(plataforma) {
+  var titulo = plataforma === 'pandape' ? 'Importar desde Pandapé (Computrabajo)' : 'Importar desde Bumeran';
+  var overlay = document.createElement('div');
+  overlay.id = 'importadorOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  overlay.onclick = function(e){ if(e.target===overlay) cerrarImportador(); };
+
+  overlay.innerHTML = '<div style="background:var(--surface);border-radius:16px;max-width:680px;width:100%;margin:auto;overflow:hidden;">'
+    +'<div style="background:var(--surface2);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border2);">'
+      +'<div style="font-size:15px;font-weight:600;">'+titulo+'</div>'
+      +'<button onclick="cerrarImportador()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>'
+    +'</div>'
+    +'<div style="padding:20px;display:flex;flex-direction:column;gap:16px;">'
+      +'<div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 14px;border-radius:8px;line-height:1.6;">'
+        +(plataforma==='pandape'
+          ? '1. En Pandapé ve a <strong>Candidatos → Exportar</strong> y descarga el Excel.<br>2. Sube ese archivo aquí — el sistema detectará las columnas automáticamente.'
+          : '1. En Bumeran ve a <strong>Postulaciones → Exportar a Excel</strong>.<br>2. Sube ese archivo aquí — el sistema detectará las columnas automáticamente.')
+      +'</div>'
+
+      // Selector de puesto
+      +'<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Asignar al puesto *</label>'
+      +'<select id="importPuesto" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--surface);">'
+      +'<option value="">Selecciona el puesto...</option>'
+      +jobs.map(function(j){ return '<option value="'+j.titulo+'">'+j.titulo+'</option>'; }).join('')
+      +'</select></div>'
+
+      // Upload
+      +'<div style="border:1.5px dashed var(--border2);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:var(--bg);" onclick="document.getElementById(\'importFile\').click()">'
+        +'<div style="font-size:24px;margin-bottom:8px;">&#128196;</div>'
+        +'<div style="font-size:13px;font-weight:500;">Haz clic para seleccionar el archivo Excel</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:4px;">.xlsx o .xls — máx. 10 MB</div>'
+        +'<input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none;" onchange="procesarArchivoImport(this,\''+plataforma+'\')">'
+      +'</div>'
+
+      +'<div id="importPreview" style="display:none;"></div>'
+
+      +'<div style="display:flex;gap:8px;justify-content:flex-end;">'
+        +'<button class="btn btn-secondary btn-sm" onclick="cerrarImportador()">Cancelar</button>'
+        +'<button class="btn btn-accent btn-sm" id="btnConfirmarImport" style="display:none;" onclick="confirmarImportacion()">Confirmar importación</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+
+  document.body.appendChild(overlay);
+}
+
+function cerrarImportador() {
+  var el = document.getElementById('importadorOverlay');
+  if (el) el.remove();
+  window._importCandidatos = null;
+}
+
+function procesarArchivoImport(input, plataforma) {
+  var file = input.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      // Parsear CSV o Excel básico
+      var texto = e.target.result;
+      var candidatos = plataforma === 'pandape'
+        ? parsearPandape(texto)
+        : parsearBumeran(texto);
+
+      if (!candidatos.length) {
+        mostrarErrorImport('No se detectaron candidatos en el archivo. Verifica que sea el formato correcto de '+plataforma+'.');
+        return;
+      }
+
+      window._importCandidatos = candidatos;
+      mostrarPrevisualizacion(candidatos, plataforma);
+    } catch(err) {
+      mostrarErrorImport('Error al leer el archivo: '+err.message);
+    }
+  };
+  // Leer como texto para CSV, como binario para Excel
+  if (file.name.endsWith('.csv')) {
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    reader.readAsText(file, 'latin1');
+  }
+}
+
+function limpiarCelular(val) {
+  if (!val) return '';
+  return String(val).replace(/\D/g,'').replace(/^51/,'').slice(-9);
+}
+
+function limpiarSalario(val) {
+  if (!val) return '';
+  return String(val).replace(/[^0-9]/g,'');
+}
+
+function parsearCSV(texto) {
+  var lines = texto.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  return lines.map(function(l) {
+    var cols = [];
+    var cur = ''; var inQ = false;
+    for (var i=0;i<l.length;i++) {
+      if (l[i]==='"') { inQ=!inQ; }
+      else if (l[i]===','&&!inQ) { cols.push(cur.trim()); cur=''; }
+      else cur+=l[i];
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+function parsearPandape(texto) {
+  // Pandapé: CSV con headers en fila variable, buscar fila que tenga "Nombre"
+  var rows = parsearCSV(texto);
+  var headerIdx = -1;
+  var headers = [];
+  for (var i=0;i<Math.min(rows.length,10);i++) {
+    var row = rows[i].map(function(c){ return (c||'').toLowerCase(); });
+    if (row.some(function(c){ return c.includes('nombre') || c.includes('candidato'); })) {
+      headerIdx = i;
+      headers = rows[i].map(function(c){ return (c||'').toLowerCase().trim(); });
+      break;
+    }
+  }
+  if (headerIdx < 0 || !headers.length) return [];
+
+  var idx = function(keys) {
+    for (var k=0;k<keys.length;k++) {
+      for (var h=0;h<headers.length;h++) {
+        if (headers[h].includes(keys[k])) return h;
+      }
+    }
+    return -1;
+  };
+
+  var iNombre    = idx(['nombre','candidato']);
+  var iApellido  = idx(['apellido']);
+  var iDni       = idx(['dni','documento','rut']);
+  var iCelular   = idx(['celular','móvil','movil','teléfono','telefono','phone']);
+  var iCorreo    = idx(['correo','email','mail']);
+  var iCiudad    = idx(['ciudad','distrito','ubicación','ubicacion']);
+  var iSalario   = idx(['salario','remuneración','pretensión','pretension','sueldo']);
+  var iExp       = idx(['experiencia','años de exp','experiencia laboral']);
+  var iGrado     = idx(['estudio','grado','nivel educativo','formación']);
+
+  var cands = [];
+  for (var r=headerIdx+1; r<rows.length; r++) {
+    var row = rows[r];
+    if (!row || row.length < 2) continue;
+    var get = function(i) { return i>=0 && i<row.length ? (row[i]||'').trim().replace(/^"|"$/g,'') : ''; };
+    var nombre = get(iNombre);
+    var apellido = get(iApellido);
+    var nombreCompleto = apellido ? nombre+' '+apellido : nombre;
+    if (!nombreCompleto.trim()) continue;
+    cands.push({
+      candidato: nombreCompleto.trim(),
+      dni:       get(iDni).replace(/[^0-9]/g,''),
+      celular:   limpiarCelular(get(iCelular)),
+      correo:    get(iCorreo),
+      distrito:  get(iCiudad),
+      gradoAcademico: get(iGrado),
+      expLaboral: get(iExp),
+      pretension: limpiarSalario(get(iSalario)),
+      fuente: 'pandape'
+    });
+  }
+  return cands;
+}
+
+function parsearBumeran(texto) {
+  var rows = parsearCSV(texto);
+  var headerIdx = -1;
+  var headers = [];
+  for (var i=0;i<Math.min(rows.length,10);i++) {
+    var row = rows[i].map(function(c){ return (c||'').toLowerCase(); });
+    if (row.some(function(c){ return c.includes('nombre') || c.includes('apellido') || c.includes('postulante'); })) {
+      headerIdx = i;
+      headers = rows[i].map(function(c){ return (c||'').toLowerCase().trim(); });
+      break;
+    }
+  }
+  if (headerIdx < 0) return [];
+
+  var idx = function(keys) {
+    for (var k=0;k<keys.length;k++) {
+      for (var h=0;h<headers.length;h++) {
+        if (headers[h].includes(keys[k])) return h;
+      }
+    }
+    return -1;
+  };
+
+  var iNombre   = idx(['nombre','postulante']);
+  var iApellido = idx(['apellido']);
+  var iDni      = idx(['dni','documento','cédula']);
+  var iTel1     = idx(['teléfono 1','telefono 1','celular','móvil 1']);
+  var iTel2     = idx(['teléfono 2','telefono 2','móvil 2']);
+  var iCorreo   = idx(['correo','email']);
+  var iCiudad   = idx(['ciudad','ubicación','localidad','provincia']);
+  var iSalario  = idx(['pretensión','pretension','salario','remuneración']);
+  var iGrado    = idx(['nivel educativo','estudios','formación','grado']);
+  var iDisp     = idx(['disponibilidad']);
+
+  var cands = [];
+  for (var r=headerIdx+1; r<rows.length; r++) {
+    var row = rows[r];
+    if (!row || row.length < 2) continue;
+    var get = function(i) { return i>=0 && i<row.length ? (row[i]||'').trim().replace(/^"|"$/g,'') : ''; };
+    var nombre = get(iNombre);
+    var apellido = get(iApellido);
+    var nombreCompleto = apellido ? nombre+' '+apellido : nombre;
+    if (!nombreCompleto.trim()) continue;
+    var cel = limpiarCelular(get(iTel1)) || limpiarCelular(get(iTel2));
+    cands.push({
+      candidato: nombreCompleto.trim(),
+      dni:       get(iDni).replace(/[^0-9]/g,''),
+      celular:   cel,
+      correo:    get(iCorreo),
+      distrito:  get(iCiudad),
+      gradoAcademico: get(iGrado),
+      disponibilidad: get(iDisp),
+      pretension: limpiarSalario(get(iSalario)),
+      fuente: 'bumeran'
+    });
+  }
+  return cands;
+}
+
+function mostrarPrevisualizacion(candidatos, plataforma) {
+  var prevPanel = document.getElementById('importPreview');
+  var btnConf   = document.getElementById('btnConfirmarImport');
+  if (!prevPanel) return;
+
+  // Detectar duplicados por DNI o celular
+  var dupes = candidatos.map(function(c) {
+    var dniBusc = c.dni && c.dni.length >= 7;
+    var celBusc = c.celular && c.celular.length >= 8;
+    var existeDni = dniBusc && _allResults.find(function(r){ return r.dni && r.dni===c.dni; });
+    var existeCel = celBusc && _allResults.find(function(r){ return r.celular && limpiarCelular(r.celular)===c.celular; });
+    return existeDni || existeCel ? (existeDni||existeCel).candidato : null;
+  });
+
+  var totalDupes = dupes.filter(Boolean).length;
+
+  var html = '<div style="border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;">'
+    +'<div style="padding:10px 14px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border2);">'
+      +'<div style="font-size:12px;font-weight:500;">'+candidatos.length+' candidatos detectados'+(totalDupes?' · <span style="color:#BA7517;">'+totalDupes+' posibles duplicados</span>':'')+'</div>'
+    +'</div>'
+    +'<div style="max-height:280px;overflow-y:auto;">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+    +'<thead><tr style="background:var(--surface2);position:sticky;top:0;">'
+      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Nombre</th>'
+      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">DNI</th>'
+      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Celular</th>'
+      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Correo</th>'
+      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Pretensión</th>'
+      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);"></th>'
+    +'</tr></thead><tbody>';
+
+  candidatos.forEach(function(c, i) {
+    var dupe = dupes[i];
+    var rowBg = i%2===0 ? 'var(--surface)' : 'var(--surface2)';
+    html += '<tr style="background:'+(dupe?'#fef9f0':rowBg)+';border-top:0.5px solid var(--border2);">'
+      +'<td style="padding:6px 10px;font-weight:500;">'+c.candidato+'</td>'
+      +'<td style="padding:6px 10px;color:var(--muted);">'+(c.dni||'—')+'</td>'
+      +'<td style="padding:6px 10px;color:var(--muted);">'+(c.celular||'—')+'</td>'
+      +'<td style="padding:6px 10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;">'+(c.correo||'—')+'</td>'
+      +'<td style="padding:6px 10px;color:var(--muted);">'+(c.pretension?'S/ '+c.pretension:'—')+'</td>'
+      +'<td style="padding:6px 10px;">'+(dupe?'<span style="font-size:10px;background:#fef3e0;color:#7a4d0a;padding:1px 5px;border-radius:3px;" title="Ya existe: '+dupe+'">Duplicado</span>':'')+'</td>'
+    +'</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+
+  prevPanel.innerHTML = html;
+  prevPanel.style.display = 'block';
+  if (btnConf) btnConf.style.display = 'inline-block';
+}
+
+function mostrarErrorImport(msg) {
+  var prev = document.getElementById('importPreview');
+  if (prev) {
+    prev.innerHTML = '<div style="background:#fbeaea;color:#8b1f1f;padding:10px 14px;border-radius:8px;font-size:12px;">'+msg+'</div>';
+    prev.style.display = 'block';
+  }
+}
+
+async function confirmarImportacion() {
+  var puesto = (document.getElementById('importPuesto')||{}).value||'';
+  if (!puesto) { toast('Selecciona el puesto de destino'); return; }
+  var candidatos = window._importCandidatos;
+  if (!candidatos || !candidatos.length) { toast('No hay candidatos para importar'); return; }
+
+  var btnConf = document.getElementById('btnConfirmarImport');
+  if (btnConf) { btnConf.textContent = 'Importando...'; btnConf.disabled = true; }
+
+  var job = jobs.find(function(j){ return j.titulo===puesto; });
+  var gerencia = job ? (job.gerencia||'') : '';
+  var area     = job ? (job.area||'') : '';
+  var fecha    = new Date().toLocaleDateString('es-PE');
+  var hora     = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+  var importados = 0;
+  var omitidos  = 0;
+
+  for (var i=0; i<candidatos.length; i++) {
+    var c = candidatos[i];
+    // Verificar duplicado — omitir si ya existe mismo DNI o celular para el mismo puesto
+    var yaExiste = _allResults.find(function(r) {
+      if (r.puesto && r.puesto.toLowerCase().trim() !== puesto.toLowerCase().trim()) return false;
+      if (c.dni && c.dni.length>=7 && r.dni === c.dni) return true;
+      if (c.celular && c.celular.length>=8 && limpiarCelular(r.celular||'') === c.celular) return true;
+      return false;
+    });
+    if (yaExiste) { omitidos++; continue; }
+
+    // Generar resumen con Claude si hay datos suficientes
+    var resumenAI = '';
+    try {
+      var expTexto = [c.expLaboral, c.gradoAcademico].filter(Boolean).join(' · ');
+      if (expTexto) {
+        var resp = await fetch('/api/anthropic', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 120,
+            messages: [{role:'user', content:'Resume en máximo 2 líneas el perfil de este candidato para un reclutador. Datos: '+JSON.stringify({nombre:c.candidato, experiencia:c.expLaboral, grado:c.gradoAcademico, pretension:c.pretension, disponibilidad:c.disponibilidad})+'. Solo el resumen, sin introducción.'}]
+          })
+        });
+        if (resp.ok) {
+          var rData = await resp.json();
+          resumenAI = rData.content && rData.content[0] ? rData.content[0].text : '';
+        }
+      }
+    } catch(e) {}
+
+    var entry = {
+      fecha: fecha, hora: hora,
+      candidato: c.candidato, dni: c.dni||'',
+      celular: c.celular||'', correo: c.correo||'',
+      distrito: c.distrito||'', gradoAcademico: c.gradoAcademico||'',
+      expLaboral: c.expLaboral||'', disponibilidad: c.disponibilidad||'',
+      pretension: c.pretension||'', remActual: c.remActual||'',
+      puesto: puesto, area: area, gerencia: gerencia,
+      estrellas: 0, puntaje: 0,
+      nivel: 'Sin evaluar',
+      fuente: c.fuente||'importado',
+      resumen: resumenAI || '',
+      fortalezas: '', areas_mejora: '', comunicacion: '', conocimiento: '', experiencia: '', motivacion: '',
+      transcripcion: '[Importado desde '+(c.fuente||'Excel')+']',
+      visibleLider: false
+    };
+    _allResults.push(entry);
+    importados++;
+  }
+
+  localStorage.setItem('rresults', JSON.stringify(_allResults));
+  await safeFetch('/api/jobs?type=results', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({results:_allResults})
+  });
+
+  cerrarImportador();
+  filtrarCandidatos();
+  toast('✓ '+importados+' candidatos importados'+(omitidos?' · '+omitidos+' omitidos (duplicados)':''));
+}
+
+
 function toggleCandGroup(puestoId) {
   var el = document.getElementById('cands_'+puestoId);
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -3507,122 +4226,145 @@ function filtrarCandidatos() {
 }
 
 function renderTablaByPuesto(results) {
-  function rBg(r){return r==='Avanzar'?'#edf7f1':'#fbeaea';}
-  function rTx(r){return r==='Avanzar'?'#1e5c38':'#8b1f1f';}
-  var byPuesto={};
-  results.forEach(function(r){if(!byPuesto[r.puesto])byPuesto[r.puesto]=[];byPuesto[r.puesto].push(r);});
-  return Object.keys(byPuesto).map(function(puesto){
+  var byPuesto = {};
+  results.forEach(function(r){ if(!byPuesto[r.puesto]) byPuesto[r.puesto]=[]; byPuesto[r.puesto].push(r); });
+
+  return Object.keys(byPuesto).map(function(puesto) {
     var cands = byPuesto[puesto];
-    cands.sort(function(a,b){return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);});
-    var avanzar = cands.filter(function(c){return c.recomendacion==='Avanzar';}).length;
-    var avg = Math.round(cands.reduce(function(s,c){return s+(c.estrellas||c.puntaje||0);},0)/cands.length);
-    var rows = cands.map(function(c, cidx){
-      var badge = cidx===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
-        :cidx===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
-        :cidx===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>':'';
-      var fuente = c.fuente==='manual'?'<span style="font-size:10px;background:#EEEDFE;color:#3C3489;border-radius:4px;padding:1px 5px;margin-left:4px;">Manual</span>':'';
-      var cEncEdit = encodeURIComponent(c.candidato); var pEncEdit = encodeURIComponent(c.puesto);
-      var editRowId = 'editrow_'+cEncEdit+'_'+pEncEdit;
-      // Alerta candidato previo no avanzado
+    cands.sort(function(a,b){ return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0); });
+    var avanzar = cands.filter(function(c){ return c.visibleLider; }).length;
+    var avg = Math.round(cands.reduce(function(s,c){ return s+(c.estrellas||c.puntaje||0); },0)/cands.length);
+
+    var rows = cands.map(function(c, cidx) {
+      var badge = cidx===0 ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
+        : cidx===1 ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
+        : cidx===2 ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>' : '';
+      var fuente = c.fuente==='manual' ? '<span style="font-size:10px;background:#EEEDFE;color:#3C3489;border-radius:4px;padding:1px 5px;margin-left:4px;">Manual</span>' : '';
       var dniCand = c.dni||'';
-      var alertaPrev = dniCand ? _allResults.find(function(r){ return r.dni===dniCand && r.puesto!==c.puesto && r.recomendacion==='No avanzar'; }) : null;
-      var alertaBadge = alertaPrev ? '<span title="Evaluado como No avanzar en '+alertaPrev.puesto+'" style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 5px;border-radius:4px;margin-left:4px;cursor:help;">&#9888; Prev.</span>' : '';
-      var P = 'padding:6px 9px;font-size:12px;';
-      return '<tr onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'  
-        +'<td style="'+P+'font-weight:500;white-space:nowrap;cursor:pointer;color:var(--accent2);" title="Click para ver perfil completo" onclick="abrirModalCandidato(this)">'+c.candidato+badge+fuente+alertaBadge+'</td>'
-        +'<td style="'+P+'color:var(--muted);">'+(c.dni||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);white-space:nowrap;">'+(c.celular||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(c.correo||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);font-size:11px;">'+(c.distrito||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;">'+(c.gradoAcademico||'&#8212;')+'</td>'
-        +'<td style="'+P+'color:var(--muted);font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;">'+(c.expLaboral||'&#8212;')+'</td>'
-        +'<td style="'+P+'text-align:center;color:var(--muted);white-space:nowrap;">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</td>'
-        +'<td style="'+P+'text-align:center;color:var(--muted);white-space:nowrap;">'+(c.pretension?'S/ '+c.pretension:'&#8212;')+'</td>'
-        +'<td style="'+P+'text-align:center;color:var(--muted);">'+(c.disponibilidad||'&#8212;')+'</td>'
-        +(function(){
-          var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
-          if (fbL && (fbL.comunicacion||fbL.tecnico||fbL.actitud||fbL.resultados)) {
-            var promL = Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4);
-            return '<td style="'+P+'text-align:center;">'+renderStars(promL,starsColor(promL))+'</td>';
-          }
-          var estRec = parseInt(c.estrellas||c.puntaje||0)||0;
-          return '<td style="'+P+'text-align:center;">'+(estRec>0?renderStars(estRec,starsColor(estRec)):'<span style="color:var(--muted);">&#8212;</span>')+'</td>';
-        })()
-        +'<td style="'+P+'text-align:center;"><span style="background:'+rBg(c.recomendacion)+';color:'+rTx(c.recomendacion)+';padding:2px 7px;border-radius:8px;font-size:10px;font-weight:500;">'+c.recomendacion+'</span></td>'
-        +(function(){
-          var reqC = requisiciones.filter(function(r){return r.puesto && c.puesto && r.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim();});
-          var lastR = reqC.length ? reqC[reqC.length-1] : null;
-          var rId = lastR ? lastR.id : '';
-          var etC = lastR && lastR.etapas ? lastR.etapas : {};
-          var ofOk = !!etC.oferta; var trOk = !!etC.tramites;
-          var cEnc = encodeURIComponent(c.candidato); var pEnc = encodeURIComponent(c.puesto);
-          var fbCand = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto && f.elegido; });
-          var esElegidoRec = !!fbCand;
-          var elegidoBadge = esElegidoRec
-            ? '<span style="font-size:11px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 8px;border-radius:6px;">🏆 Elegido</span>'
-            : '<span style="font-size:11px;color:var(--muted);">&#8212;</span>';
-          // Ingreso solo para el candidato elegido, estilo discreto
-          var trBtn = esElegidoRec
-            ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:11px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:3px 10px;border-radius:6px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--text)')+';white-space:nowrap;">'+(trOk?'\u2713 Ingreso':'\u25cb Ingreso')+'</button>'
-            : '<span style="color:var(--muted);font-size:12px;">&#8212;</span>';
-          // Switch visible para el líder
-          var cEncV = encodeURIComponent(c.candidato); var pEncV = encodeURIComponent(c.puesto);
-          var switchVis = '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;justify-content:center;">'
-            +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEncV+'" data-puesto="'+pEncV+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:14px;height:14px;">'
-            +'<span style="font-size:10px;color:var(--muted);">'+(c.visibleLider?'Sí':'No')+'</span>'
-            +'</label>';
-          return '<td style="padding:6px 9px;text-align:center;">'+switchVis+'</td>'
-               + '<td style="padding:9px 12px;text-align:center;">'+elegidoBadge+'</td>'
-               + '<td style="padding:9px 12px;text-align:center;">'+trBtn+'</td>';
-        })()
-        +'<td style="padding:6px 8px;text-align:center;white-space:nowrap;">'
-          +'<button data-cand="'+cEncEdit+'" data-puesto="'+pEncEdit+'" onclick="toggleEditCand(this.dataset.cand,this.dataset.puesto)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:2px 5px;" title="Editar">&#9998;</button>'
-          +(c.correo?'<button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="enviarCorreoCandidato(decodeURIComponent(this.dataset.cand),decodeURIComponent(this.dataset.puesto))" style="background:none;border:none;cursor:pointer;font-size:13px;color:#3C3489;padding:2px 5px;" title="Enviar correo">&#9993;</button>':'')
-          +(c.celular?'<button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="enviarWhatsAppCandidato(decodeURIComponent(this.dataset.cand),decodeURIComponent(this.dataset.puesto))" style="background:none;border:none;cursor:pointer;font-size:13px;color:#2d7a4f;padding:2px 5px;" title="Enviar WhatsApp">&#128172;</button>':'')
-          +'<button data-cand="'+encodeURIComponent(c.candidato)+'" data-puesto="'+encodeURIComponent(c.puesto)+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:15px;color:#c0392b;padding:2px 5px;">&#128465;</button>'
-        +'</td>'
-        +'</tr>'
-        +'<tr id="'+editRowId+'" style="display:none;">'
-          +'<td colspan="17" style="padding:12px 16px;background:var(--bg);border-top:0.5px solid var(--border2);">'
-            +'<div style="display:flex;flex-direction:column;gap:10px;max-width:600px;">'
-              +'<div style="display:flex;gap:8px;align-items:center;">'
-                +'<span style="font-size:12px;font-weight:500;min-width:100px;">Recomendación</span>'
-                +'<select id="editRec_'+cEncEdit+'_'+pEncEdit+'" style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);">'
-                  +'<option value="Avanzar"'+(c.recomendacion==='Avanzar'?' selected':'')+'>Avanzar</option>'
-                  +'<option value="No avanzar"'+(c.recomendacion!=='Avanzar'?' selected':'')+'>No avanzar</option>'
-                +'</select>'
-              +'</div>'
-              +'<div style="display:flex;gap:8px;align-items:flex-start;">'
-                +'<span style="font-size:12px;font-weight:500;min-width:100px;padding-top:6px;">Resumen</span>'
-                +'<textarea id="editRes_'+cEncEdit+'_'+pEncEdit+'" style="flex:1;height:70px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);resize:vertical;">'+( c.resumen||'')+'</textarea>'
-              +'</div>'
-              +'<div style="display:flex;gap:8px;align-items:flex-start;">'
-                +'<span style="font-size:12px;font-weight:500;min-width:100px;padding-top:6px;">CV (link) <span style=\'font-size:10px;background:#EEEDFE;color:#3C3489;padding:1px 5px;border-radius:4px;\'>Visible al líder</span></span>'
-                +'<input type="text" id="editCvUrl_'+cEncEdit+'_'+pEncEdit+'" placeholder="https://drive.google.com/..." value="'+(c.cvUrl||'')+'" style="flex:1;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);">'
-              +'</div>'
-              +'<div style="display:flex;gap:8px;align-items:flex-start;">'                +'<span style="font-size:12px;font-weight:500;min-width:100px;padding-top:6px;">Nota interna <span style=\"font-size:10px;background:#fef3e0;color:#7a4d0a;padding:1px 5px;border-radius:4px;\">Solo GTH</span></span>'                +'<textarea id="editNota_'+cEncEdit+'_'+pEncEdit+'" placeholder="Comentario interno — no visible al líder..." style="flex:1;height:55px;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:#fef9f4;resize:vertical;">'+(c.notaInterna||'')+'</textarea>'              +'</div>'
-              +'<div style="display:flex;gap:8px;">'
-                +'<button class="btn btn-primary btn-sm" data-cand="'+cEncEdit+'" data-puesto="'+pEncEdit+'" onclick="guardarEditCand(this.dataset.cand,this.dataset.puesto)">Guardar</button>'
-                +'<button class="btn btn-secondary btn-sm" data-cand="'+cEncEdit+'" data-puesto="'+pEncEdit+'" onclick="toggleEditCand(this.dataset.cand,this.dataset.puesto)">Cancelar</button>'
-              +'</div>'
-            +'</div>'
-          +'</td>'
-        +'</tr>';
+      var alertaPrev = dniCand ? _allResults.find(function(r){ return r.dni===dniCand && r.puesto!==c.puesto && r.visibleLider===false; }) : null;
+      var alertaBadge = alertaPrev ? '<span title="No avanzó en: '+alertaPrev.puesto+'" style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 5px;border-radius:4px;margin-left:4px;cursor:help;">&#9888; Prev.</span>' : '';
+      var cEnc = encodeURIComponent(c.candidato);
+      var pEnc = encodeURIComponent(c.puesto);
+      var rowId = 'exp_'+cEnc+'_'+pEnc;
+
+      // Estrellas
+      var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+      var starsHtml;
+      if (fbL && (fbL.comunicacion||fbL.tecnico||fbL.actitud||fbL.resultados)) {
+        var promL = Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4);
+        starsHtml = renderStars(promL, starsColor(promL));
+      } else {
+        var estRec = parseInt(c.estrellas||c.puntaje||0)||0;
+        starsHtml = estRec>0 ? renderStars(estRec, starsColor(estRec)) : '<span style="color:var(--muted);font-size:11px;">&#8212;</span>';
+      }
+
+      // Switch avanza con líder
+      var switchVis = '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;">'
+        +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:13px;height:13px;">'
+        +'<span style="font-size:10px;color:var(--muted);">'+(c.visibleLider?'Avanza':'No')+'</span>'
+        +'</label>';
+
+      // Elegido / Ingreso
+      var reqC = requisiciones.filter(function(r){ return r.puesto && c.puesto && r.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+      var lastR = reqC.length ? reqC[reqC.length-1] : null;
+      var rId = lastR ? lastR.id : '';
+      var etC = lastR && lastR.etapas ? lastR.etapas : {};
+      var trOk = !!etC.tramites;
+      var fbCand = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto && f.elegido; });
+      var esElegido = !!fbCand;
+      var elegidoBadge = esElegido ? '<span style="font-size:10px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 7px;border-radius:5px;">&#127942; Elegido</span>' : '';
+      var trBtn = esElegido ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:10px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:2px 8px;border-radius:5px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--muted)')+';">'+(trOk?'✓ Ingreso':'○ Ingreso')+'</button>' : '';
+
+      // Botones acción pequeños
+      var acciones = '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">'
+        +(c.correo?'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="enviarCorreoCandidato(decodeURIComponent(this.dataset.cand),decodeURIComponent(this.dataset.puesto))" style="background:none;border:none;cursor:pointer;font-size:12px;color:#3C3489;padding:1px 4px;" title="Correo">&#9993;</button>':'')
+        +(c.celular?'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="enviarWhatsAppCandidato(decodeURIComponent(this.dataset.cand),decodeURIComponent(this.dataset.puesto))" style="background:none;border:none;cursor:pointer;font-size:12px;color:#2d7a4f;padding:1px 4px;" title="WhatsApp">&#128172;</button>':'')
+        +'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:#c0392b;padding:1px 4px;" title="Eliminar">&#128465;</button>'
+        +'</div>';
+
+      // Fila principal compacta
+      var rowMain = '<div class="cand-row" style="display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:0.5px solid var(--border2);background:var(--surface);" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">'
+        // Nombre (clickeable para modal)
+        +'<div style="flex:0 0 200px;min-width:0;overflow:hidden;">'
+          +'<div style="font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="abrirModalCandidato(this)" title="Ver y editar perfil completo">'+c.candidato+badge+fuente+alertaBadge+'</div>'
+        +'</div>'
+        // Pretensión
+        +'<div style="flex:0 0 80px;font-size:12px;color:var(--muted);text-align:center;">'+(c.pretension?'S/ '+c.pretension:'&#8212;')+'</div>'
+        // Celular
+        +'<div style="flex:0 0 95px;font-size:12px;color:var(--muted);white-space:nowrap;">'+(c.celular||'&#8212;')+'</div>'
+        // Estrellas
+        +'<div style="flex:0 0 80px;display:flex;align-items:center;gap:2px;">'+starsHtml+'</div>'
+        // Avanza c/líder
+        +'<div style="flex:0 0 75px;display:flex;align-items:center;">'+switchVis+'</div>'
+        // Elegido + Ingreso
+        +'<div style="flex:0 0 90px;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
+        // Acciones
+        +'<div style="flex:0 0 70px;">'+acciones+'</div>'
+        // Ver más
+        +'<div style="margin-left:auto;">'
+          +'<button onclick="toggleExpandCand(\''+rowId+'\')" id="btnexp_'+rowId+'" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">Ver más &#9660;</button>'
+        +'</div>'
+      +'</div>';
+
+      // Panel expandido de detalle
+      var cvLink = c.cvBase64
+        ? '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:12px;color:#3C3489;text-decoration:none;background:#EEEDFE;padding:3px 8px;border-radius:5px;">&#128196; Descargar CV</a>'
+        : (c.cvUrl ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:12px;color:#3C3489;">Ver CV &#8599;</a>' : '<span style="font-size:11px;color:var(--muted);">No cargado</span>');
+
+      var rowExp = '<div id="'+rowId+'" style="display:none;background:var(--bg);border-bottom:0.5px solid var(--border2);">'
+        +'<div style="padding:12px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">DNI</div><div style="font-size:12px;">'+(c.dni||'&#8212;')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Correo</div><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;">'+(c.correo||'&#8212;')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Distrito</div><div style="font-size:12px;">'+(c.distrito||'&#8212;')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Grado académico</div><div style="font-size:12px;">'+(c.gradoAcademico||'&#8212;')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Experiencia</div><div style="font-size:12px;">'+(c.expLaboral||'&#8212;')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Rem. actual</div><div style="font-size:12px;">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Disponibilidad</div><div style="font-size:12px;">'+(c.disponibilidad||'&#8212;')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">CV</div>'+cvLink+'</div>'
+        +'</div>'
+        +(c.resumen ? '<div style="padding:0 14px 8px;font-size:12px;color:var(--muted);border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;color:var(--text);">Resumen:</span> '+c.resumen+'</div>' : '')
+        +(c.comentarioReclutador ? '<div style="padding:0 14px 8px;font-size:12px;color:#1e5c38;background:#f0faf5;border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;">Comentario para el líder:</span> '+c.comentarioReclutador+'</div>' : '')
+        +(c.notaInterna ? '<div style="padding:0 14px 8px;font-size:12px;color:#7a4d0a;background:#fef9f4;border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;">Nota interna GTH:</span> '+c.notaInterna+'</div>' : '')
+        +'<div style="padding:8px 14px;border-top:0.5px solid var(--border2);display:flex;gap:8px;">'
+          +'<button onclick="abrirModalCandidato(this)" data-nombre="'+c.candidato+'" data-puesto-modal="'+c.puesto+'" style="font-size:11px;padding:4px 12px;border-radius:6px;border:0.5px solid #3C3489;color:#3C3489;background:transparent;cursor:pointer;">&#9998; Editar perfil completo</button>'
+          +'<button onclick="toggleExpandCand(\''+rowId+'\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);color:var(--muted);background:transparent;cursor:pointer;margin-left:auto;">&#9650; Cerrar</button>'
+        +'</div>'
+      +'</div>';
+
+      return rowMain + rowExp;
     }).join('');
-    return '<div style="margin-bottom:20px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'
-      +'<div data-puesto-id="'+encodeURIComponent(puesto)+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:12px 16px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
+
+    // Header del grupo + sub-header de columnas
+    var colHeader = '<div style="display:flex;align-items:center;padding:6px 14px;gap:10px;background:var(--bg);border-bottom:0.5px solid var(--border2);">'
+      +'<div style="flex:0 0 200px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Nombre</div>'
+      +'<div style="flex:0 0 80px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:center;">Pretensión</div>'
+      +'<div style="flex:0 0 95px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Celular</div>'
+      +'<div style="flex:0 0 80px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Eval.</div>'
+      +'<div style="flex:0 0 75px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Avanza</div>'
+      +'<div style="flex:0 0 90px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Estado</div>'
+      +'<div style="flex:0 0 70px;"></div>'
+      +'<div style="margin-left:auto;"></div>'
+    +'</div>';
+
+    return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'
+      +'<div data-puesto-id="'+encodeURIComponent(puesto)+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
         +'<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
-          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+encodeURIComponent(puesto)+'" onclick="compararTop(this.dataset.puesto)">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
+          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+encodeURIComponent(puesto)+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
           +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
-          +'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' para avanzar</span>'
+          +'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' con el l\u00edder</span>'
           +'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>'
         +'</div>'
       +'</div>'
-      +'<div id="cands_'+encodeURIComponent(puesto)+'" style="display:none;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        +'<thead><tr style="background:var(--bg);">'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Nombre</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">DNI</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Celular</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Correo</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Distrito</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Grado</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Experiencia</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Rem.Act.</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Pretension</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Disponib.</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Eval.</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Recom.</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Líder</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Elegido</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;white-space:nowrap;">Ingreso</th>'+'<th style="padding:7px 9px;font-size:10px;color:var(--muted);font-weight:500;"></th>'+'</tr></thead><tbody>'+rows+'</tbody></table></div>'
+      +'<div id="cands_'+encodeURIComponent(puesto)+'" style="display:none;">'
+        +colHeader
+        +rows
+      +'</div>'
+    +'</div>';
   }).join('');
 }
+
+
 
 
 function renderCandidatosPorPuesto() {
@@ -3848,12 +4590,13 @@ function renderFeedbackPanel() {
             +'<div style="font-size:14px;font-weight:600;">'+puesto+'</div>'
             +'<div style="font-size:12px;color:var(--muted);margin-top:2px;">'+cands.length+' candidato'+(cands.length!==1?'s':'')+' para avanzar</div>'
           +'</div>'
-          +'<div style="display:flex;align-items:center;gap:12px;">'
+          +'<div style="display:flex;align-items:center;gap:10px;">'
             +(evaluados>0?'<div style="text-align:center;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Prom. evaluados</div>'+renderStars(promedioGrupo,starsColor(promedioGrupo))+'</div>':'')+
             '<div style="text-align:center;">'
               +'<div style="font-size:22px;font-weight:700;color:'+(evaluados===cands.length?'#2d7a4f':'#e8623a')+' ;">'+evaluados+'/'+cands.length+'</div>'
               +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Evaluados</div>'
             +'</div>'
+            +(evaluados>=2?'<button data-puesto="'+encodeURIComponent(puesto)+'" onclick="compararTopLider(this.dataset.puesto)" style="font-size:11px;padding:4px 12px;border-radius:7px;border:0.5px solid #3C3489;color:#3C3489;background:transparent;cursor:pointer;white-space:nowrap;">Comparar top '+(evaluados>=3?3:evaluados)+'</button>':'')
           +'</div>'
         +'</div>'
         // Candidatos
@@ -4402,23 +5145,56 @@ function guardarSolicitudLider() {
 // ══════════════════════════════════
 // DASHBOARD DE MÉTRICAS
 // ══════════════════════════════════
+// ── Período del dashboard ──────────────────────────────────────────
+var _dashPeriodo = 'todo';
+function setDashPeriodo(p) {
+  _dashPeriodo = p;
+  ['mes','trim','anio','todo'].forEach(function(k) {
+    var btn = document.getElementById('dPer_'+k);
+    if (!btn) return;
+    btn.style.background = k===p ? 'var(--accent2)' : 'var(--surface2)';
+    btn.style.color = k===p ? 'white' : 'var(--muted)';
+  });
+  var labels = {mes:'Este mes',trim:'Este trimestre',anio:'Este año',todo:'Todo el historial'};
+  var sub = document.getElementById('dashboardSubtitulo');
+  if (sub) sub.textContent = 'Período: '+labels[p];
+  renderDashboard();
+}
+
+function _filtrarPorPeriodo(arr, getDate) {
+  if (_dashPeriodo === 'todo') return arr;
+  var hoy = new Date();
+  var desde = new Date(hoy);
+  if (_dashPeriodo==='mes')  desde.setDate(1);
+  if (_dashPeriodo==='trim') desde.setMonth(hoy.getMonth()-2, 1);
+  if (_dashPeriodo==='anio') desde = new Date(hoy.getFullYear(), 0, 1);
+  return arr.filter(function(item) {
+    try { var d = getDate(item); return d && new Date(d) >= desde; } catch(e){ return true; }
+  });
+}
+
 function renderDashboard() {
   var panel = document.getElementById('dashboardContent');
   if (!panel) return;
   panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px;">Cargando...</div>';
 
   safeFetch('/api/jobs?type=results').then(function(d) {
-    var results = (d&&d.results) ? d.results : JSON.parse(localStorage.getItem('rresults')||'[]');
+    var allResults = (d&&d.results) ? d.results : JSON.parse(localStorage.getItem('rresults')||'[]');
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
     var hoy = new Date();
 
+    // ── Filtrar por período ──
+    var allReqs = requisiciones;
+    var reqs = _filtrarPorPeriodo(allReqs, function(r){ return r.fechaInicioRaw||null; });
+    var results = _filtrarPorPeriodo(allResults, function(r){ return r.fecha ? r.fecha.split('/').reverse().join('-') : null; });
+
     // ── Cálculos globales ──
-    var reqsActivas = requisiciones.filter(function(r){ return r.estado!=='Cubierto'; });
+    var reqsActivas = reqs.filter(function(r){ return r.estado!=='Cubierto'; });
     var totalCands = results.length;
-    var avanzar = results.filter(function(r){ return r.recomendacion==='Avanzar'; }).length;
+    var avanzar = results.filter(function(r){ return r.visibleLider; }).length;
     var tasaAvanzar = totalCands ? Math.round(avanzar/totalCands*100) : 0;
     var promedioEst = totalCands ? Math.min(5, (results.reduce(function(s,r){return s+(r.estrellas||r.puntaje||0);},0)/totalCands)).toFixed(1) : 0;
-    var cubiertos = requisiciones.filter(function(r){ return r.estado==='Cubierto'; }).length;
+    var cubiertos = reqs.filter(function(r){ return r.estado==='Cubierto'; }).length;
 
     // Tiempo promedio cobertura
     var tiemposCob = requisiciones.filter(function(r){
@@ -4433,11 +5209,41 @@ function renderDashboard() {
     }).filter(Boolean);
     var tiempoPromedio = tiemposCob.length ? Math.round(tiemposCob.reduce(function(s,v){return s+v;},0)/tiemposCob.length) : null;
 
-    // SLA vencidos
+    // SLA vencidos (siempre sobre activos reales)
     var slaAlerts = typeof calcularSLAAlerts==='function' ? calcularSLAAlerts() : [];
 
-    // Candidatos elegidos por líder
+    // Candidatos elegidos — tasa conversión
     var elegidos = fbs.filter(function(f){ return f.elegido; });
+    var tasaConversion = totalCands > 0 ? Math.round(elegidos.length/totalCands*100) : 0;
+
+    // Mes con más ingresos (procesos cubiertos por mes)
+    var ingresosPorMes = {};
+    reqs.filter(function(r){ return r.estado==='Cubierto' && r.etapas && r.etapas.tramites; }).forEach(function(r) {
+      try {
+        var pts = r.etapas.tramites.split('/');
+        var key = pts[2]+'-'+('0'+pts[1]).slice(-2);
+        ingresosPorMes[key] = (ingresosPorMes[key]||0)+1;
+      } catch(e){}
+    });
+    var mesMasIngresos = Object.keys(ingresosPorMes).sort().reduce(function(best,k){
+      return (!best||ingresosPorMes[k]>ingresosPorMes[best])?k:best;
+    }, null);
+    var mesMasIngresosLabel = mesMasIngresos ? (function(){
+      var meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      var pts = mesMasIngresos.split('-');
+      return meses[parseInt(pts[1])-1]+' '+pts[0]+' ('+ingresosPorMes[mesMasIngresos]+')';
+    })() : null;
+
+    // Gerencia con más demoras
+    var demorasPorGer = {};
+    slaAlerts.forEach(function(a) {
+      var req = reqs.find(function(r){ return r.puesto&&a.puesto&&r.puesto.toLowerCase()===a.puesto.toLowerCase(); });
+      var ger = req ? (req.gerencia||'Sin gerencia') : 'Sin gerencia';
+      demorasPorGer[ger] = (demorasPorGer[ger]||0)+1;
+    });
+    var gerMasDemoras = Object.keys(demorasPorGer).reduce(function(best,k){
+      return (!best||demorasPorGer[k]>demorasPorGer[best])?k:best;
+    }, null);
 
     // Puestos con candidatos sin feedback del líder
     var puestosSinFb = {};
@@ -4503,7 +5309,7 @@ function renderDashboard() {
           progresoHtml += '<div style="font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.puesto+'</div>';
           progresoHtml += '<div style="font-size:10px;color:'+diasColor+';margin-top:1px;">'+(dias!==null?(dias<=0?'VENCIDO':dias+'d restantes'):'\u2014')+'</div>';
           if (isSla) {
-            progresoHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#c0392b;display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;color:var(--muted);">SLA vencido</span></div>';
+            progresoHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#c0392b;display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;color:var(--muted);">Demora en etapa</span></div>';
           }
           if (tieneSinFb) {
             progresoHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#BA7517;display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;color:var(--muted);">Sin feedback l&iacute;der</span></div>';
@@ -4529,11 +5335,14 @@ function renderDashboard() {
       + mkKpi('Tasa avance', tasaAvanzar, '%', '#e8623a')
       + mkKpi('Estrellas prom.', promedioEst, '★', '#f4c430')
       + (tiempoPromedio ? mkKpi('Días cobertura prom.', tiempoPromedio, 'd', '#2d7a4f') : '')
+      + mkKpi('Tasa conversión', tasaConversion, '%', '#3C3489')
+      + (gerMasDemoras ? mkKpiTexto('Gerencia c/más demoras', gerMasDemoras, '#c0392b') : '')
+      + (mesMasIngresosLabel ? mkKpiTexto('Mes más ingresos', mesMasIngresosLabel, '#2d7a4f') : '')
     + '</div>';
 
     // Tabla por gerencia
     var byGer = {};
-    requisiciones.forEach(function(r) {
+    reqs.forEach(function(r) {
       var job = jobs.find(function(j){ return getReqsForJob(j.id,j.titulo).some(function(x){ return x.id===r.id; }); });
       var ger = (job&&job.gerencia) ? job.gerencia : (r.gerencia || 'Sin gerencia');
       if (!byGer[ger]) byGer[ger] = { activos:0, cubiertos:0, sla:0, cands:0, avances:[] };
@@ -4557,7 +5366,7 @@ function renderDashboard() {
         + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Activos</th>'
         + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Cubiertos</th>'
         + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidatos</th>'
-        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">SLA vencido</th>'
+        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Demora</th>'
         + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Avance prom.</th>'
       + '</tr></thead><tbody>';
 
@@ -4585,6 +5394,13 @@ function renderDashboard() {
   });
 }
 
+
+function mkKpiTexto(label, value, color) {
+  return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:16px 12px;text-align:center;">'+
+    '<div style="font-size:12px;font-weight:600;color:'+color+';line-height:1.4;">'+value+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px;">'+label+'</div>'+
+  '</div>';
+}
 
 function mkKpi(label, value, suffix, color) {
   return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;text-align:center;">'+
