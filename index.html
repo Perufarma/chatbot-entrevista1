@@ -3510,7 +3510,7 @@ function mostrarModalCandidato(c) {
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
         + _mField('Rem. actual (S/)','cmRemActual',c.remActual||'')
         + _mField('Pretensión (S/)','cmPretension',c.pretension||'')
-        + _mField('Experiencia','cmExpLaboral',c.expLaboral||'')
+        + _mTextarea('Experiencia','cmExpLaboral',c.expLaboral||'',3)
       + '</div>'
 
       // Fila 4 — recomendación + visible
@@ -3560,6 +3560,13 @@ function _mField(label, id, val) {
   return '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">'+label+'</label>'
     + '<input type="text" id="'+id+'" value="'+val.toString().replace(/"/g,'&quot;')+'" '
     + 'style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);box-sizing:border-box;"></div>';
+}
+
+function _mTextarea(label, id, val, rows) {
+  rows = rows || 3;
+  return '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">'+label+'</label>'
+    + '<textarea id="'+id+'" rows="'+rows+'" '
+    + 'style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);box-sizing:border-box;resize:vertical;">'+val.toString().replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea></div>';
 }
 
 function _mSel(label, id, val, opts) {
@@ -3952,6 +3959,24 @@ function parsearCSV(texto) {
   });
 }
 
+
+// ── Normalizar grado académico a opciones del select ──
+function mapearGrado(texto) {
+  if (!texto) return '';
+  var t = texto.toLowerCase().trim();
+  if (t.includes('posgrado') || t.includes('maestría') || t.includes('maestria') || t.includes('magister') || t.includes('doctorado')) return 'Posgrado / Maestría';
+  if (t.includes('universitario') || t.includes('universidad') || t.includes('bachiller') || t.includes('licenci')) {
+    if (t.includes('incompleto') || t.includes('interrump') || t.includes('cursando') || t.includes('en curso')) return 'Universitario incompleto';
+    return 'Universitario completo';
+  }
+  if (t.includes('técnico') || t.includes('tecnico') || t.includes('instituto') || t.includes('tecnológico') || t.includes('tecnologico')) {
+    if (t.includes('incompleto') || t.includes('interrump') || t.includes('cursando') || t.includes('en curso') || t.includes('estudiando')) return 'Técnico incompleto';
+    return 'Técnico completo';
+  }
+  if (t.includes('secundaria') || t.includes('escolar') || t.includes('colegio') || t.includes('básica') || t.includes('basica')) return 'Secundaria completa';
+  return ''; // No hace match — dejar vacío para que el reclutador complete
+}
+
 function parsearPandapeRows(rows) {
   // Pandapé xlsx: filas 1-4 son metadatos, fila 6 son headers, desde fila 7 candidatos
   // Buscar la fila de headers (contiene "Nombre" y "Apellido")
@@ -4010,12 +4035,17 @@ function parsearPandapeRows(rows) {
     var expRaw = get(iExp);
     var expLaboral = expRaw ? expRaw.split('\n')[0].substring(0,80) : '';
 
-    // Grado: primera formación
+    // Grado: mapear a opciones del select desde campo Formación
     var gradoRaw = get(iFormacion);
-    var grado = gradoRaw ? gradoRaw.split(',')[0].split('\n')[0].substring(0,50) : '';
+    var gradoTexto = gradoRaw ? gradoRaw.split(',')[0].split('\n')[0].trim() : '';
+    var grado = mapearGrado(gradoTexto);
 
     var dniRaw = String(get(iDni)).replace(/[^0-9]/g,'');
     if (dniRaw === '0') dniRaw = ''; // DNI oculto por Pandapé
+
+    // Resumen: usar experiencia profesional completa (primeras 200 chars)
+    var expCompleta = get(iExp);
+    var resumenPandape = expCompleta ? expCompleta.substring(0, 200) : '';
 
     cands.push({
       candidato:     nombreCompleto,
@@ -4026,6 +4056,7 @@ function parsearPandapeRows(rows) {
       gradoAcademico:grado,
       expLaboral:    expLaboral,
       pretension:    pretension,
+      resumen:       resumenPandape,
       fuente:        'pandape'
     });
   }
@@ -4071,8 +4102,9 @@ function parsearBumeranRows(rows) {
   var iSalPref  = idx(['preferencia salarial']);
   var iDisp     = idx(['disponibilidad']);
   // Columnas de cuestionario (las últimas — más confiables para pretensión y celular)
-  var iCelCuest = idx(['mencione su número de celular']);
-  var iPretCuest= idx(['pretensión salarial (considerando','rango de su pretensión']);
+  var iCelCuest  = idx(['mencione su número de celular']);
+  var iPretCuest = idx(['pretensión salarial (considerando','rango de su pretensión']);
+  var iExpCuest  = idx(['experiencia en el área de ventas','experiencia en ventas','experiencia laboral']);
 
   var cands = [];
   for (var r=headerIdx+1; r<rows.length; r++) {
@@ -4090,23 +4122,30 @@ function parsearBumeranRows(rows) {
     var celPerfil = limpiarCelular(get(iTelCel)) || limpiarCelular(get(iTelOtro));
     var cel = celCuest || celPerfil;
 
-    // Pretensión: preferir cuestionario, fallback a preferencia salarial
-    var pretCuest  = limpiarSalario(get(iPretCuest));
-    var pretPerfil = limpiarSalario(get(iSalPref));
-    var pretension = pretCuest || pretPerfil;
+    // Pretensión: respetar texto tal cual si es corto (rango), fallback a numérico si es párrafo largo
+    var pretCuestRaw = get(iPretCuest).trim();
+    var pretCuest = pretCuestRaw.length > 0 && pretCuestRaw.length <= 40
+      ? pretCuestRaw  // ej: '4000 - 5000' o '3500' — respetar tal cual
+      : limpiarSalario(get(iSalPref));  // párrafo largo → usar valor numérico del perfil
+    var pretension = pretCuest || limpiarSalario(get(iSalPref));
 
     // Experiencia: construir resumen de exp[1]
     var exp1Puesto  = get(iExp1P);
     var exp1Empresa = get(iExp1E);
     var expLaboral  = [exp1Puesto, exp1Empresa].filter(Boolean).join(' en ').substring(0,80);
 
-    // Grado: nivel de estudios 1
+    // Grado: mapear nivel a opciones del select
     var gradoNivel = get(iEst1N);
     var gradoTitulo = get(iEst1T);
-    var grado = gradoNivel && gradoNivel !== 'Curso' ? gradoNivel : gradoTitulo;
-    grado = (grado||'').substring(0,50);
+    // Preferir el nivel si no es 'Curso' u 'Otro', si no usar el título
+    var gradoBase = (gradoNivel && gradoNivel !== 'Curso' && gradoNivel !== 'Otro') ? gradoNivel : gradoTitulo;
+    var grado = mapearGrado(gradoBase);
 
     var dniRaw = get(iDni).replace(/[^0-9]/g,'');
+
+    // Resumen: usar respuesta del cuestionario de experiencia (primeras 200 chars)
+    var expCuestRaw = get(iExpCuest);
+    var resumenBumeran = expCuestRaw ? expCuestRaw.substring(0, 200) : '';
 
     cands.push({
       candidato:     nombreCompleto,
@@ -4118,6 +4157,7 @@ function parsearBumeranRows(rows) {
       expLaboral:    expLaboral,
       disponibilidad:get(iDisp),
       pretension:    pretension,
+      resumen:       resumenBumeran,
       fuente:        'bumeran'
     });
   }
@@ -4211,26 +4251,8 @@ async function confirmarImportacion() {
     });
     if (yaExiste) { omitidos++; continue; }
 
-    // Generar resumen con Claude si hay datos suficientes
+    // Resumen se completa manualmente desde el modal de edición
     var resumenAI = '';
-    try {
-      var expTexto = [c.expLaboral, c.gradoAcademico].filter(Boolean).join(' · ');
-      if (expTexto) {
-        var resp = await fetch('/api/anthropic', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 120,
-            messages: [{role:'user', content:'Resume en máximo 2 líneas el perfil de este candidato para un reclutador. Datos: '+JSON.stringify({nombre:c.candidato, experiencia:c.expLaboral, grado:c.gradoAcademico, pretension:c.pretension, disponibilidad:c.disponibilidad})+'. Solo el resumen, sin introducción.'}]
-          })
-        });
-        if (resp.ok) {
-          var rData = await resp.json();
-          resumenAI = rData.content && rData.content[0] ? rData.content[0].text : '';
-        }
-      }
-    } catch(e) {}
 
     var entry = {
       fecha: fecha, hora: hora,
@@ -4343,9 +4365,8 @@ function renderTablaByPuesto(results) {
       }
 
       // Switch avanza con líder
-      var switchVis = '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;">'
-        +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:13px;height:13px;">'
-        +'<span style="font-size:10px;color:var(--muted);">'+(c.visibleLider?'Avanza':'No')+'</span>'
+      var switchVis = '<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;">'
+        +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:14px;height:14px;">'
         +'</label>';
 
       // Elegido / Ingreso
