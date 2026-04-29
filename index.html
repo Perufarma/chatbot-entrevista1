@@ -19,7 +19,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .nav-tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--accent2);}
 
 /* PANELS */
-.panel{display:none;padding:28px;max-width:960px;margin:0 auto;}
+.panel{display:none;padding:28px;max-width:1060px;margin:0 auto;overflow:hidden;}
 .panel.active{display:block;}
 
 /* BUTTONS */
@@ -1224,6 +1224,22 @@ function showTab(id, btn) {
   document.getElementById('tab-'+id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (id === 'envio') renderEnvioSelect();
+  // Cerrar formularios flotantes al cambiar de pestaña
+  var cmf = document.getElementById('candManualForm');
+  if (cmf) cmf.classList.remove('open');
+  var cpdf = document.getElementById('cargaPDFPanel');
+  if (cpdf) cpdf.style.display = 'none';
+  // Limpiar candidatos al salir de esa pestaña
+  if (id !== 'candidatos') {
+    var cpp = document.getElementById('candidatosPorPuesto');
+    if (cpp) cpp.innerHTML = '';
+  } else {
+    // Al entrar a candidatos, mostrar estado de carga limpio
+    var cpp2 = document.getElementById('candidatosPorPuesto');
+    if (cpp2 && !cpp2.innerHTML.trim()) {
+      cpp2.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
+    }
+  }
 }
 
 // ══════════════════════════════════
@@ -3873,31 +3889,42 @@ function procesarArchivoImport(input, plataforma) {
   var file = input.files[0];
   if (!file) return;
 
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      // Parsear CSV o Excel básico
-      var texto = e.target.result;
-      var candidatos = plataforma === 'pandape'
-        ? parsearPandape(texto)
-        : parsearBumeran(texto);
+  // Cargar SheetJS dinámicamente si no está disponible
+  function doProcess(XLSX) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = new Uint8Array(e.target.result);
+        var wb = XLSX.read(data, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        // Convertir a array de arrays (incluye filas vacías)
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
 
-      if (!candidatos.length) {
-        mostrarErrorImport('No se detectaron candidatos en el archivo. Verifica que sea el formato correcto de '+plataforma+'.');
-        return;
+        var candidatos = plataforma === 'pandape'
+          ? parsearPandapeRows(rows)
+          : parsearBumeranRows(rows);
+
+        if (!candidatos.length) {
+          mostrarErrorImport('No se detectaron candidatos. Verifica que sea el formato correcto de '+plataforma+'.');
+          return;
+        }
+        window._importCandidatos = candidatos;
+        mostrarPrevisualizacion(candidatos, plataforma);
+      } catch(err) {
+        mostrarErrorImport('Error al leer el archivo: '+err.message);
       }
+    };
+    reader.readAsArrayBuffer(file);
+  }
 
-      window._importCandidatos = candidatos;
-      mostrarPrevisualizacion(candidatos, plataforma);
-    } catch(err) {
-      mostrarErrorImport('Error al leer el archivo: '+err.message);
-    }
-  };
-  // Leer como texto para CSV, como binario para Excel
-  if (file.name.endsWith('.csv')) {
-    reader.readAsText(file, 'UTF-8');
+  if (window.XLSX) {
+    doProcess(window.XLSX);
   } else {
-    reader.readAsText(file, 'latin1');
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = function(){ doProcess(window.XLSX); };
+    script.onerror = function(){ mostrarErrorImport('No se pudo cargar la librería de lectura de Excel. Verifica tu conexión.'); };
+    document.head.appendChild(script);
   }
 }
 
@@ -3926,118 +3953,173 @@ function parsearCSV(texto) {
   });
 }
 
-function parsearPandape(texto) {
-  // Pandapé: CSV con headers en fila variable, buscar fila que tenga "Nombre"
-  var rows = parsearCSV(texto);
+function parsearPandapeRows(rows) {
+  // Pandapé xlsx: filas 1-4 son metadatos, fila 6 son headers, desde fila 7 candidatos
+  // Buscar la fila de headers (contiene "Nombre" y "Apellido")
   var headerIdx = -1;
   var headers = [];
-  for (var i=0;i<Math.min(rows.length,10);i++) {
-    var row = rows[i].map(function(c){ return (c||'').toLowerCase(); });
-    if (row.some(function(c){ return c.includes('nombre') || c.includes('candidato'); })) {
+  for (var i=0; i<Math.min(rows.length,10); i++) {
+    var row = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
+    if (row.some(function(c){ return c==='nombre'; }) && row.some(function(c){ return c==='apellido'; })) {
       headerIdx = i;
-      headers = rows[i].map(function(c){ return (c||'').toLowerCase().trim(); });
-      break;
-    }
-  }
-  if (headerIdx < 0 || !headers.length) return [];
-
-  var idx = function(keys) {
-    for (var k=0;k<keys.length;k++) {
-      for (var h=0;h<headers.length;h++) {
-        if (headers[h].includes(keys[k])) return h;
-      }
-    }
-    return -1;
-  };
-
-  var iNombre    = idx(['nombre','candidato']);
-  var iApellido  = idx(['apellido']);
-  var iDni       = idx(['dni','documento','rut']);
-  var iCelular   = idx(['celular','móvil','movil','teléfono','telefono','phone']);
-  var iCorreo    = idx(['correo','email','mail']);
-  var iCiudad    = idx(['ciudad','distrito','ubicación','ubicacion']);
-  var iSalario   = idx(['salario','remuneración','pretensión','pretension','sueldo']);
-  var iExp       = idx(['experiencia','años de exp','experiencia laboral']);
-  var iGrado     = idx(['estudio','grado','nivel educativo','formación']);
-
-  var cands = [];
-  for (var r=headerIdx+1; r<rows.length; r++) {
-    var row = rows[r];
-    if (!row || row.length < 2) continue;
-    var get = function(i) { return i>=0 && i<row.length ? (row[i]||'').trim().replace(/^"|"$/g,'') : ''; };
-    var nombre = get(iNombre);
-    var apellido = get(iApellido);
-    var nombreCompleto = apellido ? nombre+' '+apellido : nombre;
-    if (!nombreCompleto.trim()) continue;
-    cands.push({
-      candidato: nombreCompleto.trim(),
-      dni:       get(iDni).replace(/[^0-9]/g,''),
-      celular:   limpiarCelular(get(iCelular)),
-      correo:    get(iCorreo),
-      distrito:  get(iCiudad),
-      gradoAcademico: get(iGrado),
-      expLaboral: get(iExp),
-      pretension: limpiarSalario(get(iSalario)),
-      fuente: 'pandape'
-    });
-  }
-  return cands;
-}
-
-function parsearBumeran(texto) {
-  var rows = parsearCSV(texto);
-  var headerIdx = -1;
-  var headers = [];
-  for (var i=0;i<Math.min(rows.length,10);i++) {
-    var row = rows[i].map(function(c){ return (c||'').toLowerCase(); });
-    if (row.some(function(c){ return c.includes('nombre') || c.includes('apellido') || c.includes('postulante'); })) {
-      headerIdx = i;
-      headers = rows[i].map(function(c){ return (c||'').toLowerCase().trim(); });
+      headers = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
       break;
     }
   }
   if (headerIdx < 0) return [];
 
   var idx = function(keys) {
-    for (var k=0;k<keys.length;k++) {
-      for (var h=0;h<headers.length;h++) {
+    for (var k=0; k<keys.length; k++) {
+      for (var h=0; h<headers.length; h++) {
         if (headers[h].includes(keys[k])) return h;
       }
     }
     return -1;
   };
 
-  var iNombre   = idx(['nombre','postulante']);
+  // Mapeo exacto de columnas Pandapé
+  var iNombre   = idx(['nombre']);
   var iApellido = idx(['apellido']);
-  var iDni      = idx(['dni','documento','cédula']);
-  var iTel1     = idx(['teléfono 1','telefono 1','celular','móvil 1']);
-  var iTel2     = idx(['teléfono 2','telefono 2','móvil 2']);
-  var iCorreo   = idx(['correo','email']);
-  var iCiudad   = idx(['ciudad','ubicación','localidad','provincia']);
-  var iSalario  = idx(['pretensión','pretension','salario','remuneración']);
-  var iGrado    = idx(['nivel educativo','estudios','formación','grado']);
-  var iDisp     = idx(['disponibilidad']);
+  var iDni      = idx(['número de identificación','identificaci']);
+  var iTel      = idx(['teléfono celular','celular']);
+  var iTel2     = idx(['teléfono']);
+  var iCorreo   = idx(['correo electrónico','correo','email']);
+  var iCiudad   = idx(['ciudad','departamento']);
+  var iSalMin   = idx(['salario mínimo','salario minimo']);
+  var iSalMax   = idx(['salario máximo','salario maximo']);
+  var iExp      = idx(['experiencia profesional']);
+  var iFormacion= idx(['formación','formacion']);
+  var iIdiomas  = idx(['idiomas']);
 
   var cands = [];
   for (var r=headerIdx+1; r<rows.length; r++) {
     var row = rows[r];
     if (!row || row.length < 2) continue;
-    var get = function(i) { return i>=0 && i<row.length ? (row[i]||'').trim().replace(/^"|"$/g,'') : ''; };
+    var get = function(i) { return i>=0 && i<row.length ? String(row[i]||'').trim() : ''; };
     var nombre = get(iNombre);
     var apellido = get(iApellido);
-    var nombreCompleto = apellido ? nombre+' '+apellido : nombre;
+    var nombreCompleto = [nombre, apellido].filter(Boolean).join(' ');
     if (!nombreCompleto.trim()) continue;
-    var cel = limpiarCelular(get(iTel1)) || limpiarCelular(get(iTel2));
+
+    // Celular: preferir teléfono celular, fallback a teléfono
+    var cel = limpiarCelular(get(iTel)) || limpiarCelular(get(iTel2));
+
+    // Pretensión: tomar salario mínimo
+    var pretension = limpiarSalario(get(iSalMin)) || limpiarSalario(get(iSalMax));
+
+    // Experiencia: primera línea de experiencia profesional
+    var expRaw = get(iExp);
+    var expLaboral = expRaw ? expRaw.split('\n')[0].substring(0,80) : '';
+
+    // Grado: primera formación
+    var gradoRaw = get(iFormacion);
+    var grado = gradoRaw ? gradoRaw.split(',')[0].split('\n')[0].substring(0,50) : '';
+
+    var dniRaw = String(get(iDni)).replace(/[^0-9]/g,'');
+    if (dniRaw === '0') dniRaw = ''; // DNI oculto por Pandapé
+
     cands.push({
-      candidato: nombreCompleto.trim(),
-      dni:       get(iDni).replace(/[^0-9]/g,''),
-      celular:   cel,
-      correo:    get(iCorreo),
-      distrito:  get(iCiudad),
-      gradoAcademico: get(iGrado),
-      disponibilidad: get(iDisp),
-      pretension: limpiarSalario(get(iSalario)),
-      fuente: 'bumeran'
+      candidato:     nombreCompleto,
+      dni:           dniRaw,
+      celular:       cel,
+      correo:        get(iCorreo),
+      distrito:      get(iCiudad),
+      gradoAcademico:grado,
+      expLaboral:    expLaboral,
+      pretension:    pretension,
+      fuente:        'pandape'
+    });
+  }
+  return cands;
+}
+
+function parsearBumeranRows(rows) {
+  // Bumeran xlsx: metadatos filas 1-3, headers en fila 5, datos desde fila 6
+  var headerIdx = -1;
+  var headers = [];
+  for (var i=0; i<Math.min(rows.length,10); i++) {
+    var row = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
+    if (row.some(function(c){ return c==='nombre'; }) &&
+        row.some(function(c){ return c==='apellido'; })) {
+      headerIdx = i;
+      headers = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
+      break;
+    }
+  }
+  if (headerIdx < 0) return [];
+
+  var idx = function(keys) {
+    for (var k=0; k<keys.length; k++) {
+      for (var h=0; h<headers.length; h++) {
+        if (headers[h] === keys[k] || headers[h].includes(keys[k])) return h;
+      }
+    }
+    return -1;
+  };
+
+  // Mapeo exacto columnas Bumeran
+  var iNombre   = idx(['nombre']);
+  var iApellido = idx(['apellido']);
+  var iDni      = idx(['nro. documento','nro documento','número de documento']);
+  var iTelCel   = idx(['teléfono celular','telefono celular']);
+  var iTelOtro  = idx(['otro teléfono','otro telefono']);
+  var iCorreo   = idx(['e-mail','email','correo']);
+  var iCiudad   = idx(['ciudad']);
+  var iExp1P    = idx(['exp[1] puesto']);
+  var iExp1E    = idx(['exp[1] empresa']);
+  var iEst1N    = idx(['est[1] nivel']);
+  var iEst1T    = idx(['est[1] titulo','est[1] título']);
+  var iSalPref  = idx(['preferencia salarial']);
+  var iDisp     = idx(['disponibilidad']);
+  // Columnas de cuestionario (las últimas — más confiables para pretensión y celular)
+  var iCelCuest = idx(['mencione su número de celular']);
+  var iPretCuest= idx(['pretensión salarial (considerando','rango de su pretensión']);
+
+  var cands = [];
+  for (var r=headerIdx+1; r<rows.length; r++) {
+    var row = rows[r];
+    if (!row || row.length < 2) continue;
+    var get = function(i) { return i>=0 && i<row.length ? String(row[i]||'').trim() : ''; };
+
+    var nombre = get(iNombre);
+    var apellido = get(iApellido);
+    var nombreCompleto = [nombre, apellido].filter(Boolean).join(' ');
+    if (!nombreCompleto.trim()) continue;
+
+    // Celular: preferir el del cuestionario (más actualizado), luego el del perfil
+    var celCuest = limpiarCelular(get(iCelCuest));
+    var celPerfil = limpiarCelular(get(iTelCel)) || limpiarCelular(get(iTelOtro));
+    var cel = celCuest || celPerfil;
+
+    // Pretensión: preferir cuestionario, fallback a preferencia salarial
+    var pretCuest  = limpiarSalario(get(iPretCuest));
+    var pretPerfil = limpiarSalario(get(iSalPref));
+    var pretension = pretCuest || pretPerfil;
+
+    // Experiencia: construir resumen de exp[1]
+    var exp1Puesto  = get(iExp1P);
+    var exp1Empresa = get(iExp1E);
+    var expLaboral  = [exp1Puesto, exp1Empresa].filter(Boolean).join(' en ').substring(0,80);
+
+    // Grado: nivel de estudios 1
+    var gradoNivel = get(iEst1N);
+    var gradoTitulo = get(iEst1T);
+    var grado = gradoNivel && gradoNivel !== 'Curso' ? gradoNivel : gradoTitulo;
+    grado = (grado||'').substring(0,50);
+
+    var dniRaw = get(iDni).replace(/[^0-9]/g,'');
+
+    cands.push({
+      candidato:     nombreCompleto,
+      dni:           dniRaw,
+      celular:       cel,
+      correo:        get(iCorreo),
+      distrito:      get(iCiudad),
+      gradoAcademico:grado,
+      expLaboral:    expLaboral,
+      disponibilidad:get(iDisp),
+      pretension:    pretension,
+      fuente:        'bumeran'
     });
   }
   return cands;
@@ -4204,6 +4286,9 @@ function filtrarGerenciaCand() {
 }
 
 function filtrarCandidatos() {
+  // No renderizar si el panel candidatos no está activo
+  var panelCand = document.getElementById('tab-candidatos');
+  if (panelCand && !panelCand.classList.contains('active')) return;
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
   var puesto = (document.getElementById('filtroPuesto_cand')||{}).value||'';
   var soloVis = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
@@ -4283,7 +4368,7 @@ function renderTablaByPuesto(results) {
         +'</div>';
 
       // Fila principal compacta
-      var rowMain = '<div class="cand-row" style="display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:0.5px solid var(--border2);background:var(--surface);" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">'
+      var rowMain = '<div class="cand-row" style="display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:0.5px solid var(--border2);background:var(--surface);overflow:hidden;" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">'
         // Nombre (clickeable para modal)
         +'<div style="flex:0 0 200px;min-width:0;overflow:hidden;">'
           +'<div style="font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="abrirModalCandidato(this)" title="Ver y editar perfil completo">'+c.candidato+badge+fuente+alertaBadge+'</div>'
@@ -4335,7 +4420,7 @@ function renderTablaByPuesto(results) {
     }).join('');
 
     // Header del grupo + sub-header de columnas
-    var colHeader = '<div style="display:flex;align-items:center;padding:6px 14px;gap:10px;background:var(--bg);border-bottom:0.5px solid var(--border2);">'
+    var colHeader = '<div style="display:flex;align-items:center;padding:6px 14px;gap:10px;background:var(--bg);border-bottom:0.5px solid var(--border2);overflow:hidden;">'
       +'<div style="flex:0 0 200px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Nombre</div>'
       +'<div style="flex:0 0 80px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:center;">Pretensión</div>'
       +'<div style="flex:0 0 95px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Celular</div>'
@@ -4346,7 +4431,7 @@ function renderTablaByPuesto(results) {
       +'<div style="margin-left:auto;"></div>'
     +'</div>';
 
-    return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;">'
+    return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
       +'<div data-puesto-id="'+encodeURIComponent(puesto)+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
         +'<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
@@ -4368,6 +4453,12 @@ function renderTablaByPuesto(results) {
 
 
 function renderCandidatosPorPuesto() {
+  // Asegurar que el formulario manual esté cerrado
+  var cmf = document.getElementById('candManualForm');
+  if (cmf) cmf.classList.remove('open');
+  // No renderizar si el panel no está activo
+  var panelCand = document.getElementById('tab-candidatos');
+  if (panelCand && !panelCand.classList.contains('active')) return;
   var panel = document.getElementById('candidatosPorPuesto');
   if (!panel) return;
   panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
