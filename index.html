@@ -436,12 +436,13 @@ a[title]{cursor:pointer;}
         <div class="form-group"><label>Grado académico</label>
           <select id="cm_grado" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
             <option value="">Selecciona...</option>
-            <option>Secundaria completa</option>
-            <option>Técnico incompleto</option>
-            <option>Técnico completo</option>
-            <option>Universitario incompleto</option>
+            <option>Maestría / MBA</option>
+            <option>Posgrado / Especialización</option>
             <option>Universitario completo</option>
-            <option>Posgrado / Maestría</option>
+            <option>Universitario incompleto</option>
+            <option>Técnico completo</option>
+            <option>Técnico incompleto</option>
+            <option>Secundaria completa</option>
           </select>
         </div>
       </div>
@@ -3502,7 +3503,7 @@ function mostrarModalCandidato(c) {
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
         + _mField('Distrito','cmDistrito',c.distrito||'')
         + _mSel('Grado académico','cmGrado',c.gradoAcademico||'',
-            ['','Secundaria completa','Técnico incompleto','Técnico completo','Universitario incompleto','Universitario completo','Posgrado / Maestría'])
+            ['','Maestría / MBA','Posgrado / Especialización','Universitario completo','Universitario incompleto','Técnico completo','Técnico incompleto','Secundaria completa'])
         + _mField('Disponibilidad','cmDisponibilidad',c.disponibilidad||'')
       + '</div>'
 
@@ -3656,6 +3657,8 @@ function toggleVisibilidad(el) {
   localStorage.setItem('rresults', JSON.stringify(_allResults));
   safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
   toast((visible?'Candidato visible':'Candidato oculto')+' para el líder');
+  // Re-renderizar tabla inmediatamente para reordenar
+  setTimeout(function(){ filtrarCandidatos(); }, 300);
 }
 
 function poblarFiltrosCandidatos(results) {
@@ -3961,20 +3964,43 @@ function parsearCSV(texto) {
 
 
 // ── Normalizar grado académico a opciones del select ──
+// Jerarquía numérica de grados (mayor = mejor)
+var GRADO_JERARQUIA = {
+  'Maestría / MBA': 7,
+  'Posgrado / Especialización': 6,
+  'Universitario completo': 5,
+  'Universitario incompleto': 4,
+  'Técnico completo': 3,
+  'Técnico incompleto': 2,
+  'Secundaria completa': 1
+};
+
 function mapearGrado(texto) {
   if (!texto) return '';
   var t = texto.toLowerCase().trim();
-  if (t.includes('posgrado') || t.includes('maestría') || t.includes('maestria') || t.includes('magister') || t.includes('doctorado')) return 'Posgrado / Maestría';
-  if (t.includes('universitario') || t.includes('universidad') || t.includes('bachiller') || t.includes('licenci')) {
+  // Maestría / MBA — nivel más alto
+  if (t === 'master' || t.includes('maestría') || t.includes('maestria') || t.includes('magister') || t.includes('mba')) return 'Maestría / MBA';
+  // Posgrado / Especialización
+  if (t === 'posgrado' || t.includes('posgrado') || t.includes('doctorado') || t.includes('especializ') || t.includes('diplomado')) return 'Posgrado / Especialización';
+  // Universitario
+  if (t.includes('universitario') || t.includes('universidad') || t.includes('bachiller') || t.includes('licenci') || t.includes('ingenier')) {
     if (t.includes('incompleto') || t.includes('interrump') || t.includes('cursando') || t.includes('en curso')) return 'Universitario incompleto';
     return 'Universitario completo';
   }
-  if (t.includes('técnico') || t.includes('tecnico') || t.includes('instituto') || t.includes('tecnológico') || t.includes('tecnologico')) {
+  // Técnico
+  if (t.includes('técnico') || t.includes('tecnico') || t.includes('terciario') || t.includes('instituto') || t.includes('tecnológico') || t.includes('tecnologico')) {
     if (t.includes('incompleto') || t.includes('interrump') || t.includes('cursando') || t.includes('en curso') || t.includes('estudiando')) return 'Técnico incompleto';
     return 'Técnico completo';
   }
+  // Secundaria
   if (t.includes('secundaria') || t.includes('escolar') || t.includes('colegio') || t.includes('básica') || t.includes('basica')) return 'Secundaria completa';
-  return ''; // No hace match — dejar vacío para que el reclutador complete
+  return '';
+}
+
+function gradoMayor(g1, g2) {
+  var j1 = GRADO_JERARQUIA[g1] || 0;
+  var j2 = GRADO_JERARQUIA[g2] || 0;
+  return j1 >= j2 ? g1 : g2;
 }
 
 function parsearPandapeRows(rows) {
@@ -4099,6 +4125,12 @@ function parsearBumeranRows(rows) {
   var iExp1E    = idx(['exp[1] empresa']);
   var iEst1N    = idx(['est[1] nivel']);
   var iEst1T    = idx(['est[1] titulo','est[1] título']);
+  var iEst2N    = idx(['est[2] nivel']);
+  var iEst2T    = idx(['est[2] titulo','est[2] título']);
+  var iEst3N    = idx(['est[3] nivel']);
+  var iEst3T    = idx(['est[3] titulo','est[3] título']);
+  var iEst4N    = idx(['est[4] nivel']);
+  var iEst4T    = idx(['est[4] titulo','est[4] título']);
   var iSalPref  = idx(['preferencia salarial']);
   var iDisp     = idx(['disponibilidad']);
   // Columnas de cuestionario (las últimas — más confiables para pretensión y celular)
@@ -4134,12 +4166,21 @@ function parsearBumeranRows(rows) {
     var exp1Empresa = get(iExp1E);
     var expLaboral  = [exp1Puesto, exp1Empresa].filter(Boolean).join(' en ').substring(0,80);
 
-    // Grado: mapear nivel a opciones del select
-    var gradoNivel = get(iEst1N);
-    var gradoTitulo = get(iEst1T);
-    // Preferir el nivel si no es 'Curso' u 'Otro', si no usar el título
-    var gradoBase = (gradoNivel && gradoNivel !== 'Curso' && gradoNivel !== 'Otro') ? gradoNivel : gradoTitulo;
-    var grado = mapearGrado(gradoBase);
+    // Grado: evaluar Est[1]-Est[4] y tomar el mayor nivel según jerarquía
+    var gradoSets = [
+      [get(iEst1N), get(iEst1T)],
+      [get(iEst2N), get(iEst2T)],
+      [get(iEst3N), get(iEst3T)],
+      [get(iEst4N), get(iEst4T)]
+    ];
+    var grado = '';
+    gradoSets.forEach(function(set) {
+      var nivel = set[0]; var titulo = set[1];
+      if (!nivel && !titulo) return;
+      var base = (nivel && nivel !== 'Curso' && nivel !== 'Otro') ? nivel : titulo;
+      var g = mapearGrado(base);
+      if (g) grado = gradoMayor(grado, g);
+    });
 
     var dniRaw = get(iDni).replace(/[^0-9]/g,'');
 
@@ -4169,50 +4210,70 @@ function mostrarPrevisualizacion(candidatos, plataforma) {
   var btnConf   = document.getElementById('btnConfirmarImport');
   if (!prevPanel) return;
 
-  // Detectar duplicados por DNI o celular
   var dupes = candidatos.map(function(c) {
-    var dniBusc = c.dni && c.dni.length >= 7;
-    var celBusc = c.celular && c.celular.length >= 8;
-    var existeDni = dniBusc && _allResults.find(function(r){ return r.dni && r.dni===c.dni; });
-    var existeCel = celBusc && _allResults.find(function(r){ return r.celular && limpiarCelular(r.celular)===c.celular; });
-    return existeDni || existeCel ? (existeDni||existeCel).candidato : null;
+    var existeDni = c.dni && c.dni.length>=7 && _allResults.find(function(r){ return r.dni===c.dni; });
+    var existeCel = c.celular && c.celular.length>=8 && _allResults.find(function(r){ return limpiarCelular(r.celular||'')===c.celular; });
+    return existeDni||existeCel ? (existeDni||existeCel).candidato : null;
   });
-
   var totalDupes = dupes.filter(Boolean).length;
 
   var html = '<div style="border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;">'
     +'<div style="padding:10px 14px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border2);">'
-      +'<div style="font-size:12px;font-weight:500;">'+candidatos.length+' candidatos detectados'+(totalDupes?' · <span style="color:#BA7517;">'+totalDupes+' posibles duplicados</span>':'')+'</div>'
+      +'<div style="font-size:12px;font-weight:500;" id="importCountLabel">'
+        +candidatos.length+' candidatos detectados'
+        +(totalDupes?' &middot; <span style="color:#BA7517;">'+totalDupes+' duplicados deseleccionados</span>':'')
+      +'</div>'
+      +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;">'
+        +'<input type="checkbox" id="importSelAll" checked onchange="toggleSelAll(this)" style="accent-color:var(--accent2);width:13px;height:13px;">'
+        +'Seleccionar todos'
+      +'</label>'
     +'</div>'
-    +'<div style="max-height:280px;overflow-y:auto;">'
+    +'<div style="max-height:300px;overflow-y:auto;">'
     +'<table style="width:100%;border-collapse:collapse;font-size:11px;">'
     +'<thead><tr style="background:var(--surface2);position:sticky;top:0;">'
+      +'<th style="padding:6px 8px;width:32px;"></th>'
       +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Nombre</th>'
       +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">DNI</th>'
       +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Celular</th>'
-      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Correo</th>'
+      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Grado</th>'
       +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);">Pretensión</th>'
-      +'<th style="padding:6px 10px;text-align:left;font-weight:500;color:var(--muted);"></th>'
     +'</tr></thead><tbody>';
 
   candidatos.forEach(function(c, i) {
     var dupe = dupes[i];
-    var rowBg = i%2===0 ? 'var(--surface)' : 'var(--surface2)';
-    html += '<tr style="background:'+(dupe?'#fef9f0':rowBg)+';border-top:0.5px solid var(--border2);">'
-      +'<td style="padding:6px 10px;font-weight:500;">'+c.candidato+'</td>'
+    var checked = !dupe;
+    var rowBg = dupe ? '#fef9f0' : (i%2===0 ? 'var(--surface)' : 'var(--surface2)');
+    html += '<tr style="background:'+rowBg+';border-top:0.5px solid var(--border2);">'
+      +'<td style="padding:6px 8px;text-align:center;">'
+        +'<input type="checkbox" class="import-sel-cb" data-idx="'+i+'" '+(checked?'checked':'')+' onchange="actualizarContadorImport()" style="accent-color:var(--accent2);width:13px;height:13px;">'
+      +'</td>'
+      +'<td style="padding:6px 10px;font-weight:500;">'+c.candidato+(dupe?'<span style="font-size:10px;background:#fef3e0;color:#7a4d0a;padding:1px 5px;border-radius:3px;margin-left:4px;">Duplicado</span>':'')+'</td>'
       +'<td style="padding:6px 10px;color:var(--muted);">'+(c.dni||'—')+'</td>'
       +'<td style="padding:6px 10px;color:var(--muted);">'+(c.celular||'—')+'</td>'
-      +'<td style="padding:6px 10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;">'+(c.correo||'—')+'</td>'
-      +'<td style="padding:6px 10px;color:var(--muted);">'+(c.pretension?'S/ '+c.pretension:'—')+'</td>'
-      +'<td style="padding:6px 10px;">'+(dupe?'<span style="font-size:10px;background:#fef3e0;color:#7a4d0a;padding:1px 5px;border-radius:3px;" title="Ya existe: '+dupe+'">Duplicado</span>':'')+'</td>'
+      +'<td style="padding:6px 10px;color:var(--muted);">'+(c.gradoAcademico||'—')+'</td>'
+      +'<td style="padding:6px 10px;color:var(--muted);">'+(c.pretension||'—')+'</td>'
     +'</tr>';
   });
 
   html += '</tbody></table></div></div>';
-
   prevPanel.innerHTML = html;
   prevPanel.style.display = 'block';
   if (btnConf) btnConf.style.display = 'inline-block';
+  actualizarContadorImport();
+}
+
+function toggleSelAll(cb) {
+  document.querySelectorAll('.import-sel-cb').forEach(function(el){ el.checked = cb.checked; });
+  actualizarContadorImport();
+}
+
+function actualizarContadorImport() {
+  var cbs = document.querySelectorAll('.import-sel-cb');
+  var sel = Array.from(cbs).filter(function(cb){ return cb.checked; }).length;
+  var lbl = document.getElementById('importCountLabel');
+  if (lbl) lbl.innerHTML = '<b>'+sel+'</b> de <b>'+((window._importCandidatos||[]).length)+'</b> seleccionados para importar';
+  var all = document.getElementById('importSelAll');
+  if (all) { all.checked = (sel===cbs.length); all.indeterminate = (sel>0 && sel<cbs.length); }
 }
 
 function mostrarErrorImport(msg) {
@@ -4226,8 +4287,12 @@ function mostrarErrorImport(msg) {
 async function confirmarImportacion() {
   var puesto = (document.getElementById('importPuesto')||{}).value||'';
   if (!puesto) { toast('Selecciona el puesto de destino'); return; }
-  var candidatos = window._importCandidatos;
-  if (!candidatos || !candidatos.length) { toast('No hay candidatos para importar'); return; }
+  var todosLosCandidatos = window._importCandidatos;
+  if (!todosLosCandidatos || !todosLosCandidatos.length) { toast('No hay candidatos para importar'); return; }
+  var cbs = document.querySelectorAll('.import-sel-cb');
+  var idxSel = Array.from(cbs).filter(function(cb){ return cb.checked; }).map(function(cb){ return parseInt(cb.dataset.idx); });
+  var candidatos = idxSel.map(function(idx){ return todosLosCandidatos[idx]; }).filter(Boolean);
+  if (!candidatos.length) { toast('Selecciona al menos un candidato'); return; }
 
   var btnConf = document.getElementById('btnConfirmarImport');
   if (btnConf) { btnConf.textContent = 'Importando...'; btnConf.disabled = true; }
@@ -4337,7 +4402,12 @@ function renderTablaByPuesto(results) {
 
   return Object.keys(byPuesto).map(function(puesto) {
     var cands = byPuesto[puesto];
-    cands.sort(function(a,b){ return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0); });
+    cands.sort(function(a,b){
+      // visibleLider primero, luego por estrellas descendente
+      if (a.visibleLider && !b.visibleLider) return -1;
+      if (!a.visibleLider && b.visibleLider) return 1;
+      return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
+    });
     var avanzar = cands.filter(function(c){ return c.visibleLider; }).length;
     var avg = Math.round(cands.reduce(function(s,c){ return s+(c.estrellas||c.puntaje||0); },0)/cands.length);
 
