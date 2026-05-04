@@ -1122,35 +1122,44 @@ async function cambiarPasswordDesdeApp() {
 }
 
 // ══════════════════════════════════
-// INIT
+// INIT — detección de modo PRIMERO
 // ══════════════════════════════════
+var _appInitialised = false;
+
+// Detectar modo líder por URL (?rol=lider) — debe ejecutarse PRIMERO
+(function detectarModoURL() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var rol = params.get('rol');
+    if (rol === 'lider') {
+      document.getElementById('loginApp').style.display = 'none';
+      document.getElementById('reclutadorApp').style.display = 'none';
+      document.getElementById('liderApp').style.display = 'block';
+      _appInitialised = true;
+      // Inicializar después de que el DOM esté listo
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function(){ poblarSelectPuestosDefault(); inicializarApp(); });
+      } else {
+        poblarSelectPuestosDefault();
+        inicializarApp();
+      }
+      return;
+    }
+    // Modo normal — mostrar login
+    document.getElementById('loginApp').style.display = 'flex';
+    document.getElementById('loginApp').style.alignItems = 'center';
+    document.getElementById('loginApp').style.justifyContent = 'center';
+    document.getElementById('reclutadorApp').style.display = 'none';
+    document.getElementById('liderApp').style.display = 'none';
+  } catch(e) {
+    // Fallback seguro — mostrar login del reclutador
+    console.error('detectarModoURL error:', e);
+  }
+})();
+
 var candidateUrl = window.location.origin + '/candidato.html';
 var _suEl = document.getElementById('shareUrl'); if (_suEl) _suEl.textContent = candidateUrl;
 poblarSelectPuestosDefault();
-
-var _appInitialised = false;
-
-// Detectar modo líder por URL (?rol=lider)
-(function detectarModoURL() {
-  var params = new URLSearchParams(window.location.search);
-  var rol = params.get('rol');
-  if (rol === 'lider') {
-    // Modo líder: ocultar loginApp, ocultar reclutadorApp, mostrar liderApp directo
-    document.getElementById('loginApp').style.display = 'none';
-    document.getElementById('reclutadorApp').style.display = 'none';
-    document.getElementById('liderApp').style.display = 'block';
-    // Inicializar datos sin mostrar reclutador
-    _appInitialised = true;
-    inicializarApp();
-    return;
-  }
-  // Modo normal — mostrar login
-  document.getElementById('loginApp').style.display = 'flex';
-  document.getElementById('loginApp').style.alignItems = 'center';
-  document.getElementById('loginApp').style.justifyContent = 'center';
-  document.getElementById('reclutadorApp').style.display = 'none';
-  document.getElementById('liderApp').style.display = 'none';
-})();
 
 async function inicializarApp() {
   // Cargar jobs
