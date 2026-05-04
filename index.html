@@ -1131,34 +1131,29 @@ var _appInitialised = false;
   try {
     var params = new URLSearchParams(window.location.search);
     var rol = params.get('rol');
-    console.log('[RecruitAI] detectarModoURL — rol:', rol, '| URL:', window.location.href);
+    // Si viene ?rol=lider, guardar en sessionStorage para persistir al recargar
     if (rol === 'lider') {
-      console.log('[RecruitAI] Modo líder detectado — mostrando liderApp');
-      var loginEl = document.getElementById('loginApp');
-      var reclEl  = document.getElementById('reclutadorApp');
-      var liderEl = document.getElementById('liderApp');
-      console.log('[RecruitAI] Elementos:', !!loginEl, !!reclEl, !!liderEl);
+      sessionStorage.setItem('recruitai_modo', 'lider');
+    }
+    // Verificar también sessionStorage (para recargas sin parámetro)
+    var modo = rol || sessionStorage.getItem('recruitai_modo');
+    if (modo === 'lider') {
       document.getElementById('loginApp').style.display = 'none';
       document.getElementById('reclutadorApp').style.display = 'none';
       document.getElementById('liderApp').style.display = 'block';
       _appInitialised = true;
-      // Inicializar después de que el DOM esté listo
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function(){ poblarSelectPuestosDefault(); inicializarApp(); });
-      } else {
-        poblarSelectPuestosDefault();
-        inicializarApp();
-      }
+      poblarSelectPuestosDefault();
+      inicializarApp();
       return;
     }
-    // Modo normal — mostrar login
+    // Modo normal — mostrar login del reclutador
+    sessionStorage.removeItem('recruitai_modo');
     document.getElementById('loginApp').style.display = 'flex';
     document.getElementById('loginApp').style.alignItems = 'center';
     document.getElementById('loginApp').style.justifyContent = 'center';
     document.getElementById('reclutadorApp').style.display = 'none';
     document.getElementById('liderApp').style.display = 'none';
   } catch(e) {
-    // Fallback seguro — mostrar login del reclutador
     console.error('detectarModoURL error:', e);
   }
 })();
@@ -1467,6 +1462,7 @@ function copiarLinkLider() {
 }
 
 function cerrarSesionLider() {
+  sessionStorage.removeItem('recruitai_modo');
   // Vuelve al login del líder, NO al panel reclutador
   liderDni = null;
   document.getElementById('liderLoginView').style.display = 'flex';
