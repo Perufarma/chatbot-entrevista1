@@ -1125,7 +1125,7 @@ async function cambiarPasswordDesdeApp() {
 // INIT
 // ══════════════════════════════════
 var candidateUrl = window.location.origin + '/candidato.html';
-document.getElementById('shareUrl').textContent = candidateUrl;
+var _suEl = document.getElementById('shareUrl'); if (_suEl) _suEl.textContent = candidateUrl;
 poblarSelectPuestosDefault();
 
 var _appInitialised = false;
