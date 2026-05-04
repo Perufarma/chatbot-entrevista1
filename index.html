@@ -1131,7 +1131,13 @@ var _appInitialised = false;
   try {
     var params = new URLSearchParams(window.location.search);
     var rol = params.get('rol');
+    console.log('[RecruitAI] detectarModoURL — rol:', rol, '| URL:', window.location.href);
     if (rol === 'lider') {
+      console.log('[RecruitAI] Modo líder detectado — mostrando liderApp');
+      var loginEl = document.getElementById('loginApp');
+      var reclEl  = document.getElementById('reclutadorApp');
+      var liderEl = document.getElementById('liderApp');
+      console.log('[RecruitAI] Elementos:', !!loginEl, !!reclEl, !!liderEl);
       document.getElementById('loginApp').style.display = 'none';
       document.getElementById('reclutadorApp').style.display = 'none';
       document.getElementById('liderApp').style.display = 'block';
