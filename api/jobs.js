@@ -12,10 +12,55 @@ export default async function handler(req, res) {
   }
 
   const type = req.query.type;
-  const key  = type === 'results' ? 'results' : type === 'reqs' ? 'reqs' : 'jobs';
+
+  // Mapeo de type a key en Upstash
+  let key;
+  if (type === 'results')        key = 'results';
+  else if (type === 'reqs')      key = 'reqs';
+  else if (type === 'feedbacks') key = 'feedbacks';
+  else if (type === 'config')    key = 'config';
+  else                           key = 'jobs';
+
   const headers = { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' };
 
-  // ── GET ──
+  // ── CONFIG: clave-valor individual (para contraseña y ajustes) ──
+  if (type === 'config') {
+    if (req.method === 'GET') {
+      try {
+        const r = await fetch(`${KV_URL}/get/config`, { headers });
+        const data = await r.json();
+        let cfg = {};
+        if (data.result) {
+          try { cfg = typeof data.result === 'string' ? JSON.parse(data.result) : data.result; } catch(e) {}
+        }
+        return res.status(200).json({ config: cfg });
+      } catch(e) {
+        return res.status(200).json({ config: {} });
+      }
+    }
+    if (req.method === 'POST') {
+      try {
+        // Leer config actual
+        const rg = await fetch(`${KV_URL}/get/config`, { headers });
+        const dg = await rg.json();
+        let cfg = {};
+        if (dg.result) {
+          try { cfg = typeof dg.result === 'string' ? JSON.parse(dg.result) : dg.result; } catch(e) {}
+        }
+        // Actualizar la clave
+        cfg[req.body.key] = req.body.value;
+        const r = await fetch(`${KV_URL}/pipeline`, {
+          method: 'POST', headers,
+          body: JSON.stringify([["SET", "config", JSON.stringify(cfg)]])
+        });
+        return res.status(200).json({ ok: true });
+      } catch(e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+  }
+
+  // GET (arrays: jobs, results, reqs, feedbacks)
   if (req.method === 'GET') {
     try {
       const r    = await fetch(`${KV_URL}/get/${key}`, { headers });
@@ -33,15 +78,13 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── POST ──
+  // POST (arrays)
   if (req.method === 'POST') {
     try {
       const payload = req.body[key];
       if (payload === undefined) {
         return res.status(400).json({ error: `Payload key "${key}" no encontrada` });
       }
-      // Usar pipeline con SET — el value se serializa como string JSON
-      // Formato: [["SET", "key", "value_string"]]
       const valueStr = JSON.stringify(payload);
       const r = await fetch(`${KV_URL}/pipeline`, {
         method: 'POST',
