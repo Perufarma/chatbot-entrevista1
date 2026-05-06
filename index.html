@@ -1958,6 +1958,42 @@ function renderDetalleProcesoSeleccionado(reqId) {
     // ── Línea de tiempo ──
     html += renderLineaTiempo(r, results, fbs, false);
 
+    // ── Banner acción contextual ──
+    var etapaActual = calcularEtapaActual(r, results, fbs);
+    var tienePropuesta = r.propuestasLider && r.propuestasLiderEstado === 'pendiente';
+    var candsPendientes = cands.filter(function(c){
+      return !fbs.find(function(f){ return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto); });
+    }).length;
+    var bannerHtml = '';
+    if (tienePropuesta) {
+      bannerHtml = '<div style="background:#FAEEDA;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:#BA7517;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:500;color:white;">!</div>'
+        +'<div><div style="font-size:12px;font-weight:500;color:#854F0B;margin-bottom:1px;">Propuesta de cambio al perfil enviada</div>'
+          +'<div style="font-size:11px;color:#854F0B;">Pendiente de aprobación por el equipo GTH.</div></div>'
+      +'</div>';
+    } else if (r.estado === 'Pendiente' || etapaActual <= 1) {
+      bannerHtml = '<div style="background:#EEEDFE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:#534AB7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:500;color:white;">i</div>'
+        +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#3C3489;margin-bottom:1px;">Revisa el perfil del puesto antes de iniciar la búsqueda</div>'
+          +'<div style="font-size:11px;color:#534AB7;">Opcional · Tus cambios pasarán por validación del equipo GTH.</div></div>'
+        +'<button onclick="toggleEditPerfilLider('+r.id+')" style="font-size:11px;padding:4px 12px;border-radius:7px;border:0.5px solid #534AB7;background:transparent;color:#534AB7;cursor:pointer;flex-shrink:0;white-space:nowrap;">Revisar perfil</button>'
+      +'</div>';
+    } else if (etapaActual >= 2 && candsPendientes > 0) {
+      bannerHtml = '<div style="background:#EAF3DE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:#3B6D11;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:white;">↓</div>'
+        +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#27500A;margin-bottom:1px;">Tienes '+candsPendientes+' candidato'+(candsPendientes>1?'s':'')+' pendiente'+(candsPendientes>1?'s':'')+' de evaluación</div>'
+          +'<div style="font-size:11px;color:#3B6D11;">Evalúalo'+(candsPendientes>1?'s':'')+' con estrellas para avanzar el proceso.</div></div>'
+      +'</div>';
+    } else if (etapaActual >= 1 && cands.length === 0) {
+      bannerHtml = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--muted);">&#8987;</div>'
+        +'<div><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px;">El equipo GTH está buscando candidatos</div>'
+          +'<div style="font-size:11px;color:var(--muted);">Te notificaremos cuando haya perfiles listos para evaluar.</div></div>'
+      +'</div>';
+    }
+    html += bannerHtml;
+
+
     // ── Candidatos ──
     if (cands.length) {
       html += '<div style="margin-top:20px;">'
@@ -2048,40 +2084,6 @@ function renderLiderCandidatos() {
     var reqsDePuesto = requisiciones.filter(function(r){ return r.puesto && titulo && r.puesto.toLowerCase().trim()===titulo.toLowerCase().trim(); });
     if (!reqsDePuesto.length) return true;
     var lastR = reqsDePuesto[reqsDePuesto.length-1];
-    // ── Banner acción contextual ──
-    var etapaActual = calcularEtapaActual(r, results, fbs);
-    var tienePropuesta = r.propuestasLider && r.propuestasLiderEstado === 'pendiente';
-    var candsPendientes = cands.filter(function(c){
-      return !fbs.find(function(f){ return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto); });
-    }).length;
-    var bannerHtml = '';
-    if (tienePropuesta) {
-      bannerHtml = '<div style="background:#FAEEDA;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
-        +'<div style="width:28px;height:28px;border-radius:50%;background:#BA7517;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:500;color:white;">!</div>'
-        +'<div><div style="font-size:12px;font-weight:500;color:#854F0B;margin-bottom:1px;">Propuesta de cambio al perfil enviada</div>'
-          +'<div style="font-size:11px;color:#854F0B;">Pendiente de aprobación por el equipo GTH.</div></div>'
-      +'</div>';
-    } else if (r.estado === 'Pendiente' || etapaActual === 0) {
-      bannerHtml = '<div style="background:#EEEDFE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
-        +'<div style="width:28px;height:28px;border-radius:50%;background:#534AB7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:500;color:white;">i</div>'
-        +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#3C3489;margin-bottom:1px;">Revisa el perfil del puesto antes de iniciar la búsqueda</div>'
-          +'<div style="font-size:11px;color:#534AB7;">Opcional · Tus cambios pasarán por validación del equipo GTH.</div></div>'
-        +'<button onclick="toggleEditPerfilLider('+r.id+')" style="font-size:11px;padding:4px 12px;border-radius:7px;border:0.5px solid #534AB7;background:transparent;color:#534AB7;cursor:pointer;flex-shrink:0;white-space:nowrap;">Revisar perfil</button>'
-      +'</div>';
-    } else if (etapaActual >= 2 && candsPendientes > 0) {
-      bannerHtml = '<div style="background:#EAF3DE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
-        +'<div style="width:28px;height:28px;border-radius:50%;background:#3B6D11;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:white;">↓</div>'
-        +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#27500A;margin-bottom:1px;">Tienes '+candsPendientes+' candidato'+(candsPendientes>1?'s':'')+' pendiente'+(candsPendientes>1?'s':'')+' de evaluación</div>'
-          +'<div style="font-size:11px;color:#3B6D11;">Evalúalo'+(candsPendientes>1?'s':'')+' con estrellas para avanzar el proceso.</div></div>'
-      +'</div>';
-    } else if (etapaActual >= 1 && cands.length === 0) {
-      bannerHtml = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
-        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--muted);">&#8987;</div>'
-        +'<div><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px;">El equipo GTH está buscando candidatos</div>'
-          +'<div style="font-size:11px;color:var(--muted);">Te notificaremos cuando haya perfiles listos para evaluar.</div></div>'
-      +'</div>';
-    }
-    html += bannerHtml;
 
     var etapas = lastR.etapas || {};
     return !etapas.tramites; // ocultar si ya está en trámites
@@ -3636,48 +3638,119 @@ function elegirDesdComparador(btn) {
 function compararTop(grupoEnc) {
   var grupoKey = decodeURIComponent(grupoEnc);
   var isReqKey = grupoKey.indexOf('req_') === 0;
-  var reqIdCT = isReqKey ? parseInt(grupoKey.replace('req_','')) : null;
-  var puesto = isReqKey ? '' : grupoKey;
-  var cands = results.filter(function(c) {
-    if (reqIdCT) return c.reqId===reqIdCT||c.reqId===parseInt(reqIdCT);
-    return c.puesto && puesto && c.puesto.toLowerCase().trim()===puesto.toLowerCase().trim() && c.visibleLider!==false;
+  var reqIdCT  = isReqKey ? parseInt(grupoKey.replace('req_','')) : null;
+  var puesto   = isReqKey ? '' : grupoKey;
+
+  // Obtener candidatos del grupo
+  var cands = _allResults.filter(function(c) {
+    if (reqIdCT) return c.reqId===reqIdCT || c.reqId===parseInt(reqIdCT);
+    return c.puesto && puesto && c.puesto.toLowerCase().trim()===puesto.toLowerCase().trim();
   });
+
+  // Ordenar por estrellas GTH descendente
   cands.sort(function(a,b){ return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0); });
-  var top = cands.slice(0,3);
-  var dims = ['comunicacion','conocimiento','experiencia','motivacion'];
-  var dimLabels = {'comunicacion':'Comunicación','conocimiento':'Conocimiento técnico','experiencia':'Experiencia','motivacion':'Motivación y fit'};
+  var top = cands.slice(0, 5);
+  if (!top.length) { toast('No hay candidatos para comparar'); return; }
 
-  var cols = top.map(function(c,i){
+  // Obtener nombre del grupo para el título
+  var grupoTitulo = puesto;
+  if (reqIdCT) {
+    var reqCT = requisiciones.find(function(r){ return r.id===reqIdCT; });
+    if (reqCT) grupoTitulo = reqCT.puesto + (reqCT.sede ? ' — ' + reqCT.sede : '');
+  }
+
+  // ── Helper: badge grado académico ──
+  function badgeGrado(g) {
+    if (!g) return '<span style="font-size:11px;color:var(--muted);">—</span>';
+    var bg = '#EEEDFE'; var tx = '#3C3489';
+    if (g.includes('Universitario')||g.includes('Bachiller')) { bg='#EAF3DE'; tx='#3B6D11'; }
+    else if (g.includes('Técnico')) { bg='var(--surface2)'; tx='var(--muted)'; }
+    else if (g.includes('Secundaria')) { bg='#FAEEDA'; tx='#854F0B'; }
+    return '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:'+bg+';color:'+tx+';">'+g.split('/')[0].trim()+'</span>';
+  }
+
+  // ── Helper: disponibilidad badge ──
+  function badgeDisp(d) {
+    if (!d) return '<span style="font-size:11px;color:var(--muted);">—</span>';
+    var isInm = d.toLowerCase().includes('inmed') || d.toLowerCase().includes('inmediata');
+    if (isInm) return '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#EAF3DE;color:#3B6D11;">Inmediata</span>';
+    return '<span style="font-size:11px;color:var(--text);">'+d+'</span>';
+  }
+
+  // ── Badges de posición ──
+  var badgeColors = ['#f4c430','#c0c0c0','#cd7f32','#d9d9d9','#d9d9d9'];
+
+  // ── Generar columnas de candidatos ──
+  var thCols = top.map(function(c, idx) {
     var est = c.estrellas||c.puntaje||0;
-    var badge = i===0?'#f4c430':i===1?'#c0c0c0':'#cd7f32';
-    var header = '<div style="text-align:center;padding-bottom:12px;border-bottom:0.5px solid var(--border2);">'+
-      '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+badge+';color:white;">#'+(i+1)+'</span>'+
-      '<div style="font-size:13px;font-weight:600;margin-top:6px;">'+c.candidato+'</div>'+
-      '<div style="font-size:11px;color:var(--muted);">'+c.puesto+'</div>'+
-      '<div style="margin-top:6px;">'+renderStars(est,starsColor(est))+'</div>'+
-    '</div>';
-    var dimRows = dims.map(function(d){
-      var v = parseInt(c[d])||0;
-      return '<div style="margin-top:10px;">'+
-        '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">'+dimLabels[d]+'</div>'+
-        '<div>'+renderStars(v,starsColor(v))+'</div>'+
-      '</div>';
-    }).join('');
-    var fortalezas = c.fortalezas?'<div style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas:</strong> '+c.fortalezas+'</div>':'';
-    var recom = c.recomendacion?'<div style="margin-top:8px;font-size:11px;background:'+(c.recomendacion==='Avanzar'?'#edf7f1':c.recomendacion==='Considerar'?'#fef8ee':'#fbeaea')+';color:'+(c.recomendacion==='Avanzar'?'#1e5c38':c.recomendacion==='Considerar'?'#7a5000':'#8b1f1f')+';padding:3px 10px;border-radius:6px;display:inline-block;">'+c.recomendacion+'</div>':'';
-    return '<div style="flex:1;min-width:0;padding:0 12px;">'+header+dimRows+fortalezas+recom+'</div>';
-  }).join('<div style="width:0.5px;background:var(--border2);"></div>');
+    var opacity = idx >= 3 ? 'opacity:.65;' : '';
+    return '<th style="padding:10px 8px;text-align:center;border-left:0.5px solid var(--border2);min-width:110px;'+opacity+'">'
+      +'<div style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:'+badgeColors[idx]+';color:'+(idx<3?'#fff':'var(--muted)')+';display:inline-block;margin-bottom:3px;">#'+(idx+1)+'</div>'
+      +'<div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;margin:0 auto;">'+c.candidato+'</div>'
+      +'<div style="font-size:10px;color:var(--muted);margin-top:1px;">'+(c.distrito||'')+'</div>'
+    +'</th>';
+  }).join('');
 
-  var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" id="comparadorOverlay" onclick="if(event.target===this)this.remove()">'+
-    '<div style="background:var(--surface);border-radius:16px;padding:28px;max-width:700px;width:100%;max-height:85vh;overflow-y:auto;">'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'+
-        '<div style="font-size:16px;font-weight:600;">Comparar top '+top.length+' — '+puesto+'</div>'+
-        '<button onclick="document.getElementById(&quot;comparadorOverlay&quot;).remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>'+
-      '</div>'+
-      '<div style="display:flex;gap:0;">'+cols+'</div>'+
-    '</div></div>';
+  // Filas de criterios
+  var filas = [
+    {label: 'Eval. GTH', fn: function(c){ var e=parseInt(c.estrellas||c.puntaje||0); return e?renderStars(e,starsColor(e)):'<span style="color:var(--muted);font-size:11px;">Sin evaluar</span>'; }},
+    {label: 'Grado académico', fn: function(c){ return badgeGrado(c.gradoAcademico); }},
+    {label: 'Experiencia', fn: function(c){ return c.expLaboral?'<span style="font-size:11px;">'+c.expLaboral+'</span>':'<span style="color:var(--muted);font-size:11px;">—</span>'; }},
+    {label: 'Pretensión', fn: function(c){ return c.pretension?'<span style="font-size:11px;">S/ '+c.pretension+'</span>':'<span style="color:var(--muted);font-size:11px;">—</span>'; }},
+    {label: 'Disponibilidad', fn: function(c){ return badgeDisp(c.disponibilidad); }},
+    {label: 'Comentario GTH', fn: function(c){ var cm=c.comentarioReclutador||c.observacion||''; return cm?'<span style="font-size:11px;color:var(--muted);line-height:1.4;display:block;max-width:110px;">'+cm.substring(0,60)+(cm.length>60?'…':'')+'</span>':'<span style="color:var(--muted);font-size:11px;">—</span>'; }},
+    {label: 'CV', fn: function(c){
+      if (c.cvBase64) return '<a href="'+c.cvBase64+'" download="'+(c.cvFileName||c.candidato+'.pdf')+'" style="font-size:11px;color:#3C3489;text-decoration:none;">Ver CV</a>';
+      if (c.cvUrl)    return '<a href="'+c.cvUrl+'" target="_blank" style="font-size:11px;color:#3C3489;text-decoration:none;">Ver CV</a>';
+      return '<span style="color:var(--muted);font-size:11px;">—</span>';
+    }}
+  ];
+
+  var rowsHtml = filas.map(function(fila, ri) {
+    var bg = ri%2===0 ? 'var(--surface)' : 'var(--surface2)';
+    var tds = top.map(function(c, idx) {
+      var opacity = idx >= 3 ? 'opacity:.65;' : '';
+      return '<td style="padding:9px 8px;text-align:center;border-left:0.5px solid var(--border2);'+opacity+'">'+fila.fn(c)+'</td>';
+    }).join('');
+    return '<tr style="border-top:0.5px solid var(--border2);background:'+bg+';">'
+      +'<td style="padding:9px 12px;font-size:11px;color:var(--muted);white-space:nowrap;">'+fila.label+'</td>'
+      +tds
+    +'</tr>';
+  }).join('');
+
+  var html = '<div id="comparadorOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.remove()">'
+    +'<div style="background:var(--surface);border-radius:16px;max-width:760px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">'
+      +'<div style="padding:16px 20px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">'
+        +'<div>'
+          +'<div style="font-size:15px;font-weight:500;">Comparativo top '+top.length+'</div>'
+          +'<div style="font-size:11px;color:var(--muted);">'+grupoTitulo+' \u00b7 ordenados por evaluaci\u00f3n GTH</div>'
+        +'</div>'
+        +'<button onclick="document.getElementById(\'comparadorOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>'
+      +'</div>'
+      +'<div style="overflow:auto;flex:1;">'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+          +'<thead>'
+            +'<tr style="background:var(--surface2);">'
+              +'<th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;width:120px;">Criterio</th>'
+              +thCols
+            +'</tr>'
+          +'</thead>'
+          +'<tbody>'+rowsHtml+'</tbody>'
+        +'</table>'
+      +'</div>'
+      +'<div style="padding:12px 20px;border-top:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">'
+        +'<div style="font-size:11px;color:var(--muted);">Los candidatos atenuados tienen menor puntaje</div>'
+        +'<button onclick="document.getElementById(\'comparadorOverlay\').remove()" class="btn btn-accent" style="font-size:12px;padding:6px 16px;">Cerrar</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+
+  // Eliminar overlay anterior si existe
+  var prev = document.getElementById('comparadorOverlay');
+  if (prev) prev.remove();
   document.body.insertAdjacentHTML('beforeend', html);
 }
+
 
 // ══════════════════════════════════
 // CANDIDATOS POR PUESTO
