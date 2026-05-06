@@ -493,7 +493,10 @@ a[title]{cursor:pointer;}
       </div>
     </div>
 
-    <div id="btnEliminarSelWrap" style="display:none;position:fixed;bottom:24px;right:24px;z-index:500;"><button onclick="eliminarSeleccionados()" style="font-size:13px;font-weight:500;padding:10px 20px;border-radius:10px;border:none;background:#A32D2D;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(163,45,45,.35);">&#128465; Eliminar seleccionados (<span id="btnEliminarSelCount">0</span>)</button></div>
+    <div id="btnEliminarSelWrap" style="display:none;position:fixed;bottom:24px;right:24px;z-index:500;flex-direction:column;gap:8px;align-items:flex-end;">
+      <button onclick="abrirCopiarCandidatos()" style="font-size:13px;font-weight:500;padding:10px 20px;border-radius:10px;border:none;background:#3C3489;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(60,52,137,.35);">&#128260; Copiar a otra solicitud (<span class="btnSelCount">0</span>)</button>
+      <button onclick="eliminarSeleccionados()" style="font-size:13px;font-weight:500;padding:10px 20px;border-radius:10px;border:none;background:#A32D2D;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(163,45,45,.35);">&#128465; Eliminar seleccionados (<span id="btnEliminarSelCount">0</span>)</button>
+    </div>
     <div id="candidatosPorPuesto"></div>
   </div>
   <!-- DASHBOARD -->
@@ -3091,14 +3094,30 @@ function toggleCandManualForm() {
 function poblarSelectPuestos(selId) {
   var sel = document.getElementById(selId);
   if (!sel) return;
-  if (!jobs.length) {
-    sel.innerHTML = '<option value="">No hay puestos configurados aún</option>';
-    return;
+  // Mostrar solicitudes activas con info de puesto+sede+fecha
+  var reqsActivas = requisiciones.filter(function(r){
+    return r.estado !== 'Cubierto' && r.estado !== 'Stand by';
+  });
+  if (reqsActivas.length) {
+    sel.innerHTML = '<option value="">Selecciona el proceso activo...</option>' +
+      reqsActivas.map(function(r){
+        var label = r.puesto + (r.sede ? ' — ' + r.sede : '') + (r.fechaInicio ? ' (' + r.fechaInicio + ')' : '');
+        return '<option value="' + r.puesto + '|||' + r.id + '">' + label + '</option>';
+      }).join('');
+  } else {
+    sel.innerHTML = '<option value="">Selecciona un puesto...</option>' +
+      jobs.map(function(j){
+        return '<option value="' + j.titulo + '|||">' + j.titulo + (j.area ? ' — ' + j.area : '') + '</option>';
+      }).join('');
   }
-  sel.innerHTML = '<option value="">Selecciona un puesto...</option>' + jobs.map(function(j){
-    return '<option value="'+j.titulo+'">'+j.titulo+(j.area?' — '+j.area:'')+'</option>';
-  }).join('');
 }
+
+function parsearValorPuesto(val) {
+  if (!val) return {puesto:'', reqId:null};
+  var parts = val.split('|||');
+  return { puesto: parts[0]||'', reqId: parts[1] ? parseInt(parts[1]) : null };
+}
+
 
 function setCmStar(n) {
   document.getElementById('cm_estrellas').value = n;
@@ -3113,7 +3132,10 @@ function setCmStar(n) {
 async function saveCandidatoManual() {
   var nombre = document.getElementById('cm_nombre').value.trim();
   var dni = document.getElementById('cm_dni').value.trim();
-  var puesto = document.getElementById('cm_puesto').value;
+  var _puestoVal = document.getElementById('cm_puesto').value;
+  var _puestoData = parsearValorPuesto(_puestoVal);
+  var puesto = _puestoData.puesto;
+  var reqIdCand = _puestoData.reqId;
   var comentarios = document.getElementById('cm_comentarios').value.trim();
   var estrellas = parseInt(document.getElementById('cm_estrellas').value)||0;
   var visibleLiderCM = (document.getElementById('cm_visibleLider')||{value:''}).value;
@@ -3137,7 +3159,7 @@ async function saveCandidatoManual() {
   var job = jobs.find(function(j){ return j.titulo===puesto; });
   var entry = {
     fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
-    candidato:nombre, dni:dni, puesto:puesto, area:job?job.area||'':'', gerencia:job?job.gerencia||'':'',
+    candidato:nombre, dni:dni, puesto:puesto, reqId:reqIdCand||null, area:job?job.area||'':'', gerencia:job?job.gerencia||'':'',
     celular:celular, correo:correo, distrito:distrito, gradoAcademico:grado,
     expLaboral:expLaboral, disponibilidad:disponibilidad, remActual:remActual, pretension:pretension,
     estrellas:estrellas, puntaje:estrellas,
@@ -3834,12 +3856,106 @@ function toggleVisibilidad(el) {
 }
 
 
+
+function abrirCopiarCandidatos() {
+  var cbs = Array.from(document.querySelectorAll('.cand-sel-cb:checked'));
+  if (!cbs.length) return;
+  var nombres = cbs.map(function(cb){ return decodeURIComponent(cb.dataset.cand); });
+
+  // Crear overlay selector
+  var overlay = document.createElement('div');
+  overlay.id = 'copiarCandOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+
+  var selectOpts = '';
+  requisiciones.filter(function(r){ return r.estado!=='Cubierto'&&r.estado!=='Stand by'; }).forEach(function(r){
+    var label = r.puesto + (r.sede?' — '+r.sede:'') + (r.fechaInicio?' ('+r.fechaInicio+')':'');
+    selectOpts += '<option value="'+r.puesto+'|||'+r.id+'">'+label+'</option>';
+  });
+
+  overlay.innerHTML = '<div style="background:var(--surface);border-radius:16px;max-width:480px;width:100%;overflow:hidden;">'
+    +'<div style="padding:16px 20px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;">'
+      +'<div style="font-size:15px;font-weight:500;">Copiar '+cbs.length+' candidato'+(cbs.length>1?'s':'')+' a otra solicitud</div>'
+      +'<button onclick="document.getElementById(\'copiarCandOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>'
+    +'</div>'
+    +'<div style="padding:20px;">'
+      +'<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Los candidatos se copiarán manteniendo toda su información. El nuevo líder no los verá hasta que se activen.</div>'
+      +'<div style="font-size:11px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:8px 12px;margin-bottom:14px;max-height:100px;overflow-y:auto;">'
+        + nombres.map(function(n){ return '<div style="padding:2px 0;">'+n+'</div>'; }).join('')
+      +'</div>'
+      +'<label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Proceso destino</label>'
+      +'<select id="copiarDestSel" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);outline:none;">'
+        +'<option value="">Selecciona el proceso destino...</option>'
+        + selectOpts
+      +'</select>'
+    +'</div>'
+    +'<div style="padding:14px 20px;border-top:0.5px solid var(--border2);display:flex;gap:8px;justify-content:flex-end;">'
+      +'<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'copiarCandOverlay\').remove()">Cancelar</button>'
+      +'<button class="btn btn-accent" onclick="confirmarCopiarCandidatos()" style="font-size:13px;padding:8px 20px;">Copiar candidatos</button>'
+    +'</div>'
+  +'</div>';
+
+  document.body.appendChild(overlay);
+}
+
+function confirmarCopiarCandidatos() {
+  var destVal = (document.getElementById('copiarDestSel')||{}).value||'';
+  if (!destVal) { toast('Selecciona el proceso destino'); return; }
+  var destData = parsearValorPuesto(destVal);
+  if (!destData.puesto) { toast('Proceso destino inválido'); return; }
+
+  var reqDest = destData.reqId ? requisiciones.find(function(r){ return r.id===destData.reqId; }) : null;
+  var cbs = Array.from(document.querySelectorAll('.cand-sel-cb:checked'));
+  var copiados = 0;
+
+  cbs.forEach(function(cb) {
+    var cand   = decodeURIComponent(cb.dataset.cand);
+    var pOrig  = decodeURIComponent(cb.dataset.puesto);
+    var orig   = _allResults.find(function(r){ return r.candidato===cand && r.puesto===pOrig; });
+    if (!orig) return;
+    // Verificar que no exista ya en el destino
+    var yaExiste = _allResults.find(function(r){
+      return r.candidato===cand &&
+        (destData.reqId ? r.reqId===destData.reqId : r.puesto===destData.puesto);
+    });
+    if (yaExiste) return;
+    // Crear copia con nuevo puesto/reqId y visibleLider=false
+    var copia = Object.assign({}, orig, {
+      puesto:       destData.puesto,
+      reqId:        destData.reqId || null,
+      area:         reqDest ? (reqDest.area||orig.area) : orig.area,
+      gerencia:     reqDest ? (reqDest.gerencia||orig.gerencia) : orig.gerencia,
+      visibleLider: false,
+      estrellas:    orig.estrellas || 0,
+      fecha:        new Date().toLocaleDateString('es-PE'),
+      hora:         new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+      fuente:       orig.fuente || 'copiado'
+    });
+    _allResults.push(copia);
+    copiados++;
+  });
+
+  if (!copiados) { toast('No se copiaron candidatos (ya existen en el destino)'); return; }
+  localStorage.setItem('rresults', JSON.stringify(_allResults));
+  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+
+  // Limpiar checkboxes y cerrar
+  document.querySelectorAll('.cand-sel-cb').forEach(function(cb){ cb.checked=false; });
+  actualizarBtnEliminarSel();
+  document.getElementById('copiarCandOverlay').remove();
+  filtrarCandidatos();
+  toast('✓ '+copiados+' candidato'+(copiados>1?'s':'')+' copiado'+(copiados>1?'s':'')+' a '+destData.puesto);
+}
+
 function actualizarBtnEliminarSel() {
   var cbs = document.querySelectorAll('.cand-sel-cb:checked');
   var wrap = document.getElementById('btnEliminarSelWrap');
   var count = document.getElementById('btnEliminarSelCount');
-  if (wrap) wrap.style.display = cbs.length > 0 ? 'block' : 'none';
+  if (wrap) wrap.style.display = cbs.length > 0 ? 'flex' : 'none';
   if (count) count.textContent = cbs.length;
+  // Actualizar también el conteo del botón copiar
+  document.querySelectorAll('.btnSelCount').forEach(function(el){ el.textContent = cbs.length; });
 }
 
 function eliminarSeleccionados() {
@@ -4228,7 +4344,7 @@ function abrirImportador(plataforma) {
       // Selector de puesto
       +'<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Asignar al puesto *</label>'
       +'<select id="importPuesto" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--surface);">'
-      +'<option value="">Selecciona el puesto...</option>'
+      +'<option value="">Selecciona el proceso activo...</option>'
       +jobs.map(function(j){ return '<option value="'+j.titulo+'">'+j.titulo+'</option>'; }).join('')
       +'</select></div>'
 
@@ -4250,6 +4366,8 @@ function abrirImportador(plataforma) {
   +'</div>';
 
   document.body.appendChild(overlay);
+  // Poblar selector con solicitudes activas
+  setTimeout(function(){ poblarSelectPuestos('importPuesto'); }, 50);
 }
 
 function cerrarImportador() {
@@ -4649,8 +4767,12 @@ function mostrarErrorImport(msg) {
 }
 
 async function confirmarImportacion() {
-  var puesto = (document.getElementById('importPuesto')||{}).value||'';
-  if (!puesto) { toast('Selecciona el puesto de destino'); return; }
+  var _importVal = (document.getElementById('importPuesto')||{}).value||'';
+  if (!_importVal) { toast('Selecciona el proceso de destino'); return; }
+  var _importData = parsearValorPuesto(_importVal);
+  var puesto = _importData.puesto;
+  var reqIdImport = _importData.reqId;
+  if (!puesto) { toast('Selecciona el proceso de destino'); return; }
   var todosLosCandidatos = window._importCandidatos;
   if (!todosLosCandidatos || !todosLosCandidatos.length) { toast('No hay candidatos para importar'); return; }
   var cbs = document.querySelectorAll('.import-sel-cb');
@@ -4690,7 +4812,7 @@ async function confirmarImportacion() {
       distrito: c.distrito||'', gradoAcademico: c.gradoAcademico||'',
       expLaboral: c.expLaboral||'', disponibilidad: c.disponibilidad||'',
       pretension: c.pretension||'', remActual: c.remActual||'',
-      puesto: puesto, area: area, gerencia: gerencia,
+      puesto: puesto, reqId: reqIdImport||null, area: area, gerencia: gerencia,
       estrellas: 0, puntaje: 0,
       nivel: 'Sin evaluar',
       fuente: c.fuente||'importado',
@@ -4761,11 +4883,25 @@ function filtrarCandidatos() {
 }
 
 function renderTablaByPuesto(results) {
-  var byPuesto = {};
-  results.forEach(function(r){ if(!byPuesto[r.puesto]) byPuesto[r.puesto]=[]; byPuesto[r.puesto].push(r); });
+  // Agrupar por reqId (solicitud específica) si existe, sino por puesto
+  var byGrupo = {};
+  results.forEach(function(r){
+    var key = r.reqId ? ('req_'+r.reqId) : ('puesto_'+r.puesto);
+    if (!byGrupo[key]) byGrupo[key] = [];
+    byGrupo[key].push(r);
+  });
 
-  return Object.keys(byPuesto).map(function(puesto) {
-    var cands = byPuesto[puesto];
+  return Object.keys(byGrupo).map(function(grupoKey) {
+    var cands = byGrupo[grupoKey];
+    var firstCand = cands[0];
+    // Obtener info de la solicitud si existe reqId
+    var req = firstCand.reqId ? requisiciones.find(function(r){ return r.id===firstCand.reqId; }) : null;
+    var puesto = req ? (req.puesto||firstCand.puesto) : firstCand.puesto;
+    var grupoLabel = puesto;
+    if (req) {
+      var extras = [req.sede, req.nivel ? req.nivel.split('/')[0].trim() : null, req.fechaInicio].filter(Boolean);
+      if (extras.length) grupoLabel += ' <span style="font-size:11px;font-weight:400;color:var(--muted);">' + extras.join(' · ') + '</span>';
+    }
     cands.sort(function(a,b){
       // visibleLider primero, luego por estrellas descendente
       if (a.visibleLider && !b.visibleLider) return -1;
@@ -4886,17 +5022,18 @@ function renderTablaByPuesto(results) {
       +'<div style="margin-left:auto;"></div>'
     +'</div>';
 
+    var grupoId = encodeURIComponent(grupoKey);
     return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
       +'<div data-puesto-id="'+encodeURIComponent(puesto)+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
         +'<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
-          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+encodeURIComponent(puesto)+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
+          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
           +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
           +'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' con el l\u00edder</span>'
           +'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>'
         +'</div>'
       +'</div>'
-      +'<div id="cands_'+encodeURIComponent(puesto)+'" style="display:none;">'
+      +'<div id="cands_'+grupoId+'" style="display:none;">'
         +colHeader
         +rows
       +'</div>'
