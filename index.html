@@ -3511,14 +3511,22 @@ function editarPerfilPDF(perfilStr) {
 // ══════════════════════════════════
 // COMPARAR TOP 3 — PORTAL LÍDER
 // ══════════════════════════════════
-function compararTopLider(puestoEnc) {
-  var puesto = decodeURIComponent(puestoEnc);
+function compararTopLider(grupoEnc) {
+  var grupoKey = decodeURIComponent(grupoEnc);
+  // grupoEnc puede ser nombre de puesto O "req_123"
+  var isReqKey = grupoKey.indexOf('req_') === 0;
+  var reqIdComp = isReqKey ? parseInt(grupoKey.replace('req_','')) : null;
+  var puestoComp = isReqKey ? '' : grupoKey;
+  // Si viene como nombre de puesto, puede que grupoEnc sea el puesto limpio
+  if (!isReqKey) puestoComp = grupoKey;
+  var puesto = puestoComp;
 
   // Candidatos visibles para este líder con feedback del líder
   var candsPuesto = _allResults.filter(function(c){
-    return c.puesto && puesto && c.puesto.toLowerCase().trim()===puesto.toLowerCase().trim() && c.visibleLider;
+    if (c.visibleLider===false) return false;
+    if (reqIdComp) return c.reqId===reqIdComp || c.reqId===parseInt(reqIdComp);
+    return c.puesto && puesto && c.puesto.toLowerCase().trim()===puesto.toLowerCase().trim();
   });
-
   // Calcular promedio combinado GTH + líder por candidato
   var conProm = candsPuesto.map(function(c) {
     var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto; });
@@ -3625,10 +3633,15 @@ function elegirDesdComparador(btn) {
   }
 }
 
-function compararTop(puestoEnc) {
-  var puesto = decodeURIComponent(puestoEnc);
-  var results = JSON.parse(localStorage.getItem('rresults')||'[]');
-  var cands = results.filter(function(c){ return c.puesto && puesto && c.puesto.toLowerCase().trim()===puesto.toLowerCase().trim(); });
+function compararTop(grupoEnc) {
+  var grupoKey = decodeURIComponent(grupoEnc);
+  var isReqKey = grupoKey.indexOf('req_') === 0;
+  var reqIdCT = isReqKey ? parseInt(grupoKey.replace('req_','')) : null;
+  var puesto = isReqKey ? '' : grupoKey;
+  var cands = results.filter(function(c) {
+    if (reqIdCT) return c.reqId===reqIdCT||c.reqId===parseInt(reqIdCT);
+    return c.puesto && puesto && c.puesto.toLowerCase().trim()===puesto.toLowerCase().trim() && c.visibleLider!==false;
+  });
   cands.sort(function(a,b){ return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0); });
   var top = cands.slice(0,3);
   var dims = ['comunicacion','conocimiento','experiencia','motivacion'];
@@ -5220,7 +5233,7 @@ function renderTablaByPuesto(results) {
 
     var grupoId = encodeURIComponent(grupoKey);
     return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
-      +'<div data-puesto-id="'+encodeURIComponent(puesto)+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
+      +'<div data-puesto-id="'+grupoId+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
         +'<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
