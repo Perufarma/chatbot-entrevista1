@@ -2977,25 +2977,23 @@ function toggleHC(btn) {
   if (!req) return;
   var etapas = Object.assign({}, req.etapas||{});
   var wasOk = !!etapas.hc;
-  var overlay = document.getElementById('jobDetailOverlay');
   if (wasOk) {
     mostrarPopupMotivo('¿Por qué se revierte la confirmación de HC?', function(motivo) {
       delete etapas.hc;
       actualizarEtapasReq(reqId, etapas, 'HC revertido: '+motivo, null);
-      if (overlay) overlay.remove();
-      if (jobId) setTimeout(function(){ abrirDetalleJob(jobId); }, 150);
+      if (jobId) setTimeout(function(){ abrirDetallePanelJob(jobId); }, 200);
     });
   } else {
     etapas.hc = new Date().toLocaleDateString('es-PE');
     // Al confirmar HC → pasar automáticamente a "En proceso"
+    var numId2 = parseInt(reqId)||reqId;
     requisiciones = requisiciones.map(function(r){
-      if (r.id===numId||r.id===reqId) return Object.assign({},r,{estado:'En proceso'});
+      if (r.id===numId2||r.id===reqId) return Object.assign({},r,{estado:'En proceso'});
       return r;
     });
     actualizarEtapasReq(reqId, etapas, 'HC y Presupuesto confirmado — estado: En proceso', null);
-    if (overlay) overlay.remove();
     toast('HC confirmado ✓ — proceso En proceso');
-    if (jobId) setTimeout(function(){ abrirDetalleJob(jobId); }, 150);
+    if (jobId) setTimeout(function(){ abrirDetallePanelJob(jobId); }, 200);
   }
 }
 
@@ -4043,9 +4041,6 @@ function abrirDetallePanelJob(id) {
 
     // ── Cuerpo scrollable ──
     + '<div style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;">'
-
-      // HC
-      + renderHCBoton(lastReq)
 
       // Historial solicitudes
       + renderHistorialSolicitudes(id)
