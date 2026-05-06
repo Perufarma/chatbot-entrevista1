@@ -3403,7 +3403,7 @@ function procesarPDF(file) {
     if (statusEl) statusEl.textContent = 'Analizando con IA...';
 
     // Llamar a la API de Claude con el PDF
-    fetch('https://api.anthropic.com/v1/messages', {
+    fetch('/api/anthropic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
