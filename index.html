@@ -419,8 +419,8 @@ a[title]{cursor:pointer;}
         <option value="">Todas las gerencias</option>
       </select>
       <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:200px;">
-        <option value="">Todos los puestos</option>
-      </select>
+      <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;">
+        <option value="">Todas las solicitudes</option>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
         <input type="checkbox" id="soloVisibles" onchange="filtrarCandidatos()" style="accent-color:var(--accent2);">
         Solo visibles para el l&iacute;der
@@ -1292,27 +1292,32 @@ function toggleEditPerfilLider(reqId) {
 
 function guardarPerfilLider(reqId) {
   var numId = parseInt(reqId)||reqId;
-  var sedeEl    = document.getElementById('liderEditSede_'+reqId);
-  var horEl     = document.getElementById('liderEditHorario_'+reqId);
-  var funcEl    = document.getElementById('liderEditFunciones_'+reqId);
-  var reqMinEl  = null; // campo eliminado — minimos se sincroniza desde funciones
-  var desEl     = document.getElementById('liderEditDeseables_'+reqId);
-  var updates = {};
-  if (sedeEl)   updates.sede = sedeEl.value.trim();
-  if (horEl)    updates.horario = horEl.value.trim();
-  if (funcEl) { updates.funciones = funcEl.value.trim(); updates.minimos = funcEl.value.trim(); }
-  if (desEl)    updates.liderDeseables = desEl.value.trim();
+  var sedeEl = document.getElementById('liderEditSede_'+reqId);
+  var horEl  = document.getElementById('liderEditHorario_'+reqId);
+  var funcEl = document.getElementById('liderEditFunciones_'+reqId);
+  var desEl  = document.getElementById('liderEditDeseables_'+reqId);
+  var propuesta = {};
+  if (sedeEl)  propuesta.sede = sedeEl.value.trim();
+  if (horEl)   propuesta.horario = horEl.value.trim();
+  if (funcEl)  propuesta.funciones = funcEl.value.trim();
+  if (desEl)   propuesta.liderDeseables = desEl.value.trim();
+  // Guardar como propuesta pendiente — NO aplicar directo
   requisiciones = requisiciones.map(function(r) {
     if (r.id===numId || String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora) ? r.bitacora.slice() : [];
       bita.push({ fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}), msg:'Perfil del puesto editado por el líder', candidato:'' });
-      return Object.assign({}, r, updates, { bitacora: bita });
+      return Object.assign({}, r, {
+        propuestasLider: propuesta,
+        propuestasLiderFecha: new Date().toISOString(),
+        propuestasLiderEstado: 'pendiente',
+        bitacora: bita
+      });
     }
     return r;
   });
   localStorage.setItem('rreqs', JSON.stringify(requisiciones));
   syncReqsToServer(requisiciones);
-  toast('Perfil del puesto actualizado ✓');
+  toast('Propuesta enviada al equipo GTH ✓ — pendiente de aprobación');
   toggleEditPerfilLider(reqId);
   renderDetalleProcesoSeleccionado(numId);
 }
@@ -1630,7 +1635,12 @@ function renderLiderKpis() {
   safeFetch('/api/jobs?type=results').then(function(d){
     var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
-    var misCands = results.filter(function(c){return c.visibleLider!==false&&(misPuestos.length===0||misPuestos.indexOf((c.puesto||'').toLowerCase().trim())!==-1);});
+    var misReqIds = misReqs.map(function(r){return r.id;});
+    var misCands = results.filter(function(c){
+      if (c.visibleLider===false) return false;
+      if (c.reqId) return misReqIds.indexOf(c.reqId)!==-1||misReqIds.indexOf(parseInt(c.reqId))!==-1;
+      return misPuestos.length===0||misPuestos.indexOf(c.puesto)!==-1;
+    });
     var pendientes = misCands.filter(function(c){return !fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
     var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/5*100);});
     var avanceProm = avances.length ? Math.round(avances.reduce(function(s,v){return s+v;},0)/avances.length) : 0;
@@ -1663,7 +1673,12 @@ function renderLiderDashboard() {
     // ── Datos base ──
     var activos = misReqs.filter(function(r){return r.estado!=='Cubierto' && r.estado!=='Stand by';});
     var cubiertos = misReqs.filter(function(r){return r.estado==='Cubierto';});
-    var misCands = results.filter(function(c){return c.visibleLider!==false&&(misPuestos.length===0||misPuestos.indexOf((c.puesto||'').toLowerCase().trim())!==-1);});
+    var misReqIds = misReqs.map(function(r){return r.id;});
+    var misCands = results.filter(function(c){
+      if (c.visibleLider===false) return false;
+      if (c.reqId) return misReqIds.indexOf(c.reqId)!==-1||misReqIds.indexOf(parseInt(c.reqId))!==-1;
+      return misPuestos.length===0||misPuestos.indexOf(c.puesto)!==-1;
+    });
     var evaluados = misCands.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
     var pendientes = misCands.filter(function(c){return !fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
     var aptos = evaluados.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&f.apto===true;});});
@@ -1852,14 +1867,10 @@ function renderLiderProcesos() {
     return;
   }
 
-  // Agrupar por puesto — mostrar solo la req más reciente por puesto
-  var byPuesto = {};
-  misReqs.forEach(function(r){
-    if (!byPuesto[r.puesto] || r.id > byPuesto[r.puesto].id) byPuesto[r.puesto] = r;
-  });
-  var reqsUnicas = Object.values(byPuesto).sort(function(a,b){ return b.id-a.id; });
+  // Mostrar CADA solicitud independiente (no agrupar por puesto)
+  var reqsOrdenadas = misReqs.slice().sort(function(a,b){ return b.id-a.id; });
 
-  panel.innerHTML = reqsUnicas.map(function(r) {
+  panel.innerHTML = reqsOrdenadas.map(function(r) {
     var isSelected = window._liderProcesoSeleccionado === r.id || String(window._liderProcesoSeleccionado) === String(r.id);
     var c = r.estado==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:r.estado==='Cubierto'?{bg:'#EEEDFE',t:'#3C3489'}:{bg:'#fef8ee',t:'#7a5000'};
     var hoy = new Date();
@@ -1869,7 +1880,7 @@ function renderLiderProcesos() {
     var tooltipTxt = plazoTotal ? 'SLA total: '+plazoTotal+' días (excl. trámites)\nEtapa: '+(r.etapas?Object.keys(r.etapas).length:0)+' de 6 completadas' : '';
     var vence = dias !== null ? (dias<=0?'<span style="font-size:10px;color:#c0392b;font-weight:600;" title="'+tooltipTxt+'">VENCIDO</span>':dias<=7?'<span style="font-size:10px;color:#c0392b;" title="'+tooltipTxt+'">'+dias+'d</span>':'<span style="font-size:10px;color:var(--muted);" title="'+tooltipTxt+'">'+dias+'d</span>') : '';
     return '<div data-req-id="'+r.id+'" onclick="seleccionarProceso(this.dataset.reqId)" style="border-radius:8px;padding:10px 12px;cursor:pointer;border:0.5px solid '+(isSelected?'var(--accent2)':'transparent')+';background:'+(isSelected?'var(--surface)':'transparent')+';transition:background .1s;">'
-      + '<div style="font-size:13px;font-weight:500;margin-bottom:4px;color:var(--text);">'+r.puesto+chevronSvg()+'</div>'
+      + '<div style="font-size:13px;font-weight:500;margin-bottom:2px;color:var(--text);">'+r.puesto+chevronSvg()+'</div>'      + (r.sede||r.fechaInicio ? '<div style="font-size:10px;color:var(--muted);margin-bottom:3px;">'+(r.sede||'')+(r.sede&&r.fechaInicio?' · ':'')+('Inicio: '+(r.fechaInicio||''))+'</div>' : '')
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">'
         + '<span style="font-size:10px;color:var(--muted);">'+(r.area||'')+'</span>'
         + '<div style="display:flex;align-items:center;gap:4px;">'
@@ -1900,9 +1911,13 @@ function renderDetalleProcesoSeleccionado(reqId) {
     var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
 
-    // Candidatos de este proceso
-    var misPuestos = [r.puesto];
-    var cands = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim() && c.visibleLider!==false; });
+    // Candidatos de este proceso — por reqId si existe, sino por puesto
+    var cands = results.filter(function(c){
+      if (c.visibleLider===false) return false;
+      if (c.reqId && r.id) return c.reqId === r.id || c.reqId === parseInt(r.id);
+      // Fallback: match por puesto (candidatos legacy sin reqId)
+      return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim();
+    });
 
     // ── Header ──
     var c = {bg:'#fef8ee',t:'#7a5000'};
@@ -1911,14 +1926,19 @@ function renderDetalleProcesoSeleccionado(reqId) {
 
     var job = jobs.find(function(j){ return j.id===r.jobId||j.titulo===r.puesto; });
     var descPuesto = (job&&job.desc)||r.funciones||'';
-    var html = '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">'
-      + '<div><div style="font-size:18px;font-weight:600;letter-spacing:-.02em;">'+r.puesto+'</div>'
-      + '<div style="font-size:12px;color:var(--muted);margin-top:3px;">'+(r.area||'')+(r.sede?' · '+r.sede:'')+(r.horario?' · '+r.horario:'')+' · Límite: '+r.fechaLimite+'</div></div>'
-      + '<div style="display:flex;gap:8px;align-items:center;">'
-        + '<button onclick="copiarLinkLider()" style="font-size:11px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:#EEEDFE;color:#3C3489;cursor:pointer;white-space:nowrap;">&#128279; Link líder</button>'
-        + '<button onclick="toggleEditPerfilLider('+r.id+')" style="font-size:11px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;white-space:nowrap;">&#9998; Editar perfil</button>'
-        + '<span style="font-size:12px;font-weight:500;padding:4px 12px;border-radius:8px;background:'+c.bg+';color:'+c.t+';">'+r.estado+'</span>'
-      + '</div></div>'
+    var html = '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:3px;">'+r.puesto+'</div>'
+        + '<div style="font-size:12px;color:var(--muted);">'
+          +(r.area||'')+(r.sede?' · '+r.sede:'')+(r.horario?' · '+r.horario:'')+(r.nivel?' · '+r.nivel:'')+(r.fechaLimite?' · Límite: '+r.fechaLimite:'')
+        + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'
+
+        + '<button onclick="toggleEditPerfilLider('+r.id+')" style="font-size:11px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">&#9998; Editar perfil</button>'
+        + '<span style="font-size:12px;font-weight:500;padding:4px 12px;border-radius:8px;white-space:nowrap;background:'+c.bg+';color:'+c.t+';">'+r.estado+'</span>'
+      + '</div>'
+    + '</div>'
       + '<div id="editPerfilLider_'+r.id+'" style="display:none;background:var(--bg);border:0.5px solid var(--border2);border-radius:10px;padding:16px;margin-bottom:16px;">'
         + '<div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:12px;">Editar perfil del puesto</div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
@@ -2028,6 +2048,41 @@ function renderLiderCandidatos() {
     var reqsDePuesto = requisiciones.filter(function(r){ return r.puesto && titulo && r.puesto.toLowerCase().trim()===titulo.toLowerCase().trim(); });
     if (!reqsDePuesto.length) return true;
     var lastR = reqsDePuesto[reqsDePuesto.length-1];
+    // ── Banner acción contextual ──
+    var etapaActual = calcularEtapaActual(r, results, fbs);
+    var tienePropuesta = r.propuestasLider && r.propuestasLiderEstado === 'pendiente';
+    var candsPendientes = cands.filter(function(c){
+      return !fbs.find(function(f){ return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto); });
+    }).length;
+    var bannerHtml = '';
+    if (tienePropuesta) {
+      bannerHtml = '<div style="background:#FAEEDA;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:#BA7517;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:500;color:white;">!</div>'
+        +'<div><div style="font-size:12px;font-weight:500;color:#854F0B;margin-bottom:1px;">Propuesta de cambio al perfil enviada</div>'
+          +'<div style="font-size:11px;color:#854F0B;">Pendiente de aprobación por el equipo GTH.</div></div>'
+      +'</div>';
+    } else if (r.estado === 'Pendiente' || etapaActual === 0) {
+      bannerHtml = '<div style="background:#EEEDFE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:#534AB7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:500;color:white;">i</div>'
+        +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#3C3489;margin-bottom:1px;">Revisa el perfil del puesto antes de iniciar la búsqueda</div>'
+          +'<div style="font-size:11px;color:#534AB7;">Opcional · Tus cambios pasarán por validación del equipo GTH.</div></div>'
+        +'<button onclick="toggleEditPerfilLider('+r.id+')" style="font-size:11px;padding:4px 12px;border-radius:7px;border:0.5px solid #534AB7;background:transparent;color:#534AB7;cursor:pointer;flex-shrink:0;white-space:nowrap;">Revisar perfil</button>'
+      +'</div>';
+    } else if (etapaActual >= 2 && candsPendientes > 0) {
+      bannerHtml = '<div style="background:#EAF3DE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:#3B6D11;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:white;">↓</div>'
+        +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#27500A;margin-bottom:1px;">Tienes '+candsPendientes+' candidato'+(candsPendientes>1?'s':'')+' pendiente'+(candsPendientes>1?'s':'')+' de evaluación</div>'
+          +'<div style="font-size:11px;color:#3B6D11;">Evalúalo'+(candsPendientes>1?'s':'')+' con estrellas para avanzar el proceso.</div></div>'
+      +'</div>';
+    } else if (etapaActual >= 1 && cands.length === 0) {
+      bannerHtml = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--muted);">&#8987;</div>'
+        +'<div><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px;">El equipo GTH está buscando candidatos</div>'
+          +'<div style="font-size:11px;color:var(--muted);">Te notificaremos cuando haya perfiles listos para evaluar.</div></div>'
+      +'</div>';
+    }
+    html += bannerHtml;
+
     var etapas = lastR.etapas || {};
     return !etapas.tramites; // ocultar si ya está en trámites
   });
@@ -2819,7 +2874,9 @@ function renderJobsList() {
       var sBg = isCubierto?'#EEEDFE':isActivo?'#E1F5EE':'var(--surface2)';
       var sTx = isCubierto?'#3C3489':isActivo?'#0F6E56':'var(--muted)';
       var isStandBy = estadoReq === 'Stand by';
-      var sLabel = isActivo?'Activo':isCubierto?'Cubierto':isStandBy?'Stand by':estadoReq==='Pendiente'?'Pendiente':'Sin proceso';
+      var tienePropPend = jobReqs.some(function(r){ return r.propuestasLider && r.propuestasLiderEstado==='pendiente'; });
+      var sLabel = tienePropPend?'Cambio pendiente':isActivo?'Activo':isCubierto?'Cubierto':isStandBy?'Stand by':estadoReq==='Pendiente'?'Pendiente':'Sin proceso';
+      if (tienePropPend) { sBg = '#FAEEDA'; sTx = '#854F0B'; }
       var sBg = isCubierto?'#EEEDFE':isActivo?'#E1F5EE':isStandBy?'#FAEEDA':'var(--surface2)';
       var sTx = isCubierto?'#3C3489':isActivo?'#0F6E56':isStandBy?'#854F0B':'var(--muted)';
       html += '<div data-job-id="'+j.id+'" id="puesto-row-'+j.id+'"'
@@ -2950,6 +3007,120 @@ function abrirDetalleJob(id) {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 // ── Renderizar sección HC en modal ──
+
+function renderAlertaPropuestaLider(jobId) {
+  var reqs = requisiciones.filter(function(r){
+    return (r.jobId===jobId||r.id===jobId) && r.propuestasLider && r.propuestasLiderEstado==='pendiente';
+  });
+  if (!reqs.length) return '';
+  var html = '';
+  reqs.forEach(function(r){
+    var p = r.propuestasLider;
+    var req = r;
+    var reqOrig = {funciones:r.funciones||r.minimos||'', liderDeseables:r.liderDeseables||'', sede:r.sede||'', horario:r.horario||''};
+    html += '<div style="background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:10px;padding:14px 16px;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+        +'<div style="font-size:12px;font-weight:500;color:#854F0B;">⚠ El líder propuso cambios al perfil — '+new Date(r.propuestasLiderFecha||Date.now()).toLocaleDateString('es-PE')+'</div>'
+      +'</div>';
+    // Mostrar diferencias
+    if (p.funciones && p.funciones !== reqOrig.funciones) {
+      html += '<div style="margin-bottom:8px;">'
+        +'<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Funciones y Requisitos</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+          +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+reqOrig.funciones+'</div>'
+          +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;line-height:1.5;">'+p.funciones+'</div>'
+        +'</div></div>';
+    }
+    if (p.liderDeseables && p.liderDeseables !== reqOrig.liderDeseables) {
+      html += '<div style="margin-bottom:8px;">'
+        +'<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Requisitos deseables</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+          +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+(reqOrig.liderDeseables||'—')+'</div>'
+          +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;line-height:1.5;">'+p.liderDeseables+'</div>'
+        +'</div></div>';
+    }
+    if (p.sede && p.sede !== reqOrig.sede) {
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
+        +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:6px 10px;border-radius:6px;text-decoration:line-through;">Sede: '+reqOrig.sede+'</div>'
+        +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:6px 10px;border-radius:6px;">Sede: '+p.sede+'</div>'
+      +'</div>';
+    }
+    // Botones de decisión
+    html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">'
+      +'<button class="btn btn-secondary btn-sm" data-req-id="'+r.id+'" onclick="rechazarCambiosLider(this.dataset.reqId)" style="font-size:11px;">&#10005; Rechazar</button>'
+      +'<button class="btn btn-secondary btn-sm" data-req-id="'+r.id+'" onclick="aprobarCambiosLider(this.dataset.reqId,\'solicitud\')" style="font-size:11px;border-color:#3B6D11;color:#3B6D11;">&#10003; Aplicar solo a esta solicitud</button>'
+      +'<button class="btn btn-accent btn-sm" data-req-id="'+r.id+'" onclick="aprobarCambiosLider(this.dataset.reqId,\'ambos\')" style="font-size:11px;">&#10003; Aplicar a solicitud y perfil base</button>'
+    +'</div>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function aprobarCambiosLider(reqId, scope) {
+  var numId = parseInt(reqId)||reqId;
+  var req = requisiciones.find(function(r){ return r.id===numId||String(r.id)===String(reqId); });
+  if (!req || !req.propuestasLider) return;
+  var p = req.propuestasLider;
+  var updates = {};
+  if (p.funciones)       { updates.funciones = p.funciones; updates.minimos = p.funciones; }
+  if (p.liderDeseables)  updates.liderDeseables = p.liderDeseables;
+  if (p.sede)            updates.sede = p.sede;
+  if (p.horario)         updates.horario = p.horario;
+
+  // Aplicar a la solicitud
+  requisiciones = requisiciones.map(function(r){
+    if (r.id===numId||String(r.id)===String(reqId)) {
+      var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),texto:'Cambios del líder aprobados por GTH'+(scope==='ambos'?' (aplicados a solicitud y perfil base)':' (solo esta solicitud)')});
+      return Object.assign({},r,updates,{propuestasLider:null,propuestasLiderEstado:'aprobado',bitacora:bita});
+    }
+    return r;
+  });
+
+  // Si scope === 'ambos', aplicar también al perfil base del job
+  if (scope === 'ambos') {
+    var jobUpdates = {};
+    if (p.funciones)      { jobUpdates.desc = p.funciones; jobUpdates.funciones = p.funciones; jobUpdates.minimos = p.funciones; }
+    if (p.liderDeseables) { jobUpdates.deseables = p.liderDeseables; jobUpdates.liderDeseables = p.liderDeseables; }
+    jobs = jobs.map(function(j){
+      if (j.id===req.jobId||j.titulo===req.puesto) return Object.assign({},j,jobUpdates);
+      return j;
+    });
+    localStorage.setItem('rjobs', JSON.stringify(jobs));
+    syncJobsToServer(jobs);
+  }
+
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  renderJobsList();
+  var jid = req.jobId || jobs.find(function(j){return j.titulo===req.puesto;});
+  jid = typeof jid === 'object' ? jid.id : jid;
+  if (jid) setTimeout(function(){ abrirDetallePanelJob(jid); }, 150);
+  toast('Cambios aprobados ✓'+(scope==='ambos'?' — aplicados a solicitud y perfil base':''));
+}
+
+function rechazarCambiosLider(reqId) {
+  var numId = parseInt(reqId)||reqId;
+  if (!confirm('¿Rechazar los cambios propuestos por el líder? El perfil original se mantiene.')) return;
+  requisiciones = requisiciones.map(function(r){
+    if (r.id===numId||String(r.id)===String(reqId)) {
+      var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),texto:'Cambios del líder rechazados por GTH'});
+      return Object.assign({},r,{propuestasLider:null,propuestasLiderEstado:'rechazado',bitacora:bita});
+    }
+    return r;
+  });
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  renderJobsList();
+  var req = requisiciones.find(function(r){return r.id===numId;});
+  if (req) {
+    var jid = req.jobId || (jobs.find(function(j){return j.titulo===req.puesto;})||{}).id;
+    if (jid) setTimeout(function(){ abrirDetallePanelJob(jid); }, 150);
+  }
+  toast('Cambios rechazados');
+}
+
 function renderHCBoton(lastReq) {
   var seccion = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;border:0.5px solid var(--border2);">'
     + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Acciones del proceso</div>'
@@ -4158,6 +4329,9 @@ function abrirDetallePanelJob(id) {
     // ── Cuerpo scrollable ──
     + '<div style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;">'
 
+      // Alerta propuesta del líder pendiente
+      + renderAlertaPropuestaLider(id)
+
       // Historial solicitudes
       + renderHistorialSolicitudes(id)
 
@@ -4268,7 +4442,9 @@ function renderCatalogoPuestos() {
       var sBg = isCubierto?'#EEEDFE':isActivo?'#E1F5EE':'var(--surface2)';
       var sTx = isCubierto?'#3C3489':isActivo?'#0F6E56':'var(--muted)';
       var isStandBy = estadoReq === 'Stand by';
-      var sLabel = isActivo?'Activo':isCubierto?'Cubierto':isStandBy?'Stand by':estadoReq==='Pendiente'?'Pendiente':'Sin proceso';
+      var tienePropPend = jobReqs.some(function(r){ return r.propuestasLider && r.propuestasLiderEstado==='pendiente'; });
+      var sLabel = tienePropPend?'Cambio pendiente':isActivo?'Activo':isCubierto?'Cubierto':isStandBy?'Stand by':estadoReq==='Pendiente'?'Pendiente':'Sin proceso';
+      if (tienePropPend) { sBg = '#FAEEDA'; sTx = '#854F0B'; }
       var sBg = isCubierto?'#EEEDFE':isActivo?'#E1F5EE':isStandBy?'#FAEEDA':'var(--surface2)';
       var sTx = isCubierto?'#3C3489':isActivo?'#0F6E56':isStandBy?'#854F0B':'var(--muted)';
       html += '<div data-job-id="'+j.id+'" id="puesto-row-'+j.id+'"'
@@ -4847,12 +5023,21 @@ function filtrarGerenciaCand() {
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
   var selPuesto = document.getElementById('filtroPuesto_cand');
   if (selPuesto) {
-    var puestosFiltrados = _allResults
-      .filter(function(r){ return !gerencia || (r.gerencia && r.gerencia===gerencia); })
-      .map(function(r){ return r.puesto; })
-      .filter(function(v,i,a){ return a.indexOf(v)===i; });
-    selPuesto.innerHTML = '<option value="">Todos los puestos</option>'
-      + puestosFiltrados.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+    // Poblar con solicitudes activas filtradas por gerencia
+    var reqsActF = requisiciones.filter(function(r){
+      return r.estado!=='Cubierto' && r.estado!=='Stand by' && (!gerencia || r.gerencia===gerencia);
+    });
+    var optsF = '<option value="">Todas las solicitudes</option>';
+    reqsActF.forEach(function(r){
+      var label = r.puesto+(r.sede?' — '+r.sede:'')+(r.fechaInicio?' ('+r.fechaInicio+')':'');
+      optsF += '<option value="'+r.puesto+'|||'+r.id+'">'+label+'</option>';
+    });
+    // Fallback: candidatos sin solicitud activa
+    var pConReq = new Set(reqsActF.map(function(r){return r.puesto;}));
+    _allResults.filter(function(r){ return (!gerencia||r.gerencia===gerencia)&&r.puesto&&!pConReq.has(r.puesto); })
+      .map(function(r){return r.puesto;}).filter(function(v,i,a){return a.indexOf(v)===i;})
+      .forEach(function(p){ optsF += '<option value="'+p+'|||">' + p + '</option>'; });
+    selPuesto.innerHTML = optsF;
   }
   filtrarCandidatos();
 }
@@ -4862,12 +5047,23 @@ function filtrarCandidatos() {
   var panelCand = document.getElementById('tab-candidatos');
   if (panelCand && !panelCand.classList.contains('active')) return;
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
-  var puesto = (document.getElementById('filtroPuesto_cand')||{}).value||'';
+  var puestoVal = (document.getElementById('filtroPuesto_cand')||{}).value||'';
+  var puestoData = parsearValorPuesto(puestoVal);
   var soloVis = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
   var busqDni = ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
   var filtered = _allResults.filter(function(r) {
     if (gerencia && r.gerencia!==gerencia) return false;
-    if (puesto && r.puesto && puesto && r.puesto.toLowerCase().trim()!==puesto.toLowerCase().trim()) return false;
+    // Filtrar por solicitud específica (reqId) o por puesto como fallback
+    if (puestoData.puesto) {
+      if (puestoData.reqId) {
+        // Tiene reqId: filtrar por reqId exacto O por puesto si el candidato no tiene reqId (legacy)
+        if (r.reqId && r.reqId !== puestoData.reqId) return false;
+        if (!r.reqId && r.puesto && r.puesto.toLowerCase().trim() !== puestoData.puesto.toLowerCase().trim()) return false;
+      } else {
+        // Solo puesto: filtrar por nombre del puesto
+        if (r.puesto && r.puesto.toLowerCase().trim() !== puestoData.puesto.toLowerCase().trim()) return false;
+      }
+    }
     if (soloVis && !r.visibleLider) return false;
     if (busqDni) {
       var hayNombre = r.candidato && r.candidato.toLowerCase().includes(busqDni);
@@ -5156,27 +5352,40 @@ function renderFeedbackPanel() {
   var misPuestos = liderDni ? jobs.filter(function(j){return j.dniLider===liderDni;}).map(function(j){return j.titulo;}) : [];
   safeFetch('/api/jobs?type=results').then(function(d){
     var results=(d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
-    var avanzar=results.filter(function(r){ return r.visibleLider!==false&&(misPuestos.length===0||misPuestos.indexOf(r.puesto)!==-1); });
+    var misReqIds = misReqs.map(function(r){return r.id;});
+    var avanzar=results.filter(function(r){
+      if (r.visibleLider===false) return false;
+      if (r.reqId) return misReqIds.indexOf(r.reqId)!==-1 || misReqIds.indexOf(parseInt(r.reqId))!==-1;
+      return misPuestos.length===0 || misPuestos.indexOf(r.puesto)!==-1;
+    });
     if (!avanzar.length){ panel.innerHTML='<div class="empty-state" style="padding:20px 0;">No hay candidatos asignados a tus puestos aún.</div>'; return; }
 
-    // Agrupar por puesto
-    var byPuesto = {};
+    // Agrupar por reqId (solicitud específica) si existe, sino por puesto
+    var byGrupoFb = {};
     avanzar.forEach(function(c){
-      if (!byPuesto[c.puesto]) byPuesto[c.puesto] = [];
-      byPuesto[c.puesto].push(c);
+      var key = c.reqId ? ('req_'+c.reqId) : ('puesto_'+c.puesto);
+      if (!byGrupoFb[key]) byGrupoFb[key] = [];
+      byGrupoFb[key].push(c);
     });
 
-    panel.innerHTML = Object.keys(byPuesto).map(function(puesto){
-      var cands = byPuesto[puesto];
+    panel.innerHTML = Object.keys(byGrupoFb).map(function(grupoFbKey){
+      var cands = byGrupoFb[grupoFbKey];
+      var firstC = cands[0];
+      var reqFb = firstC.reqId ? requisiciones.find(function(r){return r.id===firstC.reqId||r.id===parseInt(firstC.reqId);}) : null;
+      var puesto = reqFb ? (reqFb.puesto||firstC.puesto) : firstC.puesto;
+      var grupoTitulo = puesto;
+      if (reqFb && (reqFb.sede||reqFb.fechaInicio)) {
+        grupoTitulo += '<span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px;">'+(reqFb.sede||'')+(reqFb.sede&&reqFb.fechaInicio?' · ':'')+( reqFb.fechaInicio||'')+'</span>';
+      }
       // Resumen del grupo
       var evaluados = cands.filter(function(c){
-        return feedbacks.some(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
+        return feedbacks.some(function(f){return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto);});
       }).length;
       var promedioGrupo = 0;
       if (evaluados) {
         var totalEst = 0;
         cands.forEach(function(c){
-          var fb = feedbacks.find(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
+          var fb = feedbacks.find(function(f){return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto);});
           if (fb) totalEst += Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4);
         });
         promedioGrupo = Math.round(totalEst/evaluados);
@@ -5184,8 +5393,8 @@ function renderFeedbackPanel() {
 
       // Cards de candidatos
       var cardsHtml = cands.map(function(c){
-        var fb=feedbacks.find(function(f){return f.candidato===c.candidato&&f.puesto===c.puesto;});
-        var key=(c.candidato+'_'+c.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
+        var fb=feedbacks.find(function(f){return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto);});
+        var key=(c.candidato+'_'+(c.reqId||c.puesto)).replace(/[^a-zA-Z0-9_]/g,'_');
         var fbData=fbTemp[key]||fb||{};
         var campos=[{id:'comunicacion',label:'Comunicación'},{id:'tecnico',label:'Conocimiento técnico'},{id:'actitud',label:'Actitud y fit cultural'},{id:'resultados',label:'Orientación a resultados'}];
         var vencido = false; // Sin límite de tiempo
@@ -5274,7 +5483,7 @@ function renderFeedbackPanel() {
         // Header del grupo
         +'<div style="padding:14px 18px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
           +'<div>'
-            +'<div style="font-size:14px;font-weight:600;">'+puesto+'</div>'
+            +'<div style="font-size:14px;font-weight:600;">'+grupoTitulo+'</div>'
             +'<div style="font-size:12px;color:var(--muted);margin-top:2px;">'+cands.length+' candidato'+(cands.length!==1?'s':'')+' para avanzar</div>'
           +'</div>'
           +'<div style="display:flex;align-items:center;gap:10px;">'
@@ -5303,7 +5512,8 @@ function marcarApto(cand, puesto, valor) {
   var comentEl = document.getElementById('fb_'+key);
   var comentario = comentEl ? comentEl.value : '';
   var existing = feedbacks.find(function(f){ return f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim(); });
-  var fb = Object.assign({candidato:cDec,puesto:pDec,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false}, fbTemp[key]||{});
+  var reqIdFb = cand ? (cand.reqId||null) : null;
+    var fb = Object.assign({candidato:cDec,puesto:pDec,reqId:reqIdFb,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false}, fbTemp[key]||{});
   if (existing) { fb.elegido = existing.elegido; }
   fb.apto = valor;
   feedbacks = feedbacks.filter(function(f){ return !(f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim()); });
