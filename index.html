@@ -2601,12 +2601,22 @@ function renderHistorialSolicitudes(jobId) {
     var snap = r.perfilSnapshot || {};
     var snapId = 'snap_' + r.id;
     var h = '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;">';
-    h += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">';
-    h += '<div style="font-size:12px;font-weight:500;">Solicitud del '+r.fecha+' &mdash; Inicio: '+(r.fechaInicio||'—')+' &mdash; Límite: '+r.fechaLimite+'</div>';
-    h += '<div style="display:flex;align-items:center;gap:6px;">';
+    var etapasReq = r.etapas || {}; var hcOkReq = !!etapasReq.hc;
+    h += '<div style="margin-bottom:6px;">';
+    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">';
+    h += '<div style="font-size:12px;font-weight:500;">Solicitud del '+r.fecha+'</div>';
     h += '<span style="font-size:11px;background:'+c.bg+';color:'+c.t+';padding:2px 8px;border-radius:6px;">'+r.estado+'</span>';
-    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;background:none;border:0.5px solid var(--border2);border-radius:5px;padding:3px 8px;cursor:pointer;color:var(--muted);">Ver perfil usado</button>';
-    h += '</div></div>';
+    if (!hcOkReq && (r.estado==='Pendiente'||r.estado==='En proceso')) {
+      h += '<button class="btn btn-primary btn-sm" data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="toggleHC(this)" style="font-size:11px;padding:3px 10px;">✓ Confirmar HC</button>';
+    } else if (hcOkReq) {
+      h += '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">✓ HC confirmado</span>';
+    }
+    h += '</div>';
+    h += '<div style="font-size:11px;color:var(--muted);">Inicio: '+(r.fechaInicio||'—')+' · Límite: '+(r.fechaLimite||'—')+(r.sede?' · '+r.sede:'')+(r.nivel?' · '+r.nivel:'')+'</div>';
+    h += '</div>';
+    h += '<div style="display:flex;align-items:center;gap:6px;">';
+    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:5px;padding:2px 8px;color:var(--muted);cursor:pointer;">Ver perfil usado</button>';
+    h += '</div>';
     // Snapshot colapsable
     h += '<div id="'+snapId+'" style="display:none;margin-top:8px;padding:10px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border2);font-size:12px;color:var(--muted);line-height:1.6;">';
     h += '<div style="font-size:11px;font-weight:500;color:var(--accent2);margin-bottom:6px;">&#128247; Perfil exacto usado en esta solicitud ('+( snap.fechaSnapshot||r.fecha)+')</div>';
@@ -5076,6 +5086,10 @@ function renderFeedbackPanel() {
             var bodyHtml = '<div id="fbbody_'+key+'" style="display:'+(collapsed?'none':'flex')+';flex-direction:column;gap:12px;padding:16px;border-top:0.5px solid var(--border2);">';
             bodyHtml += c.fortalezas ? '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5;"><strong style="color:var(--text);">Fortalezas IA:</strong> '+c.fortalezas+'</div>' : '';
             // Evaluación GTH (estrellas + comentario del reclutador — solo lectura para el líder)
+            // Disponibilidad del candidato
+            if (c.disponibilidad) bodyHtml += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">&#128337; Disponibilidad: <strong style="color:var(--text);">'+c.disponibilidad+'</strong></div>';
+
+
             var estrellaRec = parseInt(c.estrellas||c.puntaje||0)||0;
             var comentRec   = c.comentarioReclutador || c.observacion || '';
             if (estrellaRec > 0 || comentRec) {
