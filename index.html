@@ -1398,24 +1398,29 @@ var _appInitialised = false;
   try {
     var params = new URLSearchParams(window.location.search);
     var rol = params.get('rol');
-    // Si viene ?rol=lider, guardar en sessionStorage para persistir al recargar
+    // Si viene ?rol=lider, guardar en AMBOS storages
     if (rol === 'lider') {
       sessionStorage.setItem('recruitai_modo', 'lider');
+      localStorage.setItem('recruitai_modo', 'lider');
     }
-    // Verificar también sessionStorage (para recargas sin parámetro)
-    var modo = rol || sessionStorage.getItem('recruitai_modo');
+    // Verificar sessionStorage primero, luego localStorage como fallback
+    var modo = rol
+      || sessionStorage.getItem('recruitai_modo')
+      || localStorage.getItem('recruitai_modo');
+
     if (modo === 'lider') {
       document.getElementById('loginApp').style.display = 'none';
       document.getElementById('reclutadorApp').style.display = 'none';
       document.getElementById('liderApp').style.display = 'block';
       _appInitialised = true;
-      poblarSelectPuestosDefault();
-  cargarConfigOnboarding();
+      try { poblarSelectPuestosDefault(); } catch(e2){}
+      try { cargarConfigOnboarding(); } catch(e2){}
       inicializarApp();
       return;
     }
-    // Modo normal — mostrar login del reclutador
+    // Modo normal — limpiar ambos storages y mostrar login
     sessionStorage.removeItem('recruitai_modo');
+    localStorage.removeItem('recruitai_modo');
     document.getElementById('loginApp').style.display = 'flex';
     document.getElementById('loginApp').style.alignItems = 'center';
     document.getElementById('loginApp').style.justifyContent = 'center';
@@ -1736,6 +1741,7 @@ function copiarLinkLider() {
 
 function cerrarSesionLider() {
   sessionStorage.removeItem('recruitai_modo');
+  localStorage.removeItem('recruitai_modo');
   // Vuelve al login del líder, NO al panel reclutador
   liderDni = null;
   document.getElementById('liderLoginView').style.display = 'flex';
