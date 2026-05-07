@@ -540,6 +540,7 @@ a[title]{cursor:pointer;}
       </select>
       <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;">
         <option value="">Todas las solicitudes</option>
+      </select>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
         <input type="checkbox" id="soloVisibles" onchange="filtrarCandidatos()" style="accent-color:var(--accent2);">
         Solo visibles para el l&iacute;der
@@ -5735,6 +5736,7 @@ function renderTablaByPuesto(results) {
       }) : [];
       var alertaBadge = histPrev.length ? '<button onclick="verHistoricoCandidato(\''+encodeURIComponent(c.candidato)+'\',\''+dniCand+'\')" style="font-size:10px;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:8px;padding:2px 8px;cursor:pointer;white-space:nowrap;">&#128203; Ya postuló '+histPrev.length+' vez'+(histPrev.length>1?'es':'')+' antes</button>' : '';
       var alertaPrev = histPrev.length ? histPrev[0] : null; // compatibilidad
+      var cEnc = encodeURIComponent(c.candidato);
       var pEnc = encodeURIComponent(c.puesto);
       var rowId = 'exp_'+cEnc+'_'+pEnc;
 
