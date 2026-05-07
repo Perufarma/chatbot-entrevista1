@@ -1539,6 +1539,12 @@ function showTab(id, btn) {
 // LÍDER — navegación
 // ══════════════════════════════════
 function mostrarLider() {
+  // Guardar modo líder en storage Y actualizar URL para persistir en recargas
+  sessionStorage.setItem('recruitai_modo', 'lider');
+  localStorage.setItem('recruitai_modo', 'lider');
+  if (window.history && window.history.pushState) {
+    window.history.pushState({}, '', '?rol=lider');
+  }
   document.getElementById('reclutadorApp').style.display = 'none';
   document.getElementById('liderApp').style.display = 'block';
   document.getElementById('liderLoginView').style.display = 'flex';
