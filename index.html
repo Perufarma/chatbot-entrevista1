@@ -1398,13 +1398,15 @@ var _appInitialised = false;
   try {
     var params = new URLSearchParams(window.location.search);
     var rol = params.get('rol');
-    // Si viene ?rol=lider, guardar en AMBOS storages
-    if (rol === 'lider') {
+    var esRutaLider = window.location.pathname === '/lider' || window.location.pathname === '/lider/';
+    // Si viene ?rol=lider o ruta /lider, guardar en AMBOS storages
+    if (rol === 'lider' || esRutaLider) {
       sessionStorage.setItem('recruitai_modo', 'lider');
       localStorage.setItem('recruitai_modo', 'lider');
     }
-    // Verificar sessionStorage primero, luego localStorage como fallback
-    var modo = rol
+    // Verificar ruta, parámetro y storages
+    var modo = esRutaLider ? 'lider'
+      : rol
       || sessionStorage.getItem('recruitai_modo')
       || localStorage.getItem('recruitai_modo');
 
@@ -1727,7 +1729,7 @@ function verificarRecordatorioBackup() {
 // LINK DEL LÍDER
 // ══════════════════════════════════
 function copiarLinkLider() {
-  var url = window.location.origin + window.location.pathname + '?rol=lider';
+  var url = window.location.origin + '/lider';
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(function() {
       toast('Link del líder copiado ✓ — ' + url);
@@ -3017,7 +3019,7 @@ function saveJobAndCreateReq() {
     puesto:titulo, area:jobData.area||'', sede:sede||'',
     nivel:PLAZOS[nivel]?PLAZOS[nivel].label:nivel,
     fechaLimite:fechaLimiteDate.toLocaleDateString('es-PE'),
-    funciones:minimos||'', link:(window.location.origin+window.location.pathname+'?rol=lider')
+    funciones:minimos||'', link:(window.location.origin+'/lider')
   });
   var cuerpo = encodeURIComponent(cuerpoBase);
 
@@ -6177,7 +6179,26 @@ function switchCandTab(tab) {
 function renderBancoTalentos() {
   var panel = document.getElementById('bancotalentos-content');
   if (!panel) return;
-  var talentos = _allResults.filter(function(r){ return r.enBancoTalentos; });
+  // Banco de talentos: candidatos marcados explícitamente O con buena evaluación del líder sin ser elegidos
+  var talentos = _allResults.filter(function(r){
+    if (r.enBancoTalentos) return true;
+    // Candidatos con feedback del líder, promedio ≥ 3 estrellas, no elegidos
+    var fb = feedbacks.find(function(f){
+      return f.candidato===r.candidato && (r.reqId?f.reqId===r.reqId:f.puesto===r.puesto);
+    });
+    if (!fb) return false;
+    if (fb.elegido) return false; // ya ingresó, no incluir
+    var prom = ((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4;
+    return prom >= 3;
+  });
+  // Eliminar duplicados por DNI — quedarse con el más reciente
+  var vistosDni = {};
+  talentos = talentos.filter(function(r){
+    var key = r.dni || r.candidato;
+    if (vistosDni[key]) return false;
+    vistosDni[key] = true;
+    return true;
+  });
   talentos.sort(function(a,b){ return (b.estrellas||0)-(a.estrellas||0); });
 
   if (!talentos.length) {
