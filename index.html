@@ -4164,9 +4164,10 @@ function elegirDesdComparador(btn) {
 
 function compararTop(grupoEnc) {
   var grupoKey = decodeURIComponent(grupoEnc);
-  var isReqKey = grupoKey.indexOf('req_') === 0;
-  var reqIdCT  = isReqKey ? parseInt(grupoKey.replace('req_','')) : null;
-  var puesto   = isReqKey ? '' : grupoKey;
+  var isReqKey  = grupoKey.indexOf('req_') === 0;
+  var isPuesto  = grupoKey.indexOf('puesto_') === 0;
+  var reqIdCT   = isReqKey ? parseInt(grupoKey.replace('req_','')) : null;
+  var puesto    = isReqKey ? '' : (isPuesto ? grupoKey.replace('puesto_','') : grupoKey);
 
   // Asegurar que _allResults esté cargado
   if (!_allResults || !_allResults.length) {
@@ -5712,7 +5713,8 @@ function renderTablaByPuesto(results) {
     var firstCand = cands[0];
     // Obtener info de la solicitud si existe reqId
     var req = firstCand.reqId ? requisiciones.find(function(r){ return r.id===firstCand.reqId; }) : null;
-    var puesto = req ? (req.puesto||firstCand.puesto) : firstCand.puesto;
+    var grupoKeyClean = grupoKey.indexOf('puesto_')===0 ? grupoKey.replace('puesto_','') : grupoKey;
+    var puesto = req ? (req.puesto||firstCand.puesto) : (firstCand.puesto||grupoKeyClean);
     var grupoLabel = puesto || '(sin puesto)';
     try {
       if (req) {
@@ -5849,7 +5851,7 @@ function renderTablaByPuesto(results) {
       +'<div data-puesto-id="'+grupoId+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
         +'<div style="font-size:13px;font-weight:500;">'+grupoLabel+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
-          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
+          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top 5</button>':'')
           +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
           +'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' con el l\u00edder</span>'
           +'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>'
