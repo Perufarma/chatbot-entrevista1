@@ -1410,6 +1410,8 @@ var _appInitialised = false;
       || sessionStorage.getItem('recruitai_modo')
       || localStorage.getItem('recruitai_modo');
 
+    console.log('[RecruitAI] modo:', modo, '| pathname:', window.location.pathname, '| ss:', sessionStorage.getItem('recruitai_modo'), '| ls:', localStorage.getItem('recruitai_modo'));
+
     if (modo === 'lider') {
       document.getElementById('loginApp').style.display = 'none';
       document.getElementById('reclutadorApp').style.display = 'none';
