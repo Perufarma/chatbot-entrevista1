@@ -538,7 +538,6 @@ a[title]{cursor:pointer;}
       <select id="filtroGerencia_cand" onchange="filtrarGerenciaCand()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:160px;">
         <option value="">Todas las gerencias</option>
       </select>
-      <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:200px;">
       <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;">
         <option value="">Todas las solicitudes</option>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
@@ -1787,7 +1786,15 @@ var ETAPAS = [
 // ══════════════════════════════════
 
 function exportarReportes() {
-  if (typeof XLSX === 'undefined') { toast('Cargando exportador...'); return; }
+  if (typeof XLSX === 'undefined') {
+    toast('Cargando exportador...');
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = function(){ exportarReportes(); };
+    script.onerror = function(){ toast('Error al cargar el exportador'); };
+    document.head.appendChild(script);
+    return;
+  }
 
   var wb = XLSX.utils.book_new();
   var ahora = new Date().toLocaleDateString('es-PE');
