@@ -4177,7 +4177,11 @@ function compararTop(grupoEnc) {
   // Ordenar por estrellas GTH descendente
   cands.sort(function(a,b){ return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0); });
   var top = cands.slice(0, 5);
-  if (!top.length) { toast('No hay candidatos para comparar'); return; }
+  if (!top.length) { 
+    toast('No hay candidatos en este grupo ('+cands.length+' total, '+top.length+' top)');
+    console.log('compararTop debug:', {grupoKey:grupoKey, isReqKey:isReqKey, reqIdCT:reqIdCT, puesto:puesto, allResultsLen:_allResults.length, candsLen:cands.length});
+    return; 
+  }
 
   // Obtener nombre del grupo para el título
   var grupoTitulo = puesto;
@@ -5842,7 +5846,7 @@ function renderTablaByPuesto(results) {
     var grupoId = encodeURIComponent(grupoKey);
     return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
       +'<div data-puesto-id="'+grupoId+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
-        +'<div style="font-size:13px;font-weight:500;">'+puesto+'</div>'
+        +'<div style="font-size:13px;font-weight:500;">'+grupoLabel+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top '+(cands.length>=3?3:cands.length)+'</button>':'')
           +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
