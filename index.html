@@ -4168,6 +4168,11 @@ function compararTop(grupoEnc) {
   var reqIdCT  = isReqKey ? parseInt(grupoKey.replace('req_','')) : null;
   var puesto   = isReqKey ? '' : grupoKey;
 
+  // Asegurar que _allResults esté cargado
+  if (!_allResults || !_allResults.length) {
+    _allResults = JSON.parse(localStorage.getItem('rresults')||'[]');
+  }
+
   // Obtener candidatos del grupo
   var cands = _allResults.filter(function(c) {
     if (reqIdCT) return c.reqId===reqIdCT || c.reqId===parseInt(reqIdCT);
@@ -4177,11 +4182,7 @@ function compararTop(grupoEnc) {
   // Ordenar por estrellas GTH descendente
   cands.sort(function(a,b){ return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0); });
   var top = cands.slice(0, 5);
-  if (!top.length) { 
-    toast('No hay candidatos en este grupo ('+cands.length+' total, '+top.length+' top)');
-    console.log('compararTop debug:', {grupoKey:grupoKey, isReqKey:isReqKey, reqIdCT:reqIdCT, puesto:puesto, allResultsLen:_allResults.length, candsLen:cands.length});
-    return; 
-  }
+  if (!top.length) { toast('No hay candidatos para comparar'); return; }
 
   // Obtener nombre del grupo para el título
   var grupoTitulo = puesto;
