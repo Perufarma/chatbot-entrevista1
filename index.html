@@ -4806,7 +4806,10 @@ function poblarFiltrosCandidatos(results) {
   var gerencias = [...new Set([...gerenciasReqs,...gerenciasJobs,..._allResults.map(function(r){return r.gerencia||'';}).filter(Boolean)])].sort();
   var curGer = selGer.value; var curPuesto = selPuesto.value;
   selGer.innerHTML = '<option value="">Todas las gerencias</option>'+gerencias.map(function(g){ return '<option value="'+g+'"'+(g===curGer?' selected':'')+'>'+g+'</option>'; }).join('');
-  selPuesto.innerHTML = '<option value="">Todos los puestos</option>'+puestos.map(function(p){ return '<option value="'+p+'"'+(p===curPuesto?' selected':'')+'>'+p+'</option>'; }).join('');
+  // filtroPuesto_cand se puebla por filtrarGerenciaCand con solicitudes activas
+  if (!selPuesto.options.length || selPuesto.options[0].value === '') {
+    filtrarGerenciaCand();
+  }
 }
 
 function toggleExpandCand(rowId) {
@@ -5704,11 +5707,13 @@ function renderTablaByPuesto(results) {
     // Obtener info de la solicitud si existe reqId
     var req = firstCand.reqId ? requisiciones.find(function(r){ return r.id===firstCand.reqId; }) : null;
     var puesto = req ? (req.puesto||firstCand.puesto) : firstCand.puesto;
-    var grupoLabel = puesto;
-    if (req) {
-      var extras = [req.sede, req.nivel ? req.nivel.split('/')[0].trim() : null, req.fechaInicio].filter(Boolean);
-      if (extras.length) grupoLabel += ' <span style="font-size:11px;font-weight:400;color:var(--muted);">' + extras.join(' · ') + '</span>';
-    }
+    var grupoLabel = puesto || '(sin puesto)';
+    try {
+      if (req) {
+        var extras = [req.sede, req.nivel ? req.nivel.split('/')[0].trim() : null, req.fechaInicio].filter(Boolean);
+        if (extras.length) grupoLabel += ' <span style="font-size:11px;font-weight:400;color:var(--muted);">' + extras.join(' · ') + '</span>';
+      }
+    } catch(e) { console.warn('grupoLabel error:', e); }
     cands.sort(function(a,b){
       // visibleLider primero, luego por estrellas descendente
       if (a.visibleLider && !b.visibleLider) return -1;
@@ -5869,8 +5874,16 @@ function renderCandidatosPorPuesto() {
     if (!Array.isArray(_allResults)) _allResults = [];
     if (!_allResults.length) { panel.innerHTML='<div class="empty-state">A&uacute;n no hay candidatos.<br>Usa <strong>+ Candidato manual</strong> para agregar uno o comparte el link de entrevista.</div>'; return; }
     poblarFiltrosCandidatos(_allResults);
-    panel.innerHTML = renderTablaByPuesto(_allResults);
-  }).catch(function(){ panel.innerHTML='<div style="font-size:13px;color:var(--muted);">Error al cargar.</div>'; });
+    try {
+      panel.innerHTML = renderTablaByPuesto(_allResults);
+    } catch(e) {
+      console.error('renderTablaByPuesto error:', e);
+      panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al renderizar candidatos: '+e.message+'</div>';
+    }
+  }).catch(function(err){ 
+    console.error('Error cargando candidatos:', err);
+    panel.innerHTML='<div style="font-size:13px;color:var(--muted);">Error al cargar. Verifica la conexión.</div>'; 
+  });
 }
 
 // ══════════════════════════════════
