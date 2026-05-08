@@ -5716,9 +5716,32 @@ function renderTablaByPuesto(results) {
   // Agrupar por reqId (solicitud específica) si existe, sino por puesto
   var byGrupo = {};
   results.forEach(function(r){
-    var key = r.reqId ? ('req_'+r.reqId) : ('puesto_'+r.puesto);
-    if (!byGrupo[key]) byGrupo[key] = [];
-    byGrupo[key].push(r);
+    if (r.reqId) {
+      // Candidato con reqId — asignar a su solicitud
+      var key = 'req_'+r.reqId;
+      if (!byGrupo[key]) byGrupo[key] = [];
+      byGrupo[key].push(r);
+    } else {
+      // Candidato legacy sin reqId — buscar solicitudes del mismo puesto
+      var reqsDelPuesto = requisiciones.filter(function(q){
+        return q.puesto && r.puesto && q.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim();
+      });
+      if (reqsDelPuesto.length === 0) {
+        // Sin solicitudes — agrupar por nombre del puesto
+        var key = 'puesto_'+r.puesto;
+        if (!byGrupo[key]) byGrupo[key] = [];
+        byGrupo[key].push(r);
+      } else {
+        // 1 o más solicitudes — aparecer en todas
+        reqsDelPuesto.forEach(function(q){
+          var key = 'req_'+q.id;
+          if (!byGrupo[key]) byGrupo[key] = [];
+          // Evitar duplicados
+          var yaEsta = byGrupo[key].find(function(x){ return x.candidato===r.candidato && x.dni===r.dni; });
+          if (!yaEsta) byGrupo[key].push(r);
+        });
+      }
+    }
   });
 
   return Object.keys(byGrupo).map(function(grupoKey) {
