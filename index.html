@@ -523,7 +523,7 @@ a[title]{cursor:pointer;}
   <!-- CANDIDATOS -->
   <div class="panel" id="tab-candidatos">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:16px;flex-wrap:wrap;">
-      <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real</div></div>
+      <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real &nbsp;<span id="candidatosContador" style="font-size:11px;color:var(--muted);"></span></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="renderCandidatosPorPuesto()" title="Recarga la lista de candidatos desde el servidor">Actualizar</button>
         <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Descargar Excel</button>
@@ -5898,6 +5898,7 @@ function renderTablaByPuesto(results) {
         +rows
       +'</div>'
     +'</div>';
+  var _cEl=document.getElementById('candidatosContador'); if(_cEl) _cEl.textContent=results.length+' candidato'+(results.length!==1?'s':'')+' en total';
   }).join('');
 }
 
@@ -5918,6 +5919,10 @@ function renderCandidatosPorPuesto() {
     _allResults = (d&&d.results)?d.results:(JSON.parse(localStorage.getItem('rresults')||'[]'));
     if (!Array.isArray(_allResults)) _allResults = [];
     if (!_allResults.length) { panel.innerHTML='<div class="empty-state">A&uacute;n no hay candidatos.<br>Usa <strong>+ Candidato manual</strong> para agregar uno o comparte el link de entrevista.</div>'; return; }
+    // Asegurar que requisiciones está cargado antes de renderizar
+    if (!requisiciones || !requisiciones.length) {
+      requisiciones = JSON.parse(localStorage.getItem('rreqs')||'[]');
+    }
     poblarFiltrosCandidatos(_allResults);
     try {
       panel.innerHTML = renderTablaByPuesto(_allResults);
@@ -6207,6 +6212,13 @@ function switchCandTab(tab) {
 function renderBancoTalentos() {
   var panel = document.getElementById('bancotalentos-content');
   if (!panel) return;
+  // Asegurar que los datos están cargados
+  if (!_allResults || !_allResults.length) {
+    _allResults = JSON.parse(localStorage.getItem('rresults')||'[]');
+  }
+  if (!feedbacks || !feedbacks.length) {
+    feedbacks = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+  }
   // Banco de talentos: candidatos marcados explícitamente O con buena evaluación del líder sin ser elegidos
   var talentos = _allResults.filter(function(r){
     if (r.enBancoTalentos) return true;
@@ -6227,7 +6239,11 @@ function renderBancoTalentos() {
     vistosDni[key] = true;
     return true;
   });
-  talentos.sort(function(a,b){ return (b.estrellas||0)-(a.estrellas||0); });
+  talentos.sort(function(a,b){
+    var pa=(a.puesto||'').toLowerCase(); var pb=(b.puesto||'').toLowerCase();
+    if(pa<pb) return -1; if(pa>pb) return 1;
+    return (b.estrellas||0)-(a.estrellas||0);
+  });
 
   if (!talentos.length) {
     panel.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--muted);">'
@@ -6238,21 +6254,37 @@ function renderBancoTalentos() {
     return;
   }
 
-  var rows = talentos.map(function(c){
+  var bancoBuscarVal = (document.getElementById('bancoBuscar')||{}).value||'';
+  var bancoFiltroPuestoVal = (document.getElementById('bancoFiltroPuesto')||{}).value||'';
+  var selBanco = document.getElementById('bancoFiltroPuesto');
+  if (selBanco && selBanco.options.length <= 1) {
+    var puestosUnicos = [...new Set(talentos.map(function(t){return t.puesto||'';}).filter(Boolean))].sort();
+    puestosUnicos.forEach(function(p){ var opt=document.createElement('option'); opt.value=p; opt.textContent=p; if(p===bancoFiltroPuestoVal) opt.selected=true; selBanco.appendChild(opt); });
+  }
+  var talentosFiltrados = talentos.filter(function(c){
+    if (bancoFiltroPuestoVal && c.puesto!==bancoFiltroPuestoVal) return false;
+    if (bancoBuscarVal) { var busq=bancoBuscarVal.toLowerCase(); return (c.candidato||'').toLowerCase().includes(busq)||(c.dni||'').includes(busq); }
+    return true;
+  });
+  var rows = talentosFiltrados.map(function(c){
     var est = parseInt(c.estrellas||c.puntaje||0)||0;
     var estHtml = est>0 ? renderStars(est,starsColor(est)) : '<span style="color:var(--muted);font-size:11px;">—</span>';
     var fb = feedbacks.find(function(f){ return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto); });
     var resultado = fb&&fb.elegido ? '<span style="color:#2d7a4f;font-size:11px;">&#127942; Elegido</span>'
       : fb&&fb.apto===false ? '<span style="color:#A32D2D;font-size:11px;">&#10007; No apto</span>'
       : '<span style="color:var(--muted);font-size:11px;">—</span>';
-    var cvLink = c.cvBase64 ? '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:11px;color:#3C3489;text-decoration:none;">Ver CV</a>'
-      : (c.cvUrl ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:11px;color:#3C3489;">Ver CV &#8599;</a>' : '<span style="color:var(--muted);font-size:11px;">—</span>');
+    var cvLink = c.cvBase64 ? '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:11px;color:#3C3489;text-decoration:none;">Ver CV</a>' : (c.cvUrl ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:11px;color:#3C3489;">Ver CV &#8599;</a>' : '<span style="color:var(--muted);font-size:11px;">&#8212;</span>');
+    var dispBadge = c.disponibilidad ? '<span style="font-size:10px;background:#EAF3DE;color:#3B6D11;padding:2px 7px;border-radius:8px;">'+c.disponibilidad+'</span>' : '<span style="color:var(--muted);font-size:11px;">&#8212;</span>';
+    if (!requisiciones||!requisiciones.length) requisiciones=JSON.parse(localStorage.getItem('rreqs')||'[]');
+    var enProcesoActivo = requisiciones.find(function(r){ return r.estado!=='Cubierto'&&r.estado!=='Stand by'&&(c.reqId?r.id===c.reqId:(r.puesto&&c.puesto&&r.puesto.toLowerCase()===c.puesto.toLowerCase())); });
+    var procesoBadge = enProcesoActivo ? '<span style="font-size:10px;background:#EAF3DE;color:#0F6E56;padding:2px 7px;border-radius:8px;">&#10003; En proceso</span>' : '<span style="color:var(--muted);font-size:11px;">&#8212;</span>';
     return '<tr style="border-top:0.5px solid var(--border2);">'
       +'<td style="padding:9px 12px;font-size:12px;font-weight:500;">'+c.candidato+'</td>'
       +'<td style="padding:9px 12px;font-size:11px;color:var(--muted);">'+(c.puesto||'—')+'</td>'
       +'<td style="padding:9px 12px;font-size:11px;color:var(--muted);">'+(c.fechaBanco||c.fecha||'—')+'</td>'
       +'<td style="padding:9px 10px;">'+estHtml+'</td>'
-      +'<td style="padding:9px 12px;">'+resultado+'</td>'
+      +'<td style="padding:9px 12px;">'+dispBadge+'</td>'
+      +'<td style="padding:9px 12px;">'+procesoBadge+'</td>'
       +'<td style="padding:9px 12px;">'+cvLink+'</td>'
       +'<td style="padding:9px 10px;text-align:center;">'
         +'<button onclick="abrirCopiarCandidatosBanco(\''+encodeURIComponent(c.candidato)+'\',\''+encodeURIComponent(c.puesto)+'\')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid #534AB7;background:transparent;color:#534AB7;cursor:pointer;white-space:nowrap;">Copiar a solicitud</button>'
@@ -6268,6 +6300,7 @@ function renderBancoTalentos() {
         +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">Fecha</th>'
         +'<th style="padding:9px 10px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">Eval. GTH</th>'
         +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">Resultado</th>'
+        +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">En proceso</th>'
         +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">CV</th>'
         +'<th style="padding:9px 10px;"></th>'
       +'</tr></thead>'
