@@ -545,6 +545,10 @@ a[title]{cursor:pointer;}
         <input type="checkbox" id="soloVisibles" onchange="filtrarCandidatos()" style="accent-color:var(--accent2);">
         Solo visibles para el l&iacute;der
       </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="mostrarCubiertos_cand" onchange="filtrarCandidatos()" style="accent-color:#3C3489;">
+        Mostrar cubiertos
+      </label>
     </div>
 
     <!-- Tabs: Candidatos / Banco de talentos -->
@@ -933,8 +937,12 @@ a[title]{cursor:pointer;}
         <!-- Columna izquierda: lista de procesos -->
         <div style="width:260px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
           <div style="padding:14px 16px;border-bottom:0.5px solid var(--border2);">
-            <div style="font-size:13px;font-weight:500;color:var(--text);">Mis procesos activos</div>
+            <div style="font-size:13px;font-weight:500;color:var(--text);">Mis procesos</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;">Clic en un proceso para gestionar</div>
+            <label style="display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;">
+              <input type="checkbox" id="liderMostrarCubiertos" onchange="renderLiderProcesos()" style="accent-color:var(--accent2);width:13px;height:13px;">
+              <span style="font-size:11px;color:var(--muted);">Mostrar procesos cerrados</span>
+            </label>
           </div>
           <div id="liderProcesosLista" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px;"></div>
         </div>
@@ -2269,19 +2277,23 @@ function renderLiderProcesos() {
   var panel = document.getElementById('liderProcesosLista');
   if (!panel) return;
   var misPuestosIds = jobs.filter(function(j){ return j.dniLider===liderDni; }).map(function(j){ return j.id; });
-  var misReqs = requisiciones.filter(function(r){
+  var mostrarCubiertos = document.getElementById('liderMostrarCubiertos') && document.getElementById('liderMostrarCubiertos').checked;
+  var todasMisReqs = requisiciones.filter(function(r){
     return r.dniLider===liderDni || misPuestosIds.indexOf(r.jobId)!==-1;
-  }).filter(function(r){ return r.estado!=='Cubierto'; });
+  });
+  var misReqs = todasMisReqs.filter(function(r){ return r.estado!=='Cubierto' && r.estado!=='Stand by'; });
+  var misReqsCubiertas = todasMisReqs.filter(function(r){ return r.estado==='Cubierto'; });
 
-  if (!misReqs.length) {
-    panel.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;">No tienes procesos activos</div>';
+  if (!misReqs.length && !misReqsCubiertas.length) {
+    panel.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;">No tienes procesos asignados</div>';
     return;
   }
 
-  // Mostrar CADA solicitud independiente (no agrupar por puesto)
-  var reqsOrdenadas = misReqs.slice().sort(function(a,b){ return b.id-a.id; });
+  // Orden: más antiguos primero (id menor = más antiguo)
+  var reqsOrdenadas = misReqs.slice().sort(function(a,b){ return a.id-b.id; });
+  var cubsOrdenadas = misReqsCubiertas.slice().sort(function(a,b){ return a.id-b.id; });
 
-  panel.innerHTML = reqsOrdenadas.map(function(r) {
+  function renderItemLider(r) {
     var isSelected = window._liderProcesoSeleccionado === r.id || String(window._liderProcesoSeleccionado) === String(r.id);
     var c = r.estado==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:r.estado==='Cubierto'?{bg:'#EEEDFE',t:'#3C3489'}:{bg:'#fef8ee',t:'#7a5000'};
     var hoy = new Date();
@@ -2300,7 +2312,23 @@ function renderLiderProcesos() {
         + '</div>'
       + '</div>'
       + '</div>';
-  }).join('');
+  }
+
+  var htmlActivos = reqsOrdenadas.length
+    ? reqsOrdenadas.map(renderItemLider).join('')
+    : '<div style="padding:10px 12px;font-size:12px;color:var(--muted);">Sin procesos activos</div>';
+
+  var htmlCubiertos = '';
+  if (mostrarCubiertos && cubsOrdenadas.length) {
+    htmlCubiertos = '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 12px 4px;margin-top:4px;border-top:0.5px solid var(--border2);">Cerrados ('+cubsOrdenadas.length+')</div>'
+      + cubsOrdenadas.map(renderItemLider).join('');
+  } else if (mostrarCubiertos && !cubsOrdenadas.length) {
+    htmlCubiertos = '<div style="padding:10px 12px;font-size:12px;color:var(--muted);border-top:0.5px solid var(--border2);margin-top:4px;">Sin procesos cerrados</div>';
+  } else if (!mostrarCubiertos && cubsOrdenadas.length) {
+    htmlCubiertos = '<div style="padding:8px 12px;font-size:11px;color:var(--muted);border-top:0.5px solid var(--border2);margin-top:4px;cursor:pointer;" onclick="document.getElementById(\'liderMostrarCubiertos\').checked=true;renderLiderProcesos();">'+cubsOrdenadas.length+' proceso'+(cubsOrdenadas.length!==1?'s':'')+' cerrado'+(cubsOrdenadas.length!==1?'s':'')+' — <span style="color:var(--accent2);">ver</span></div>';
+  }
+
+  panel.innerHTML = htmlActivos + htmlCubiertos;
 }
 
 function seleccionarProceso(reqId) {
@@ -5850,6 +5878,15 @@ function filtrarCandidatos() {
 function renderTablaByPuesto(results) {
   // Agrupar por reqId (solicitud específica) si existe, sino por puesto
   var byGrupo = {};
+
+  // Primero: inicializar grupos para TODAS las requisiciones (activas y cubiertas)
+  // así aparecen aunque aún no tengan candidatos
+  requisiciones.forEach(function(q){
+    if (q.estado === 'Stand by') return; // Stand by sí se oculta
+    var key = 'req_'+q.id;
+    if (!byGrupo[key]) byGrupo[key] = [];
+  });
+
   results.forEach(function(r){
     if (r.reqId) {
       // Candidato con reqId — asignar a su solicitud
@@ -5879,13 +5916,39 @@ function renderTablaByPuesto(results) {
     }
   });
 
-  return Object.keys(byGrupo).map(function(grupoKey) {
+  // Ordenar grupos: activos primero (más antiguos primero), luego cubiertos (más antiguos primero)
+  var grupoKeys = Object.keys(byGrupo);
+  grupoKeys.sort(function(a, b) {
+    var idA = a.indexOf('req_')===0 ? (parseInt(a.replace('req_',''))||0) : 0;
+    var idB = b.indexOf('req_')===0 ? (parseInt(b.replace('req_',''))||0) : 0;
+    var reqA = requisiciones.find(function(r){ return r.id===idA; });
+    var reqB = requisiciones.find(function(r){ return r.id===idB; });
+    var cubA = reqA && reqA.estado==='Cubierto' ? 1 : 0;
+    var cubB = reqB && reqB.estado==='Cubierto' ? 1 : 0;
+    if (cubA !== cubB) return cubA - cubB; // activos antes que cubiertos
+    return idA - idB; // dentro de cada grupo: más antiguos primero
+  });
+
+  var mostrarCub = document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked;
+  var nCubiertos = grupoKeys.filter(function(k){
+    var id = k.indexOf('req_')===0 ? (parseInt(k.replace('req_',''))||0) : 0;
+    var r = requisiciones.find(function(r){ return r.id===id; });
+    return r && r.estado==='Cubierto';
+  }).length;
+
+  var html = grupoKeys.map(function(grupoKey) {
+    var reqId2 = grupoKey.indexOf('req_')===0 ? (parseInt(grupoKey.replace('req_',''))||grupoKey.replace('req_','')) : null;
+    var reqCheck = reqId2 ? requisiciones.find(function(r){ return r.id===reqId2; }) : null;
+    var esCubierto = reqCheck && reqCheck.estado==='Cubierto';
+    if (esCubierto && !mostrarCub) return ''; // ocultar cubiertos si no está el toggle activo
+    return (function(grupoKey) {
     var cands = byGrupo[grupoKey];
+    // Obtener la req directamente desde la key (formato 'req_ID') — funciona aunque no haya candidatos
+    var reqId = grupoKey.indexOf('req_')===0 ? (parseInt(grupoKey.replace('req_',''))||grupoKey.replace('req_','')) : null;
+    var req = reqId ? requisiciones.find(function(r){ return r.id===reqId; }) : null;
     var firstCand = cands[0];
-    // Obtener info de la solicitud si existe reqId
-    var req = firstCand.reqId ? requisiciones.find(function(r){ return r.id===firstCand.reqId; }) : null;
     var grupoKeyClean = grupoKey.indexOf('puesto_')===0 ? grupoKey.replace('puesto_','') : grupoKey;
-    var puesto = req ? (req.puesto||firstCand.puesto) : (firstCand.puesto||grupoKeyClean);
+    var puesto = req ? (req.puesto||'') : (firstCand ? firstCand.puesto : grupoKeyClean);
     var grupoLabel = puesto || '(sin puesto)';
     try {
       if (req) {
@@ -5900,7 +5963,13 @@ function renderTablaByPuesto(results) {
       return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
     });
     var avanzar = cands.filter(function(c){ return c.visibleLider; }).length;
-    var avg = Math.round(cands.reduce(function(s,c){ return s+(c.estrellas||c.puntaje||0); },0)/cands.length);
+    var avg = cands.length ? Math.round(cands.reduce(function(s,c){ return s+(c.estrellas||c.puntaje||0); },0)/cands.length) : 0;
+
+    // Estado de la solicitud para badge
+    var estadoBadge = '';
+    if (req && req.estado === 'Cubierto') {
+      estadoBadge = '<span style="font-size:10px;font-weight:500;background:#EEEDFE;color:#3C3489;padding:2px 8px;border-radius:6px;margin-left:4px;">Cubierto</span>';
+    }
 
     var rows = cands.map(function(c, cidx) {
       var badge = cidx===0 ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
@@ -6028,23 +6097,35 @@ function renderTablaByPuesto(results) {
     +'</div>';
 
     var grupoId = encodeURIComponent(grupoKey);
-    return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
+    var htmlGrupo = '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
       +'<div data-puesto-id="'+grupoId+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
-        +'<div style="font-size:13px;font-weight:500;">'+grupoLabel+'</div>'
+        +'<div style="font-size:13px;font-weight:500;">'+grupoLabel+estadoBadge+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top 5</button>':'')
           +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
-          +'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' con el l\u00edder</span>'
-          +'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>'
+          +(cands.length>0?'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' con el l\u00edder</span>':'')
+          +(cands.length>0?'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>':'')
         +'</div>'
       +'</div>'
       +'<div id="cands_'+grupoId+'" style="display:none;">'
-        +colHeader
-        +rows
+        +(cands.length>0 ? colHeader+rows : '<div style="padding:14px 16px;font-size:12px;color:var(--muted);">Aún no hay candidatos registrados para este proceso.</div>')
       +'</div>'
     +'</div>';
+    return htmlGrupo;
+    })(grupoKey);
+  }).filter(Boolean).join('');
+
+  // Actualizar contador
   var _cEl=document.getElementById('candidatosContador'); if(_cEl) _cEl.textContent=results.length+' candidato'+(results.length!==1?'s':'')+' en total';
-  }).join('');
+
+  // Footer de cubiertos ocultos
+  if (!mostrarCub && nCubiertos > 0) {
+    html += '<div style="text-align:center;padding:10px 0 4px;font-size:12px;color:var(--muted);">'
+      + nCubiertos+' proceso'+(nCubiertos!==1?'s':'')+' cubierto'+(nCubiertos!==1?'s':'')+' oculto'+(nCubiertos!==1?'s':'')+' — '
+      + '<label style="cursor:pointer;color:#3C3489;text-decoration:underline;" onclick="var cb=document.getElementById(&quot;mostrarCubiertos_cand&quot;);if(cb){cb.checked=true;filtrarCandidatos();}">mostrar</label>'
+      + '</div>';
+  }
+  return html;
 }
 
 
