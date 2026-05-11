@@ -5523,10 +5523,24 @@ function parsearPandapeRows(rows) {
     var expRaw = get(iExp);
     var expLaboral = expRaw ? expRaw.split('\n')[0].substring(0,80) : '';
 
-    // Grado: mapear a opciones del select desde campo Formación
+    // Grado Pandapé: formación es multilínea separada por '---------'
+    // Cada parte: 'Nivel , Institución Fecha Estado: ...'
+    // Evaluar todas las entradas, ignorar Interrumpido/Estudiando si hay completas, tomar el mayor
     var gradoRaw = get(iFormacion);
-    var gradoTexto = gradoRaw ? gradoRaw.split(',')[0].split('\n')[0].trim() : '';
-    var grado = mapearGrado(gradoTexto);
+    var grado = '';
+    if (gradoRaw) {
+      var partes = gradoRaw.split('---------');
+      partes.forEach(function(parte) {
+        var nivel = parte.split(',')[0].trim();
+        var estaEstudiando = /estudiando|cursando|interrumpido|en curso/i.test(parte);
+        var g = mapearGrado(nivel);
+        if (g) {
+          // Preferir niveles completos; aceptar incompletos solo si no hay nada mejor
+          if (!grado) { grado = estaEstudiando ? (mapearGrado(nivel+' incompleto') || g) : g; }
+          else { grado = gradoMayor(grado, estaEstudiando ? (mapearGrado(nivel+' incompleto') || g) : g); }
+        }
+      });
+    }
 
     var dniRaw = String(get(iDni)).replace(/[^0-9]/g,'');
     if (dniRaw === '0') dniRaw = ''; // DNI oculto por Pandapé
@@ -5617,11 +5631,20 @@ function parsearBumeranRows(rows) {
     var celPerfil = limpiarCelular(get(iTelCel)) || limpiarCelular(get(iTelOtro));
     var cel = celCuest || celPerfil;
 
-    // Pretensión: respetar texto tal cual si es corto (rango), fallback a numérico si es párrafo largo
+    // Pretensión Bumeran: cuestionario col[94] tiene el dato más actualizado
     var pretCuestRaw = get(iPretCuest).trim();
-    var pretCuest = pretCuestRaw.length > 0 && pretCuestRaw.length <= 40
-      ? pretCuestRaw  // ej: '4000 - 5000' o '3500' — respetar tal cual
-      : limpiarSalario(get(iSalPref));  // párrafo largo → usar valor numérico del perfil
+    var pretCuest = '';
+    if (pretCuestRaw.length > 0 && pretCuestRaw.length <= 40) {
+      // Texto corto: '4000 - 5000', '3500', '4300 soles a mas'
+      // Si es rango limpio conservar; si tiene texto libre extraer primer número
+      if (/^\d[\d\s,.\-]+\d$/.test(pretCuestRaw)) {
+        pretCuest = pretCuestRaw; // rango limpio: '4000 - 5000' o '3500'
+      } else {
+        var primerNum = pretCuestRaw.match(/\d[\d,.*]/);
+        pretCuest = primerNum ? primerNum[0].replace(/[^0-9]/g,'') : '';
+      }
+    }
+    // Párrafo largo o sin cuestionario → usar preferencia salarial del perfil
     var pretension = pretCuest || limpiarSalario(get(iSalPref));
 
     // Experiencia: construir resumen de exp[1]
