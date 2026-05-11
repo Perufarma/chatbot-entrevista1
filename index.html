@@ -566,6 +566,19 @@ a[title]{cursor:pointer;}
     <!-- Form candidato manual -->
     <div class="add-job-form" id="candManualForm">
       <div style="font-size:14px;font-weight:500;">Agregar candidato manualmente</div>
+      <!-- Carga de CV para auto-completar -->
+      <div style="background:var(--surface2);border:1.5px dashed var(--border2);border-radius:10px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+        <div style="font-size:22px;">&#128196;</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:500;margin-bottom:2px;">Cargar CV para auto-completar</div>
+          <div style="font-size:11px;color:var(--muted);">La IA leerá el CV y completará los campos automáticamente. Soporta PDF y Word (.docx)</div>
+        </div>
+        <label style="cursor:pointer;">
+          <input type="file" id="cvAutoFillInput" accept=".pdf,.doc,.docx" style="display:none;" onchange="procesarCVCandidato(this)">
+          <span class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px;">&#128206; Seleccionar CV</span>
+        </label>
+        <div id="cvAutoFillStatus" style="font-size:11px;color:var(--muted);"></div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Nombre completo *</label><input type="text" id="cm_nombre" placeholder="Ej: Juan Pérez"></div>
         <div class="form-group"><label>DNI *</label><input type="text" id="cm_dni" maxlength="8" placeholder="12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
@@ -2382,60 +2395,71 @@ function renderDetalleProcesoSeleccionado(reqId) {
     html += bannerHtml;
 
 
-    // ── Candidatos ──
+    // ── Candidatos + Feedback unificados ──
     if (cands.length) {
       html += '<div style="margin-top:20px;">'
-        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Candidatos ('+cands.length+')</div>';
+        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">CANDIDATOS ('+cands.length+')</div>';
       cands.sort(function(a,b){return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);});
       html += cands.map(function(cand, ci){
-        var badge = ci===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
-          :ci===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
-          :ci===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>':'';
-        var fb = fbs.find(function(f){ return f.candidato===cand.candidato && f.puesto && cand.puesto && f.puesto.toLowerCase().trim()===cand.puesto.toLowerCase().trim(); });
+        var badge = ci===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:#fff;margin-left:4px;">#1</span>'
+          :ci===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:#fff;margin-left:4px;">#2</span>'
+          :ci===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:#fff;margin-left:4px;">#3</span>':'';
+        var fb = fbs.find(function(f){ return f.candidato===cand.candidato&&(cand.reqId?f.reqId===cand.reqId:f.puesto===cand.puesto); });
         var aptoOk = fb&&fb.apto===true; var noAptoOk = fb&&fb.apto===false; var esElegido = fb&&fb.elegido;
         var cEncL = encodeURIComponent(cand.candidato); var pEncL = encodeURIComponent(cand.puesto);
-        var aptoTag = aptoOk?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:5px;">✓ Apto</span>'
-          :noAptoOk?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:5px;">✗ No apto'+(fb&&fb.motivoRechazo?' &middot; '+fb.motivoRechazo:'')+'</span>':'';
-        var elegidoTag = esElegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:5px;">🏆 Elegido</span>':'';
-        var BTN = 'font-size:10px;padding:2px 8px;';
-        var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'✓ Apto':'Apto')+'</button>') : '';
-        var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">'+(noAptoOk?'✗ No apto':'No apto')+'</button>') : '';
-        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">🏆 Elegir</button>' : '';
-        return '<div style="padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;">'
-          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+        var reqIdL = cand.reqId || '';
+        var key = (cand.candidato+'_'+cand.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
+        var aptoTag = aptoOk?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:6px;">&#10003; Apto</span>'
+          :noAptoOk?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:6px;">&#10007; No apto'+(fb&&fb.motivoRechazo?' &middot; '+fb.motivoRechazo:'')+'</span>':'';
+        var elegidoTag = esElegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:6px;">&#127942; Elegido</span>':'';
+        // Sección de evaluación por dimensiones
+        var dimHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;padding:10px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border2);" data-key="'+key+'">';
+        var dims = [{id:'comunicacion',label:'Comunicaci\u00f3n'},{id:'tecnico',label:'T\u00e9cnico'},{id:'actitud',label:'Actitud'},{id:'resultados',label:'Orientaci\u00f3n a resultados'}];
+        dims.forEach(function(d){
+          var val = fb&&fb[d.id] ? fb[d.id] : 0;
+          var starsD = '';
+          for (var s=1;s<=5;s++) {
+            starsD += '<span onclick="setDimStar(this,'+(s)+',\''+key+'\',\''+d.id+'\',\''+cEncL+'\',\''+pEncL+'\',\''+reqIdL+'\')" style="cursor:pointer;font-size:16px;color:'+(s<=val?'#E8623A':'#e0ddd8')+';">&#9733;</span>';
+          }
+          dimHtml += '<div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">'+d.label+'</div><div>'+starsD+'</div></div>';
+        });
+        dimHtml += '</div>';
+        // Comentario
+        var comentVal = fb&&fb.comentario ? fb.comentario : '';
+        var comentHtml = '<textarea data-key="'+key+'" id="fbComent_'+key+'" placeholder="Comentario sobre el candidato..." style="width:100%;font-size:12px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);resize:none;height:60px;box-sizing:border-box;margin-bottom:8px;">'+comentVal+'</textarea>';
+        // Info candidato
+        var infoHtml = '';
+        if (cand.disponibilidad) infoHtml += '<span style="font-size:11px;background:#EAF3DE;color:#0F6E56;padding:2px 8px;border-radius:10px;">&#128337; '+cand.disponibilidad+'</span> ';
+        if (cand.pretension) infoHtml += '<span style="font-size:11px;background:#FAEEDA;color:#854F0B;padding:2px 8px;border-radius:10px;">S/ '+cand.pretension+'</span> ';
+        // Botones
+        var BTN = 'font-size:11px;padding:4px 12px;';
+        var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'\u2713 Apto':'\u2713 Apto')+'</button>') : '';
+        var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">\u2717 No apto</button>') : '';
+        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">&#127942; Elegir</button>' : '';
+        var cvLink = cand.cvBase64 ? '<a href="'+cand.cvBase64+'" download="CV.pdf" style="font-size:11px;color:#3C3489;">Ver CV</a>'
+          : cand.cvUrl ? '<a href="'+cand.cvUrl+'" target="_blank" style="font-size:11px;color:#3C3489;">Ver CV &#8599;</a>' : '';
+        // Comentario del reclutador
+        var recComent = cand.comentarioReclutador||cand.observacion||'';
+        var recHtml = recComent ? '<div style="font-size:11px;background:#f0f7ee;border-radius:6px;padding:6px 10px;color:#1e5c38;margin-bottom:8px;">&#128203; GTH: '+recComent+'</div>' : '';
+        return '<div style="padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:0.5px solid var(--border2);">'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'
             + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
             + '<div style="flex:1;"></div>'
-            + (function(){
-                if (fb && (fb.comunicacion||fb.tecnico||fb.actitud||fb.resultados)) {
-                  var promL = Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4);
-                  return renderStars(promL, starsColor(promL));
-                }
-                return '<span style="font-size:12px;color:var(--muted);">&#8212;</span>';
-              })()
-            + '<span style="font-size:11px;color:var(--muted);">'+cand.recomendacion+'</span>'
-            + aptoTag + elegidoTag
+            + aptoTag + elegidoTag + (cvLink ? ' '+cvLink : '')
           + '</div>'
-          + (!esElegido
-            ? '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'
-                + btnApto + btnNoApto + btnElegir
-              + '</div>'
-            : '')
-          + '</div>';
+          + (infoHtml ? '<div style="margin-bottom:8px;">'+infoHtml+'</div>' : '')
+          + recHtml
+          + dimHtml
+          + comentHtml
+          + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+            + btnApto + btnNoApto + btnElegir
+          + '</div>'
+        + '</div>';
       }).join('');
       html += '</div>';
     } else {
       html += '<div style="margin-top:16px;font-size:13px;color:var(--muted);">Aún no hay candidatos visibles para este proceso.</div>';
     }
-
-    // ── Feedback — renderizar directamente para este puesto ──
-    var candsFeedback = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim() && c.visibleLider!==false; });
-    if (candsFeedback.length) {
-      html += '<div style="margin-top:20px;border-top:0.5px solid var(--border2);padding-top:16px;">'
-        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Feedback de entrevistas presenciales</div>'
-        + '<div id="feedbackPanelDetalle"></div>'
-        + '</div>';
-    }
-
     // ── Bitácora ──
     var bita = Array.isArray(r.bitacora) ? r.bitacora : [];
     if (bita.length) {
@@ -2453,14 +2477,13 @@ function renderDetalleProcesoSeleccionado(reqId) {
     panel.innerHTML = html;
 
     // Renderizar feedback dentro del panel para este puesto específico
-    if (candsFeedback.length) {
-      var fbPanel = document.getElementById('feedbackPanelDetalle');
-      if (fbPanel && typeof renderFeedbackParaPuesto === 'function') {
-        fbPanel.innerHTML = renderFeedbackParaPuesto(r.puesto, candsFeedback, fbs);
-      }
-    }
+    // Feedback ya integrado en las cards de candidatos
+    // (bloque anterior eliminado)
+
   });
 }
+
+
 
 function renderLiderCandidatos() {
   var panel = document.getElementById('liderCandidatos');
@@ -3839,6 +3862,104 @@ function setCmStar(n) {
   var spans = row.querySelectorAll('span');
   for (var i = 0; i < spans.length; i++) {
     spans[i].style.color = (i < n) ? starsColor(n) : '#e0ddd8';
+  }
+}
+
+async 
+function procesarCVCandidato(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var status = document.getElementById('cvAutoFillStatus');
+  if (status) status.textContent = 'Leyendo CV...';
+
+  var ext = file.name.split('.').pop().toLowerCase();
+
+  function enviarAIA(base64Data, mediaType) {
+    if (status) status.textContent = 'Analizando con IA...';
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: mediaType === 'application/pdf' ? 'document' : 'text',
+              source: mediaType === 'application/pdf' ? {type:'base64', media_type:mediaType, data:base64Data} : undefined,
+              text: mediaType !== 'application/pdf' ? base64Data : undefined
+            },
+            { type: 'text', text: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown: {"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}. Solo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto.' }
+          ]
+        }]
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var txt = data.content && data.content[0] ? data.content[0].text : '';
+      try {
+        var clean = txt.replace(/```json|```/g,'').trim();
+        var parsed = JSON.parse(clean);
+        // Auto-completar campos del formulario
+        var campos = {
+          'cm_nombre': parsed.nombre, 'cm_dni': parsed.dni, 'cm_celular': parsed.celular,
+          'cm_correo': parsed.correo, 'cm_distrito': parsed.distrito,
+          'cm_expLaboral': parsed.expLaboral, 'cm_pretension': parsed.pretension,
+          'cm_disponibilidad': parsed.disponibilidad, 'cm_resumen': parsed.resumen
+        };
+        var completados = 0;
+        Object.keys(campos).forEach(function(id) {
+          if (campos[id]) {
+            var el = document.getElementById(id);
+            if (el && !el.value) { el.value = campos[id]; completados++; }
+          }
+        });
+        // Grado académico
+        if (parsed.gradoAcademico) {
+          var gradoEl = document.getElementById('cm_grado');
+          if (gradoEl) {
+            var mapped = mapearGrado(parsed.gradoAcademico);
+            for (var i=0; i<gradoEl.options.length; i++) {
+              if (gradoEl.options[i].value === mapped) { gradoEl.value = mapped; completados++; break; }
+            }
+          }
+        }
+        if (status) status.textContent = '✓ ' + completados + ' campos completados';
+        toast('✓ CV analizado — ' + completados + ' campos auto-completados');
+      } catch(e) {
+        if (status) status.textContent = 'No se pudo extraer la información';
+        toast('Error al procesar el CV');
+      }
+    })
+    .catch(function() {
+      if (status) status.textContent = 'Error al conectar con la IA';
+    });
+  }
+
+  if (ext === 'pdf') {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64 = e.target.result.split(',')[1];
+      enviarAIA(base64, 'application/pdf');
+    };
+    reader.readAsDataURL(file);
+  } else if (ext === 'docx' || ext === 'doc') {
+    // Usar mammoth para convertir Word a texto
+    if (typeof mammoth !== 'undefined') {
+      var reader2 = new FileReader();
+      reader2.onload = function(e) {
+        mammoth.extractRawText({arrayBuffer: e.target.result})
+          .then(function(result) { enviarAIA(result.value, 'text/plain'); })
+          .catch(function() { if (status) status.textContent = 'Error al leer el archivo Word'; });
+      };
+      reader2.readAsArrayBuffer(file);
+    } else {
+      // Cargar mammoth dinámicamente
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+      sc.onload = function() { procesarCVCandidato(input); };
+      document.head.appendChild(sc);
+    }
   }
 }
 
@@ -6492,7 +6613,71 @@ function confirmarMotivoRechazo(cand, puesto) {
   marcarApto(cand, puesto, false, motivo);
 }
 
+
+function setDimStar(el, val, key, dim, candEnc, puestoEnc, reqIdParam) {
+  // Guardar en fbTemp
+  if (!window._fbTemp) window._fbTemp = {};
+  if (!window._fbTemp[key]) window._fbTemp[key] = {};
+  window._fbTemp[key][dim] = val;
+  window._fbTemp[key].candidato = decodeURIComponent(candEnc);
+  window._fbTemp[key].puesto = decodeURIComponent(puestoEnc);
+  if (reqIdParam) window._fbTemp[key].reqId = parseInt(reqIdParam)||reqIdParam;
+
+  // Actualizar visual de estrellas
+  var stars = el.parentElement.querySelectorAll('span');
+  stars.forEach(function(s, i) {
+    s.style.color = (i < val) ? '#E8623A' : '#e0ddd8';
+  });
+
+  // Auto-guardar feedback
+  var cDec = decodeURIComponent(candEnc);
+  var pDec = decodeURIComponent(puestoEnc);
+  var comentEl = document.getElementById('fbComent_'+key);
+  var comentario = comentEl ? comentEl.value : '';
+
+  var fbData = window._fbTemp[key];
+  var existingFb = feedbacks.find(function(f){
+    return f.candidato===cDec && (fbData.reqId ? f.reqId===fbData.reqId : f.puesto===pDec);
+  });
+
+  var newFb = Object.assign({}, existingFb||{}, {
+    candidato: cDec, puesto: pDec,
+    reqId: fbData.reqId||null,
+    comunicacion: fbData.comunicacion||0,
+    tecnico: fbData.tecnico||0,
+    actitud: fbData.actitud||0,
+    resultados: fbData.resultados||0,
+    comentario: comentario,
+    fecha: new Date().toLocaleDateString('es-PE'),
+    timestamp: Date.now()
+  });
+
+  if (existingFb) {
+    feedbacks = feedbacks.map(function(f){
+      return (f.candidato===cDec && (fbData.reqId?f.reqId===fbData.reqId:f.puesto===pDec)) ? newFb : f;
+    });
+  } else {
+    feedbacks.push(newFb);
+  }
+  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+  safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
+}
+
 function marcarApto(cand, puesto, valor, motivoParam) {
+  // Verificar que el líder haya evaluado las 4 dimensiones antes de marcar
+  var cDec0 = decodeURIComponent(cand);
+  var pDec0 = decodeURIComponent(puesto);
+  var key0 = (cDec0+'_'+pDec0).replace(/[^a-zA-Z0-9_]/g,'_');
+  var fbTemp0 = window._fbTemp && window._fbTemp[key0] ? window._fbTemp[key0] : {};
+  var com = fbTemp0.comunicacion||0; var tec = fbTemp0.tecnico||0;
+  var act = fbTemp0.actitud||0; var res = fbTemp0.resultados||0;
+  if (!com || !tec || !act || !res) {
+    toast('Por favor evalúa las 4 dimensiones antes de marcar apto o no apto');
+    // Scroll al formulario de feedback
+    var fbEl = document.querySelector('[data-key="'+key0+'"]');
+    if (fbEl) fbEl.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
   // Si es No apto y no viene motivo, mostrar popup primero
   if (!valor && !motivoParam) {
     mostrarPopupMotivoRechazo(cand, puesto);
