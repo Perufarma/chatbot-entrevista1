@@ -1923,14 +1923,24 @@ function calcularEtapaActual(req, candidatos, feedbacks) {
 
   // Etapa 0: HC — manual
   if (!etapasCompletadas.hc) return 0;
-  // Etapa 1: Convocatoria — automática cuando hay candidatos registrados
-  var hayCandidatos = candidatos.some(function(c){ return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim(); });
+  // Etapa 1: Convocatoria — automática cuando hay candidatos registrados EN ESTA SOLICITUD
+  var hayCandidatos = candidatos.some(function(c){
+    if (c.reqId) return c.reqId === req.id || c.reqId === parseInt(req.id);
+    return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
+  });
   if (!hayCandidatos) return 1;
-  // Etapa 2: Evaluación y Longlist — candidatos visibles para el líder
-  var hayVisibles = candidatos.some(function(c){ return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim() && c.visibleLider; });
+  // Etapa 2: Evaluación y Longlist — candidatos visibles para el líder EN ESTA SOLICITUD
+  var hayVisibles = candidatos.some(function(c){
+    var matchReq = c.reqId ? (c.reqId === req.id || c.reqId === parseInt(req.id))
+                           : (c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim());
+    return matchReq && c.visibleLider;
+  });
   if (!hayVisibles) return 2;
-  // Etapa 3: Entrevista/Feedback — hay feedback del líder
-  var hayFeedback = feedbacks.some(function(f){ return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim(); });
+  // Etapa 3: Entrevista/Feedback — hay feedback del líder EN ESTA SOLICITUD
+  var hayFeedback = feedbacks.some(function(f){
+    if (f.reqId) return f.reqId === req.id || f.reqId === parseInt(req.id);
+    return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
+  });
   if (!hayFeedback) return 3;
   // Etapa 4: Oferta — manual
   if (!etapasCompletadas.oferta) return 4;
@@ -4192,7 +4202,11 @@ function compararTopLider(grupoEnc) {
   });
   // Calcular promedio combinado GTH + líder por candidato
   var conProm = candsPuesto.map(function(c) {
-    var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto; });
+    var fbL = feedbacks.find(function(f){
+      if (f.candidato!==c.candidato) return false;
+      if (c.reqId) return f.reqId===c.reqId || f.reqId===parseInt(c.reqId);
+      return f.puesto===c.puesto;
+    });
     var promedioLider = fbL ? Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4) : 0;
     var estGTH = parseInt(c.estrellas||c.puntaje||0)||0;
     // Promedio combinado: si líder evaluó, promediar ambos; si no, usar solo GTH
@@ -5778,9 +5792,9 @@ function filtrarGerenciaCand() {
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
   var selPuesto = document.getElementById('filtroPuesto_cand');
   if (selPuesto) {
-    // Poblar con solicitudes activas filtradas por gerencia
+    // Poblar con solicitudes (incluyendo Cubiertas) filtradas por gerencia
     var reqsActF = requisiciones.filter(function(r){
-      return r.estado!=='Cubierto' && r.estado!=='Stand by' && (!gerencia || r.gerencia===gerencia);
+      return r.estado!=='Stand by' && (!gerencia || r.gerencia===gerencia);
     });
     var optsF = '<option value="">Todas las solicitudes</option>';
     reqsActF.forEach(function(r){
@@ -5904,8 +5918,12 @@ function renderTablaByPuesto(results) {
       var pEnc = encodeURIComponent(c.puesto);
       var rowId = 'exp_'+cEnc+'_'+pEnc;
 
-      // Estrellas
-      var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+      // Estrellas — buscar feedback por reqId si existe, fallback por puesto
+      var fbL = feedbacks.find(function(f){
+        if (f.candidato !== c.candidato) return false;
+        if (c.reqId) return f.reqId === c.reqId || f.reqId === parseInt(c.reqId);
+        return f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim();
+      });
       var starsHtml;
       if (fbL && (fbL.comunicacion||fbL.tecnico||fbL.actitud||fbL.resultados)) {
         var promL = Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4);
@@ -5920,13 +5938,19 @@ function renderTablaByPuesto(results) {
         +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:14px;height:14px;">'
         +'</label>';
 
-      // Elegido / Ingreso
-      var reqC = requisiciones.filter(function(r){ return r.puesto && c.puesto && r.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+      // Elegido / Ingreso — usar la req específica del candidato si tiene reqId
+      var reqC = c.reqId
+        ? requisiciones.filter(function(r){ return r.id===c.reqId || r.id===parseInt(c.reqId); })
+        : requisiciones.filter(function(r){ return r.puesto && c.puesto && r.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
       var lastR = reqC.length ? reqC[reqC.length-1] : null;
       var rId = lastR ? lastR.id : '';
       var etC = lastR && lastR.etapas ? lastR.etapas : {};
       var trOk = !!etC.tramites;
-      var fbCand = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto && f.elegido; });
+      var fbCand = feedbacks.find(function(f){
+        if (f.candidato !== c.candidato || !f.elegido) return false;
+        if (c.reqId) return f.reqId === c.reqId || f.reqId === parseInt(c.reqId);
+        return f.puesto === c.puesto;
+      });
       var esElegido = !!fbCand;
       var elegidoBadge = esElegido ? '<span style="font-size:10px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 7px;border-radius:5px;">&#127942; Elegido</span>' : '';
       var trBtn = esElegido ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:10px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:2px 8px;border-radius:5px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--muted)')+';">'+(trOk?'✓ Ingreso':'○ Ingreso')+'</button>' : '';
@@ -6689,13 +6713,23 @@ function marcarApto(cand, puesto, valor, motivoParam) {
   var key = (cDec+'_'+pDec).replace(/[^a-zA-Z0-9_]/g,'_');
   var comentEl = document.getElementById('fb_'+key);
   var comentario = comentEl ? comentEl.value : '';
-  var existing = feedbacks.find(function(f){ return f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim(); });
-  var reqIdFb = cand ? (cand.reqId||null) : null;
-    var fb = Object.assign({candidato:cDec,puesto:pDec,reqId:reqIdFb,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false}, fbTemp[key]||{});
+  // Obtener reqId desde _fbTemp (seteado por setDimStar) o desde el candidato en _allResults
+  var reqIdFb = (window._fbTemp&&window._fbTemp[key]&&window._fbTemp[key].reqId) ? window._fbTemp[key].reqId
+    : (function(){ var co=_allResults.find(function(r){return r.candidato===cDec&&r.puesto===pDec;}); return co?co.reqId||null:null; })();
+  var existing = feedbacks.find(function(f){
+    if (f.candidato!==cDec) return false;
+    if (reqIdFb) return f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb);
+    return f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim();
+  });
+  var fb = Object.assign({candidato:cDec,puesto:pDec,reqId:reqIdFb||null,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false}, fbTemp[key]||{});
   if (existing) { fb.elegido = existing.elegido; }
   fb.apto = valor;
   if (!valor && motivoParam) fb.motivoRechazo = motivoParam;
-  feedbacks = feedbacks.filter(function(f){ return !(f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim()); });
+  feedbacks = feedbacks.filter(function(f){
+    if (f.candidato!==cDec) return true;
+    if (reqIdFb) return !(f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb));
+    return !(f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim());
+  });
   feedbacks.push(fb);
   localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
@@ -6717,28 +6751,44 @@ function elegirCandidato(cand, puesto) {
   var key = (cDec+'_'+pDec).replace(/[^a-zA-Z0-9_]/g,'_');
   var comentEl = document.getElementById('fb_'+key);
   var comentario = comentEl ? comentEl.value : '';
-  var existing = feedbacks.find(function(f){ return f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim(); });
+  var existing = feedbacks.find(function(f){
+    if (f.candidato!==cDec) return false;
+    if (c_reqId) return f.reqId===c_reqId || f.reqId===parseInt(c_reqId);
+    return f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim();
+  });
   if (!existing) {
-    var fb = Object.assign({candidato:cDec,puesto:pDec,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:true,elegido:false}, fbTemp[key]||{});
+    var fb = Object.assign({candidato:cDec,puesto:pDec,reqId:c_reqId||null,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:true,elegido:false}, fbTemp[key]||{});
     feedbacks.push(fb);
   } else {
     existing.comentario = comentario || existing.comentario;
     existing.apto = existing.apto !== false ? true : existing.apto;
   }
-  // Solo uno puede ser elegido por puesto
+  // Solo uno puede ser elegido por solicitud (o por puesto si no hay reqId)
   feedbacks = feedbacks.map(function(f){
+    if (c_reqId) {
+      // Mismo puesto y misma solicitud: desmarcar todos menos el elegido
+      var mismaSolicitud = f.reqId===c_reqId || f.reqId===parseInt(c_reqId);
+      var mismoPuesto = f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim();
+      if (!mismaSolicitud && !mismoPuesto) return f;
+      if (mismaSolicitud) return Object.assign({}, f, {elegido: f.candidato===cDec});
+      return f; // diferente solicitud del mismo puesto — no tocar
+    }
     if (f.puesto !== pDec) return f;
     return Object.assign({}, f, {elegido: f.candidato===cDec});
   });
   localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
 
-  // Activar etapa 6 (oferta) automáticamente en la requisición del puesto
-  var reqsDePuesto = requisiciones.filter(function(r){ return r.puesto && pDec && r.puesto.toLowerCase().trim()===pDec.toLowerCase().trim() && r.estado!=='Cubierto'; });
-  if (reqsDePuesto.length) {
-    var lastReqId = reqsDePuesto[reqsDePuesto.length-1].id;
+  // Activar etapa oferta en la req específica del candidato (o última activa del puesto como fallback)
+  var targetReqId = c_reqId
+    ? c_reqId
+    : (function(){
+        var reqs = requisiciones.filter(function(r){ return r.puesto && pDec && r.puesto.toLowerCase().trim()===pDec.toLowerCase().trim() && r.estado!=='Cubierto'; });
+        return reqs.length ? reqs[reqs.length-1].id : null;
+      })();
+  if (targetReqId) {
     requisiciones = requisiciones.map(function(r){
-      if (r.id !== lastReqId) return r;
+      if (r.id !== targetReqId && r.id !== parseInt(targetReqId)) return r;
       var etapas = Object.assign({}, r.etapas||{});
       etapas.oferta = new Date().toLocaleDateString('es-PE');
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
@@ -6800,16 +6850,26 @@ function saveFeedbackBtn(el) {
 function deleteFeedbackBtn(el) {
   var candidato = decodeURIComponent(el.dataset.cand);
   var puesto = decodeURIComponent(el.dataset.puesto);
-  deleteFeedback(candidato, puesto);
+  var reqId = el.dataset.reqId ? (parseInt(el.dataset.reqId)||el.dataset.reqId) : null;
+  deleteFeedback(candidato, puesto, reqId);
 }
 
 function saveFeedback(candidato,puesto,key){
   var comentario=document.getElementById('fb_'+key)?document.getElementById('fb_'+key).value:'';
+  var reqIdFb = (window._fbTemp&&window._fbTemp[key]&&window._fbTemp[key].reqId) ? window._fbTemp[key].reqId : null;
   // Preservar apto/elegido existentes para no resetearlos al guardar comentario
-  var existing=feedbacks.find(function(f){return f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim();});
-  var fb=Object.assign({candidato:candidato,puesto:puesto,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false},fbTemp[key]||{});
+  var existing=feedbacks.find(function(f){
+    if (f.candidato!==candidato) return false;
+    if (reqIdFb) return f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb);
+    return f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim();
+  });
+  var fb=Object.assign({candidato:candidato,puesto:puesto,reqId:reqIdFb||null,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false},fbTemp[key]||{});
   if(existing){fb.apto=existing.apto;fb.elegido=existing.elegido;}
-  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());});
+  feedbacks=feedbacks.filter(function(f){
+    if (f.candidato!==candidato) return true;
+    if (reqIdFb) return !(f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb));
+    return !(f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());
+  });
   feedbacks.push(fb);
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
@@ -6821,8 +6881,12 @@ function saveFeedback(candidato,puesto,key){
   }
 }
 
-function deleteFeedback(candidato,puesto){
-  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());});
+function deleteFeedback(candidato,puesto,reqId){
+  feedbacks=feedbacks.filter(function(f){
+    if (f.candidato!==candidato) return true;
+    if (reqId) return !(f.reqId===reqId || f.reqId===parseInt(reqId));
+    return !(f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());
+  });
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
   toast('Feedback eliminado');
