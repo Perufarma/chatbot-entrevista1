@@ -462,53 +462,7 @@ a[title]{cursor:pointer;}
       <div><div class="section-title">Envío masivo</div><div class="section-sub">Gestiona links de entrevista, mensajes y configuración de onboarding</div></div>
     </div>
 
-    <!-- Sección 1: Link de entrevista IA -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Link de entrevista IA</div>
-      <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 14px;">
-        <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareUrl">cargando...</span>
-        <button class="btn btn-secondary btn-sm" onclick="copyLink()" style="flex-shrink:0;">Copiar link</button>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Comparte este link con candidatos para que completen la entrevista inicial con IA</div>
-    </div>
-
-    <!-- Sección 2: Envío masivo WhatsApp -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Envío masivo por WhatsApp</div>
-        <button onclick="mostrarTemplateEditor('whatsapp')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">&#9998; Editar template</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lista de candidatos</label>
-            <textarea id="candidatosList" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;resize:none;height:110px;color:var(--text);box-sizing:border-box;" placeholder="Nombre, teléfono&#10;Juan Pérez, 987654321&#10;María López, 912345678"></textarea>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px;">Un candidato por línea: Nombre, teléfono</div>
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Puesto al que aplican</label>
-            <select id="envioJobSelect" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none;"></select>
-          </div>
-          <button class="btn btn-accent" onclick="generarMensajes()" style="align-self:flex-start;">Generar mensajes</button>
-        </div>
-        <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:10px;"></div>
-      </div>
-    </div>
-
-    <!-- Sección 3: Templates de mensajes -->
-    <div class="card" style="margin-bottom:16px;" id="templateEditorSection" style="display:none;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Templates de mensajes</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:0.5px solid var(--border2);padding-bottom:12px;">
-        <button onclick="switchTemplateTab('whatsapp')" id="tplTabWA" style="font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;">WhatsApp candidato</button>
-        <button onclick="switchTemplateTab('email_cand')" id="tplTabEmail" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email candidato</button>
-        <button onclick="switchTemplateTab('email_lider')" id="tplTabLider" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email líder</button>
-        <button onclick="switchTemplateTab('email_adm')" id="tplTabAdm" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Adm.</button>
-        <button onclick="switchTemplateTab('email_seg')" id="tplTabSeg" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Seguridad</button>
-      </div>
-      <div id="templateEditorContent"></div>
-    </div>
-
-    <!-- Sección 4: Reporte de ingresos -->
+<!-- Sección 4: Reporte de ingresos -->
     <div class="card" style="margin-bottom:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Reporte de ingresos</div>
@@ -559,7 +513,53 @@ a[title]{cursor:pointer;}
         </div>
       </div>
     </div>
-  </div>
+<!-- Sección 1: Link de entrevista IA -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Link de entrevista IA</div>
+      <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 14px;">
+        <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareUrl">cargando...</span>
+        <button class="btn btn-secondary btn-sm" onclick="copyLink()" style="flex-shrink:0;">Copiar link</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Comparte este link con candidatos para que completen la entrevista inicial con IA</div>
+    </div>
+
+    <!-- Sección 2: Envío masivo WhatsApp -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Envío masivo por WhatsApp</div>
+        <button onclick="mostrarTemplateEditor('whatsapp')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">&#9998; Editar template</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lista de candidatos</label>
+            <textarea id="candidatosList" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;resize:none;height:110px;color:var(--text);box-sizing:border-box;" placeholder="Nombre, teléfono&#10;Juan Pérez, 987654321&#10;María López, 912345678"></textarea>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;">Un candidato por línea: Nombre, teléfono</div>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Puesto al que aplican</label>
+            <select id="envioJobSelect" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none;"></select>
+          </div>
+          <button class="btn btn-accent" onclick="generarMensajes()" style="align-self:flex-start;">Generar mensajes</button>
+        </div>
+        <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- Sección 3: Templates de mensajes -->
+    <div class="card" style="margin-bottom:16px;" id="templateEditorSection" style="display:none;">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Templates de mensajes</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:0.5px solid var(--border2);padding-bottom:12px;">
+        <button onclick="switchTemplateTab('whatsapp')" id="tplTabWA" style="font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;">WhatsApp candidato</button>
+        <button onclick="switchTemplateTab('email_cand')" id="tplTabEmail" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email candidato</button>
+        <button onclick="switchTemplateTab('email_lider')" id="tplTabLider" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email líder</button>
+        <button onclick="switchTemplateTab('email_adm')" id="tplTabAdm" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Adm.</button>
+        <button onclick="switchTemplateTab('email_seg')" id="tplTabSeg" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Seguridad</button>
+      </div>
+      <div id="templateEditorContent"></div>
+    </div>
+
+      </div>
 
 
   <!-- CANDIDATOS -->
@@ -1467,8 +1467,7 @@ function cargarConfigOnboarding() {
     var segEl = document.getElementById('emailSeguridad');
     if (admEl && saved.emailAdmPersonal) admEl.value = saved.emailAdmPersonal;
     if (segEl && saved.emailSeguridad) segEl.value = saved.emailSeguridad;
-    renderDocsBiblioteca();
-    renderReporteIngresos();
+    // renderDocsBiblioteca se llama desde showTab y al final de inicializarApp
   } catch(e){}
 }
 
@@ -1589,6 +1588,10 @@ async function inicializarApp() {
   renderEnvioSelect();
   verificarAlertas();
   poblarSelectPuestosDefault();
+  renderDocsBiblioteca();
+  // Reporte de ingresos solo si la pestaña envio está activa
+  var tabEnvio = document.getElementById('tab-envio');
+  if (tabEnvio && tabEnvio.classList.contains('active')) renderReporteIngresos();
   _appInitialised = true;
 }
 
@@ -8055,27 +8058,49 @@ function renderReporteIngresos() {
   var el = document.getElementById('reporteIngresosPanel');
   if (!el) return;
 
+  // Asegurar que _allResults y feedbacks están cargados
+  if (!_allResults || !_allResults.length) {
+    var cached = JSON.parse(localStorage.getItem('rresults')||'[]');
+    if (cached.length) {
+      _allResults = cached;
+    } else {
+      // Cargar desde servidor y volver a llamar
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);font-style:italic;">Cargando datos...</div>';
+      safeFetch('/api/jobs?type=results').then(function(d){
+        _allResults = (d&&d.results) ? d.results : [];
+        if (!Array.isArray(_allResults)) _allResults = [];
+        renderReporteIngresos();
+      });
+      return;
+    }
+  }
+  if (!feedbacks || !feedbacks.length) {
+    var cachedFb = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+    if (cachedFb.length) feedbacks = cachedFb;
+  }
+
   // Candidatos en trámites: req con etapas.tramites y candidato elegido no notificado
   var pendientes = [];
   requisiciones.forEach(function(req) {
     if (!req.etapas || !req.etapas.tramites) return;
     // Buscar candidato elegido de esta req
+    var reqIdStr = String(req.id);
     var fb = feedbacks.find(function(f) {
-      return (f.reqId === req.id || f.reqId === parseInt(req.id)) && f.elegido;
+      return f.elegido && f.reqId && String(f.reqId) === reqIdStr;
     });
-    // Fallback: buscar por puesto si no hay reqId
+    // Fallback: buscar por puesto si no hay reqId en el feedback
     if (!fb) {
       fb = feedbacks.find(function(f) {
         return f.elegido && f.puesto && req.puesto &&
-          f.puesto.toLowerCase().trim() === req.puesto.toLowerCase().trim() &&
-          !f.reqId;
+          f.puesto.toLowerCase().trim() === req.puesto.toLowerCase().trim();
       });
     }
     var candidatoNombre = fb ? fb.candidato : null;
     var cand = candidatoNombre ? _allResults.find(function(r) {
-      return r.candidato === candidatoNombre &&
-        (r.reqId === req.id || r.reqId === parseInt(req.id) ||
-          (r.puesto && req.puesto && r.puesto.toLowerCase().trim() === req.puesto.toLowerCase().trim()));
+      if (r.candidato !== candidatoNombre) return false;
+      if (r.reqId && String(r.reqId) === reqIdStr) return true;
+      if (r.puesto && req.puesto && r.puesto.toLowerCase().trim() === req.puesto.toLowerCase().trim()) return true;
+      return false;
     }) : null;
 
     if (!cand) return; // sin candidato elegido identificado
@@ -8201,13 +8226,7 @@ function enviarReporteIngresos() {
   }, 1500);
 }
 
-// ── Incluir docs de ingreso en email de candidato elegido ──
-function getLinksDocsIngreso() {
-  var docs = getDocsIngreso();
-  if (!docs.length) return '';
-  return '\n\nDocumentos a completar para tus trámites de ingreso:\n'
-    + docs.map(function(d){ return '• ' + d.nombre + ': ' + d.url; }).join('\n');
-}
+// getLinksDocsIngreso — integrado directamente en enviarCorreoCandidato
 
 
 </script>
