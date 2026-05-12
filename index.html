@@ -508,7 +508,27 @@ a[title]{cursor:pointer;}
       <div id="templateEditorContent"></div>
     </div>
 
-    <!-- Sección 4: Configuración de onboarding -->
+    <!-- Sección 4: Reporte de ingresos -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Reporte de ingresos</div>
+        <button class="btn btn-secondary btn-sm" onclick="renderReporteIngresos()">&#8635; Actualizar</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Candidatos en Trámites de Ingreso pendientes de notificar a Administración de Personal y Seguridad.</div>
+      <div id="reporteIngresosPanel">
+        <div style="font-size:12px;color:var(--muted);font-style:italic;">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Sección 5: Biblioteca de documentos -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Documentos de trámites de ingreso</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Links de documentos que se incluirán automáticamente en el email de comunicación al candidato elegido.</div>
+      <div id="docsBiblioteca" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+      <button class="btn btn-secondary btn-sm" onclick="agregarDocIngreso()">+ Agregar documento</button>
+    </div>
+
+    <!-- Sección 6: Configuración de onboarding -->
     <div class="card" id="onboardingConfigSection">
       <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Configuración de onboarding</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Emails que recibirán notificación automática cuando se confirme el ingreso de un candidato</div>
@@ -1431,7 +1451,10 @@ function resetTemplate(tab) {
 function guardarConfigOnboarding() {
   var adm = (document.getElementById('emailAdmPersonal')||{}).value||'';
   var seg = (document.getElementById('emailSeguridad')||{}).value||'';
-  var config = {emailAdmPersonal: adm, emailSeguridad: seg};
+  // Preservar documentos ya guardados
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem('rOnboardingConfig')||'{}'); } catch(e){}
+  var config = {emailAdmPersonal: adm, emailSeguridad: seg, docsIngreso: saved.docsIngreso||[]};
   localStorage.setItem('rOnboardingConfig', JSON.stringify(config));
   safeFetch('/api/jobs?type=config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key:'onboardingConfig', value: JSON.stringify(config)})});
   toast('✓ Configuración guardada');
@@ -1444,6 +1467,8 @@ function cargarConfigOnboarding() {
     var segEl = document.getElementById('emailSeguridad');
     if (admEl && saved.emailAdmPersonal) admEl.value = saved.emailAdmPersonal;
     if (segEl && saved.emailSeguridad) segEl.value = saved.emailSeguridad;
+    renderDocsBiblioteca();
+    renderReporteIngresos();
   } catch(e){}
 }
 
@@ -1575,7 +1600,7 @@ function showTab(id, btn) {
   document.querySelectorAll('#reclutadorApp .nav-tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('tab-'+id).classList.add('active');
   if (btn) btn.classList.add('active');
-  if (id === 'envio') renderEnvioSelect();
+  if (id === 'envio') { renderEnvioSelect(); renderReporteIngresos(); renderDocsBiblioteca(); }
   // Cerrar formularios flotantes al cambiar de pestaña
   var cmf = document.getElementById('candManualForm');
   if (cmf) cmf.classList.remove('open');
@@ -1676,6 +1701,13 @@ function enviarCorreoCandidato(candidato, puesto) {
       ? 'Nos complace informarle que ha sido seleccionado/a para este cargo. '
         + 'Adjuntamos la carta oferta con los detalles de su incorporacion.' + '\n\n'
         + 'Por favor, confirme su aceptacion respondiendo a este correo.' + '\n\n'
+        + (function(){
+            var docs = getDocsIngreso();
+            if (!docs.length) return '';
+            return 'Para completar sus tramites de ingreso, le pedimos completar los siguientes documentos:\n'
+              + docs.map(function(d){ return '\u2022 ' + d.nombre + ': ' + d.url; }).join('\n')
+              + '\n\n';
+          })()
       : 'Le informamos sobre el estado de su proceso de seleccion.' + '\n\n')
     + 'Ante cualquier consulta, no dude en comunicarse con nosotros.' + '\n\n'
     + 'Atentamente,\nEquipo de GTH\nPerufarma S.A.';
@@ -5509,13 +5541,20 @@ function parsearPandapeRows(rows) {
   for (var i=0; i<Math.min(rows.length,15); i++) {
     if (!rows[i] || !rows[i].length) continue;
     var row = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
-    if (row.some(function(c){ return c==='nombre'; }) && row.some(function(c){ return c==='apellido'; })) {
+    // Pandapé: debe tener 'nombre', 'apellido' Y 'número de identificación' (discriminador único)
+    var tieneNombre   = row.some(function(c){ return c==='nombre'; });
+    var tieneApellido = row.some(function(c){ return c==='apellido'; });
+    var esPandape     = row.some(function(c){ return c.indexOf('identificaci')>=0; });
+    if (tieneNombre && tieneApellido && esPandape) {
       headerIdx = i;
       headers = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
       break;
     }
   }
-  if (headerIdx < 0) return [];
+  if (headerIdx < 0) {
+    mostrarErrorImport('El archivo no parece ser un export de Pandapé. Verifica que sea el Excel correcto.');
+    return [];
+  }
 
   var idx = function(keys) {
     for (var k=0; k<keys.length; k++) {
@@ -5609,14 +5648,20 @@ function parsearBumeranRows(rows) {
   for (var i=0; i<Math.min(rows.length,15); i++) {
     if (!rows[i] || !rows[i].length) continue;
     var row = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
-    if (row.some(function(c){ return c==='nombre'; }) &&
-        row.some(function(c){ return c==='apellido'; })) {
+    // Bumeran: debe tener 'nombre', 'apellido' Y 'filtro curricular' (discriminador único)
+    var tieneNombre    = row.some(function(c){ return c==='nombre'; });
+    var tieneApellido  = row.some(function(c){ return c==='apellido'; });
+    var esBumeran      = row.some(function(c){ return c.indexOf('filtro curricular')>=0; });
+    if (tieneNombre && tieneApellido && esBumeran) {
       headerIdx = i;
       headers = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
       break;
     }
   }
-  if (headerIdx < 0) return [];
+  if (headerIdx < 0) {
+    mostrarErrorImport('El archivo no parece ser un export de Bumeran. Verifica que sea el Excel correcto.');
+    return [];
+  }
 
   var idx = function(keys) {
     for (var k=0; k<keys.length; k++) {
@@ -7896,6 +7941,272 @@ function mostrarPreviewCV(candEnc) {
     + '</div>';
 
   document.body.appendChild(overlay);
+}
+
+
+// ══════════════════════════════════════════════════════════
+// BIBLIOTECA DE DOCUMENTOS DE INGRESO
+// ══════════════════════════════════════════════════════════
+
+function getDocsIngreso() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('rOnboardingConfig')||'{}');
+    return Array.isArray(saved.docsIngreso) ? saved.docsIngreso : [];
+  } catch(e) { return []; }
+}
+
+function saveDocsIngreso(docs) {
+  try {
+    var saved = JSON.parse(localStorage.getItem('rOnboardingConfig')||'{}');
+    saved.docsIngreso = docs;
+    localStorage.setItem('rOnboardingConfig', JSON.stringify(saved));
+    safeFetch('/api/jobs?type=config', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({key:'onboardingConfig', value: JSON.stringify(saved)})
+    });
+  } catch(e) {}
+}
+
+function renderDocsBiblioteca() {
+  var el = document.getElementById('docsBiblioteca');
+  if (!el) return;
+  var docs = getDocsIngreso();
+  if (!docs.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);font-style:italic;">No hay documentos configurados aún.</div>';
+    return;
+  }
+  el.innerHTML = docs.map(function(doc, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;">'
+      + '<div style="font-size:13px;">📄</div>'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:12px;font-weight:500;color:var(--text);">' + (doc.nombre||'Sin nombre') + '</div>'
+        + '<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (doc.url||'Sin URL') + '</div>'
+      + '</div>'
+      + '<button onclick="editarDocIngreso(' + i + ')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">✎</button>'
+      + '<button onclick="eliminarDocIngreso(' + i + ')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:#c0392b;cursor:pointer;">🗑</button>'
+    + '</div>';
+  }).join('');
+}
+
+function agregarDocIngreso() {
+  _abrirModalDoc(null, null, -1);
+}
+
+function editarDocIngreso(idx) {
+  var docs = getDocsIngreso();
+  if (!docs[idx]) return;
+  _abrirModalDoc(docs[idx].nombre, docs[idx].url, idx);
+}
+
+function eliminarDocIngreso(idx) {
+  var docs = getDocsIngreso();
+  docs.splice(idx, 1);
+  saveDocsIngreso(docs);
+  renderDocsBiblioteca();
+  toast('Documento eliminado');
+}
+
+function _abrirModalDoc(nombre, url, idx) {
+  var overlay = document.createElement('div');
+  overlay.id = 'modalDocOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  var esNuevo = idx < 0;
+  overlay.innerHTML = '<div style="background:var(--surface);border-radius:14px;width:100%;max-width:480px;overflow:hidden;">'
+    + '<div style="padding:14px 18px;border-bottom:0.5px solid var(--border2);font-size:14px;font-weight:500;">' + (esNuevo?'Agregar documento':'Editar documento') + '</div>'
+    + '<div style="padding:18px;display:flex;flex-direction:column;gap:12px;">'
+      + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Nombre del documento *</label>'
+        + '<input id="mdocNombre" value="' + (nombre||'') + '" placeholder="Ej: Ficha de datos personales" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;"></div>'
+      + '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Link del documento (Drive, SharePoint, etc.) *</label>'
+        + '<input id="mdocUrl" value="' + (url||'') + '" placeholder="https://drive.google.com/..." style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;"></div>'
+    + '</div>'
+    + '<div style="padding:12px 18px;border-top:0.5px solid var(--border2);display:flex;gap:8px;justify-content:flex-end;">'
+      + '<button onclick="var o=document.getElementById(&quot;modalDocOverlay&quot;);if(o)o.remove();" style="font-size:12px;padding:7px 14px;border-radius:8px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;">Cancelar</button>'
+      + '<button onclick="_guardarDocIngreso(' + idx + ')" class="btn btn-accent btn-sm">Guardar</button>'
+    + '</div>'
+  + '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ var el=document.getElementById('mdocNombre'); if(el) el.focus(); }, 100);
+}
+
+function _guardarDocIngreso(idx) {
+  var nombre = (document.getElementById('mdocNombre')||{}).value||'';
+  var url    = (document.getElementById('mdocUrl')||{}).value||'';
+  if (!nombre.trim() || !url.trim()) { toast('Completa nombre y link'); return; }
+  var docs = getDocsIngreso();
+  if (idx < 0) {
+    docs.push({nombre: nombre.trim(), url: url.trim()});
+  } else {
+    docs[idx] = {nombre: nombre.trim(), url: url.trim()};
+  }
+  saveDocsIngreso(docs);
+  renderDocsBiblioteca();
+  var overlay = document.getElementById('modalDocOverlay');
+  if (overlay) overlay.remove();
+  toast('✓ Documento guardado');
+}
+
+// ══════════════════════════════════════════════════════════
+// REPORTE DE INGRESOS
+// ══════════════════════════════════════════════════════════
+
+function renderReporteIngresos() {
+  var el = document.getElementById('reporteIngresosPanel');
+  if (!el) return;
+
+  // Candidatos en trámites: req con etapas.tramites y candidato elegido no notificado
+  var pendientes = [];
+  requisiciones.forEach(function(req) {
+    if (!req.etapas || !req.etapas.tramites) return;
+    // Buscar candidato elegido de esta req
+    var fb = feedbacks.find(function(f) {
+      return (f.reqId === req.id || f.reqId === parseInt(req.id)) && f.elegido;
+    });
+    // Fallback: buscar por puesto si no hay reqId
+    if (!fb) {
+      fb = feedbacks.find(function(f) {
+        return f.elegido && f.puesto && req.puesto &&
+          f.puesto.toLowerCase().trim() === req.puesto.toLowerCase().trim() &&
+          !f.reqId;
+      });
+    }
+    var candidatoNombre = fb ? fb.candidato : null;
+    var cand = candidatoNombre ? _allResults.find(function(r) {
+      return r.candidato === candidatoNombre &&
+        (r.reqId === req.id || r.reqId === parseInt(req.id) ||
+          (r.puesto && req.puesto && r.puesto.toLowerCase().trim() === req.puesto.toLowerCase().trim()));
+    }) : null;
+
+    if (!cand) return; // sin candidato elegido identificado
+    if (cand.notificadoIngreso) return; // ya notificado
+
+    pendientes.push({
+      req: req,
+      cand: cand,
+      nombre: cand.candidato || candidatoNombre,
+      dni: cand.dni || '—',
+      puesto: req.puesto || cand.puesto || '—',
+      gerencia: req.gerencia || cand.gerencia || '—',
+      pretension: cand.pretension ? 'S/ ' + cand.pretension : '—',
+      disponibilidad: cand.disponibilidad || '—',
+      fecha: req.fechaLimite || req.fechaVencimiento || '—'
+    });
+  });
+
+  if (!pendientes.length) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:var(--muted);">✓ No hay candidatos pendientes de notificar.</div>';
+    return;
+  }
+
+  // Tabla de pendientes
+  var html = '<div style="overflow-x:auto;margin-bottom:14px;">'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+    + '<thead><tr style="background:var(--bg);">'
+    + '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--border2);">Candidato</th>'
+    + '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--border2);">DNI</th>'
+    + '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--border2);">Puesto</th>'
+    + '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--border2);">Gerencia</th>'
+    + '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--border2);">Pretensión</th>'
+    + '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--border2);">Disponibilidad</th>'
+    + '</tr></thead><tbody>'
+    + pendientes.map(function(p, i) {
+        return '<tr style="border-bottom:0.5px solid var(--border2);cursor:default;">'
+          + '<td style="padding:8px 10px;font-weight:500;">' + p.nombre + '</td>'
+          + '<td style="padding:8px 10px;color:var(--muted);">' + p.dni + '</td>'
+          + '<td style="padding:8px 10px;">' + p.puesto + '</td>'
+          + '<td style="padding:8px 10px;color:var(--muted);">' + p.gerencia + '</td>'
+          + '<td style="padding:8px 10px;">' + p.pretension + '</td>'
+          + '<td style="padding:8px 10px;color:var(--muted);">' + p.disponibilidad + '</td>'
+        + '</tr>';
+      }).join('')
+    + '</tbody></table></div>';
+
+  // Botón enviar
+  var cfg = {};
+  try { cfg = JSON.parse(localStorage.getItem('rOnboardingConfig')||'{}'); } catch(e){}
+  var emailAdm = cfg.emailAdmPersonal || '';
+  var emailSeg = cfg.emailSeguridad || '';
+  var sinEmails = !emailAdm && !emailSeg;
+
+  html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+  if (sinEmails) {
+    html += '<div style="font-size:12px;color:#854F0B;background:#FAEEDA;padding:6px 12px;border-radius:7px;">⚠ Configura los emails de Adm. Personal y Seguridad más abajo antes de enviar.</div>';
+  } else {
+    html += '<div style="font-size:12px;color:var(--muted);">Se enviará a: '
+      + [emailAdm, emailSeg].filter(Boolean).map(function(e){ return '<strong>'+e+'</strong>'; }).join(', ')
+      + '</div>';
+    html += '<button class="btn btn-accent btn-sm" onclick="enviarReporteIngresos()">📧 Enviar reporte (' + pendientes.length + ' candidato' + (pendientes.length!==1?'s':'') + ')</button>';
+  }
+  html += '</div>';
+
+  el.innerHTML = html;
+  // Guardar pendientes en window para usarlos al enviar
+  window._reportePendientes = pendientes;
+}
+
+function enviarReporteIngresos() {
+  var pendientes = window._reportePendientes || [];
+  if (!pendientes.length) { toast('No hay candidatos pendientes'); return; }
+
+  var cfg = {};
+  try { cfg = JSON.parse(localStorage.getItem('rOnboardingConfig')||'{}'); } catch(e){}
+  var emailAdm = cfg.emailAdmPersonal || '';
+  var emailSeg = cfg.emailSeguridad || '';
+  var destinatarios = [emailAdm, emailSeg].filter(Boolean).join(';');
+  if (!destinatarios) { toast('Configura los emails de destino primero'); return; }
+
+  var fecha = new Date().toLocaleDateString('es-PE', {day:'2-digit', month:'long', year:'numeric'});
+  var asunto = encodeURIComponent('Reporte de Ingresos — Perufarma S.A. — ' + fecha);
+
+  // Cuerpo del email con tabla de candidatos
+  var filas = pendientes.map(function(p) {
+    return '- ' + p.nombre + ' | DNI: ' + p.dni + ' | Puesto: ' + p.puesto + ' | Gerencia: ' + p.gerencia + ' | Pretensión: ' + p.pretension + ' | Disponibilidad: ' + p.disponibilidad;
+  }).join('\n');
+
+  var docs = cfg.docsIngreso || [];
+  var docsTexto = docs.length
+    ? '\n\nDocumentos requeridos para tramites:\n' + docs.map(function(d){ return '- ' + d.nombre + ': ' + d.url; }).join('\n')
+    : '';
+
+  var cuerpo = encodeURIComponent(
+    'Estimado equipo,\n\n'
+    + 'Se adjunta el reporte de candidatos que iniciaran sus tramites de ingreso:\n\n'
+    + filas
+    + docsTexto
+    + '\n\nSaludos,\nEquipo de Gestion del Talento Humano - Perufarma S.A.'
+  );
+
+  // Abrir cliente de email
+  window.location.href = 'mailto:' + destinatarios + '?subject=' + asunto + '&body=' + cuerpo;
+
+  // Marcar candidatos como notificados
+  setTimeout(function() {
+    pendientes.forEach(function(p) {
+      var idx = _allResults.findIndex(function(r){ return r.candidato === p.nombre && r.dni === p.dni; });
+      if (idx >= 0) {
+        _allResults[idx].notificadoIngreso = true;
+        _allResults[idx].fechaNotificacionIngreso = new Date().toLocaleDateString('es-PE');
+      }
+    });
+    // Persistir
+    safeFetch('/api/jobs?type=results', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({results: _allResults})
+    });
+    localStorage.setItem('rresults', JSON.stringify(_allResults));
+    toast('✓ Reporte enviado — candidatos marcados como notificados');
+    renderReporteIngresos();
+  }, 1500);
+}
+
+// ── Incluir docs de ingreso en email de candidato elegido ──
+function getLinksDocsIngreso() {
+  var docs = getDocsIngreso();
+  if (!docs.length) return '';
+  return '\n\nDocumentos a completar para tus trámites de ingreso:\n'
+    + docs.map(function(d){ return '• ' + d.nombre + ': ' + d.url; }).join('\n');
 }
 
 
