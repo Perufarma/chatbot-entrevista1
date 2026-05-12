@@ -523,7 +523,7 @@ a[title]{cursor:pointer;}
   <!-- CANDIDATOS -->
   <div class="panel" id="tab-candidatos">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:16px;flex-wrap:wrap;">
-      <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real</div></div>
+      <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real &nbsp;<span id="candidatosContador" style="font-size:11px;color:var(--muted);"></span></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="renderCandidatosPorPuesto()" title="Recarga la lista de candidatos desde el servidor">Actualizar</button>
         <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Descargar Excel</button>
@@ -538,12 +538,14 @@ a[title]{cursor:pointer;}
       <select id="filtroGerencia_cand" onchange="filtrarGerenciaCand()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:160px;">
         <option value="">Todas las gerencias</option>
       </select>
-      <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;">
-        <option value="">Todas las solicitudes</option>
-      </select>
+
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
         <input type="checkbox" id="soloVisibles" onchange="filtrarCandidatos()" style="accent-color:var(--accent2);">
         Solo visibles para el l&iacute;der
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="mostrarCubiertos_cand" onchange="filtrarCandidatos()" style="accent-color:#3C3489;">
+        Mostrar cubiertos
       </label>
     </div>
 
@@ -566,6 +568,19 @@ a[title]{cursor:pointer;}
     <!-- Form candidato manual -->
     <div class="add-job-form" id="candManualForm">
       <div style="font-size:14px;font-weight:500;">Agregar candidato manualmente</div>
+      <!-- Carga de CV para auto-completar -->
+      <div style="background:var(--surface2);border:1.5px dashed var(--border2);border-radius:10px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+        <div style="font-size:22px;">&#128196;</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:500;margin-bottom:2px;">Cargar CV para auto-completar</div>
+          <div style="font-size:11px;color:var(--muted);">La IA leerá el CV y completará los campos automáticamente. Soporta PDF y Word (.docx)</div>
+        </div>
+        <label style="cursor:pointer;">
+          <input type="file" id="cvAutoFillInput" accept=".pdf,.doc,.docx" style="display:none;" onchange="procesarCVCandidato(this)">
+          <span class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px;">&#128206; Seleccionar CV</span>
+        </label>
+        <div id="cvAutoFillStatus" style="font-size:11px;color:var(--muted);"></div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Nombre completo *</label><input type="text" id="cm_nombre" placeholder="Ej: Juan Pérez"></div>
         <div class="form-group"><label>DNI *</label><input type="text" id="cm_dni" maxlength="8" placeholder="12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
@@ -633,7 +648,25 @@ a[title]{cursor:pointer;}
       <button onclick="abrirCopiarCandidatos()" style="font-size:13px;font-weight:500;padding:10px 20px;border-radius:10px;border:none;background:#3C3489;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(60,52,137,.35);">&#128260; Copiar a otra solicitud (<span class="btnSelCount">0</span>)</button>
       <button onclick="eliminarSeleccionados()" style="font-size:13px;font-weight:500;padding:10px 20px;border-radius:10px;border:none;background:#A32D2D;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(163,45,45,.35);">&#128465; Eliminar seleccionados (<span id="btnEliminarSelCount">0</span>)</button>
     </div>
-    <div id="candidatosPorPuesto"></div>
+    <!-- Layout panel lateral candidatos -->
+    <div id="candLayoutWrap" style="display:flex;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;height:calc(100vh - 260px);min-height:520px;">
+
+      <!-- SIDEBAR solicitudes -->
+      <div id="candSidebar" style="width:230px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
+        <div style="padding:10px;border-bottom:0.5px solid var(--border2);">
+          <input id="buscarSolicitud_cand" oninput="renderCandSidebar()" placeholder="Buscar solicitud..." style="width:100%;font-size:12px;padding:6px 10px;border-radius:8px;border:0.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        </div>
+        <div id="candSidebarList" style="flex:1;overflow-y:auto;padding:4px 0;"></div>
+        <div id="candSidebarFooter" style="padding:8px 12px;border-top:0.5px solid var(--border2);font-size:11px;color:var(--muted);display:none;"></div>
+      </div>
+
+      <!-- PANEL DERECHO -->
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--surface);">
+        <div id="candMainHeader" style="padding:12px 16px;border-bottom:0.5px solid var(--border2);flex-shrink:0;display:none;"></div>
+        <div id="candidatosPorPuesto" style="flex:1;overflow-y:auto;"></div>
+      </div>
+
+    </div>
   </div>
   <!-- DASHBOARD -->
   <div class="panel" id="tab-dashboard">
@@ -920,8 +953,12 @@ a[title]{cursor:pointer;}
         <!-- Columna izquierda: lista de procesos -->
         <div style="width:260px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
           <div style="padding:14px 16px;border-bottom:0.5px solid var(--border2);">
-            <div style="font-size:13px;font-weight:500;color:var(--text);">Mis procesos activos</div>
+            <div style="font-size:13px;font-weight:500;color:var(--text);">Mis procesos</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;">Clic en un proceso para gestionar</div>
+            <label style="display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;">
+              <input type="checkbox" id="liderMostrarCubiertos" onchange="renderLiderProcesos()" style="accent-color:var(--accent2);width:13px;height:13px;">
+              <span style="font-size:11px;color:var(--muted);">Mostrar procesos cerrados</span>
+            </label>
           </div>
           <div id="liderProcesosLista" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px;"></div>
         </div>
@@ -1910,14 +1947,24 @@ function calcularEtapaActual(req, candidatos, feedbacks) {
 
   // Etapa 0: HC — manual
   if (!etapasCompletadas.hc) return 0;
-  // Etapa 1: Convocatoria — automática cuando hay candidatos registrados
-  var hayCandidatos = candidatos.some(function(c){ return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim(); });
+  // Etapa 1: Convocatoria — automática cuando hay candidatos registrados EN ESTA SOLICITUD
+  var hayCandidatos = candidatos.some(function(c){
+    if (c.reqId) return c.reqId === req.id || c.reqId === parseInt(req.id);
+    return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
+  });
   if (!hayCandidatos) return 1;
-  // Etapa 2: Evaluación y Longlist — candidatos visibles para el líder
-  var hayVisibles = candidatos.some(function(c){ return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim() && c.visibleLider; });
+  // Etapa 2: Evaluación y Longlist — candidatos visibles para el líder EN ESTA SOLICITUD
+  var hayVisibles = candidatos.some(function(c){
+    var matchReq = c.reqId ? (c.reqId === req.id || c.reqId === parseInt(req.id))
+                           : (c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim());
+    return matchReq && c.visibleLider;
+  });
   if (!hayVisibles) return 2;
-  // Etapa 3: Entrevista/Feedback — hay feedback del líder
-  var hayFeedback = feedbacks.some(function(f){ return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim(); });
+  // Etapa 3: Entrevista/Feedback — hay feedback del líder EN ESTA SOLICITUD
+  var hayFeedback = feedbacks.some(function(f){
+    if (f.reqId) return f.reqId === req.id || f.reqId === parseInt(req.id);
+    return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
+  });
   if (!hayFeedback) return 3;
   // Etapa 4: Oferta — manual
   if (!etapasCompletadas.oferta) return 4;
@@ -2246,19 +2293,23 @@ function renderLiderProcesos() {
   var panel = document.getElementById('liderProcesosLista');
   if (!panel) return;
   var misPuestosIds = jobs.filter(function(j){ return j.dniLider===liderDni; }).map(function(j){ return j.id; });
-  var misReqs = requisiciones.filter(function(r){
+  var mostrarCubiertos = document.getElementById('liderMostrarCubiertos') && document.getElementById('liderMostrarCubiertos').checked;
+  var todasMisReqs = requisiciones.filter(function(r){
     return r.dniLider===liderDni || misPuestosIds.indexOf(r.jobId)!==-1;
-  }).filter(function(r){ return r.estado!=='Cubierto'; });
+  });
+  var misReqs = todasMisReqs.filter(function(r){ return r.estado!=='Cubierto' && r.estado!=='Stand by'; });
+  var misReqsCubiertas = todasMisReqs.filter(function(r){ return r.estado==='Cubierto'; });
 
-  if (!misReqs.length) {
-    panel.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;">No tienes procesos activos</div>';
+  if (!misReqs.length && !misReqsCubiertas.length) {
+    panel.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;">No tienes procesos asignados</div>';
     return;
   }
 
-  // Mostrar CADA solicitud independiente (no agrupar por puesto)
-  var reqsOrdenadas = misReqs.slice().sort(function(a,b){ return b.id-a.id; });
+  // Orden: más antiguos primero (id menor = más antiguo)
+  var reqsOrdenadas = misReqs.slice().sort(function(a,b){ return a.id-b.id; });
+  var cubsOrdenadas = misReqsCubiertas.slice().sort(function(a,b){ return a.id-b.id; });
 
-  panel.innerHTML = reqsOrdenadas.map(function(r) {
+  function renderItemLider(r) {
     var isSelected = window._liderProcesoSeleccionado === r.id || String(window._liderProcesoSeleccionado) === String(r.id);
     var c = r.estado==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:r.estado==='Cubierto'?{bg:'#EEEDFE',t:'#3C3489'}:{bg:'#fef8ee',t:'#7a5000'};
     var hoy = new Date();
@@ -2277,7 +2328,23 @@ function renderLiderProcesos() {
         + '</div>'
       + '</div>'
       + '</div>';
-  }).join('');
+  }
+
+  var htmlActivos = reqsOrdenadas.length
+    ? reqsOrdenadas.map(renderItemLider).join('')
+    : '<div style="padding:10px 12px;font-size:12px;color:var(--muted);">Sin procesos activos</div>';
+
+  var htmlCubiertos = '';
+  if (mostrarCubiertos && cubsOrdenadas.length) {
+    htmlCubiertos = '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 12px 4px;margin-top:4px;border-top:0.5px solid var(--border2);">Cerrados ('+cubsOrdenadas.length+')</div>'
+      + cubsOrdenadas.map(renderItemLider).join('');
+  } else if (mostrarCubiertos && !cubsOrdenadas.length) {
+    htmlCubiertos = '<div style="padding:10px 12px;font-size:12px;color:var(--muted);border-top:0.5px solid var(--border2);margin-top:4px;">Sin procesos cerrados</div>';
+  } else if (!mostrarCubiertos && cubsOrdenadas.length) {
+    htmlCubiertos = '<div style="padding:8px 12px;font-size:11px;color:var(--muted);border-top:0.5px solid var(--border2);margin-top:4px;cursor:pointer;" onclick="document.getElementById(\'liderMostrarCubiertos\').checked=true;renderLiderProcesos();">'+cubsOrdenadas.length+' proceso'+(cubsOrdenadas.length!==1?'s':'')+' cerrado'+(cubsOrdenadas.length!==1?'s':'')+' — <span style="color:var(--accent2);">ver</span></div>';
+  }
+
+  panel.innerHTML = htmlActivos + htmlCubiertos;
 }
 
 function seleccionarProceso(reqId) {
@@ -2382,60 +2449,77 @@ function renderDetalleProcesoSeleccionado(reqId) {
     html += bannerHtml;
 
 
-    // ── Candidatos ──
+    // ── Candidatos + Feedback unificados ──
     if (cands.length) {
       html += '<div style="margin-top:20px;">'
-        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Candidatos ('+cands.length+')</div>';
+        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">CANDIDATOS ('+cands.length+')</div>';
       cands.sort(function(a,b){return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);});
       html += cands.map(function(cand, ci){
-        var badge = ci===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
-          :ci===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:white;margin-left:4px;">#2</span>'
-          :ci===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:white;margin-left:4px;">#3</span>':'';
-        var fb = fbs.find(function(f){ return f.candidato===cand.candidato && f.puesto && cand.puesto && f.puesto.toLowerCase().trim()===cand.puesto.toLowerCase().trim(); });
+        var badge = ci===0?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:#fff;margin-left:4px;">#1</span>'
+          :ci===1?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#c0c0c0;color:#fff;margin-left:4px;">#2</span>'
+          :ci===2?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#cd7f32;color:#fff;margin-left:4px;">#3</span>':'';
+        var fb = fbs.find(function(f){ return f.candidato===cand.candidato&&(cand.reqId?f.reqId===cand.reqId:f.puesto===cand.puesto); });
         var aptoOk = fb&&fb.apto===true; var noAptoOk = fb&&fb.apto===false; var esElegido = fb&&fb.elegido;
         var cEncL = encodeURIComponent(cand.candidato); var pEncL = encodeURIComponent(cand.puesto);
-        var aptoTag = aptoOk?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:5px;">✓ Apto</span>'
-          :noAptoOk?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:5px;">✗ No apto'+(fb&&fb.motivoRechazo?' &middot; '+fb.motivoRechazo:'')+'</span>':'';
-        var elegidoTag = esElegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:5px;">🏆 Elegido</span>':'';
-        var BTN = 'font-size:10px;padding:2px 8px;';
-        var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'✓ Apto':'Apto')+'</button>') : '';
-        var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">'+(noAptoOk?'✗ No apto':'No apto')+'</button>') : '';
-        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">🏆 Elegir</button>' : '';
-        return '<div style="padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;">'
-          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+        var reqIdL = cand.reqId || '';
+        var key = (cand.candidato+'_'+cand.puesto).replace(/[^a-zA-Z0-9_]/g,'_');
+        var aptoTag = aptoOk?'<span style="font-size:10px;background:#edf7f1;color:#1e5c38;padding:1px 7px;border-radius:6px;">&#10003; Apto</span>'
+          :noAptoOk?'<span style="font-size:10px;background:#fbeaea;color:#8b1f1f;padding:1px 7px;border-radius:6px;">&#10007; No apto'+(fb&&fb.motivoRechazo?' &middot; '+fb.motivoRechazo:'')+'</span>':'';
+        var elegidoTag = esElegido?'<span style="font-size:10px;font-weight:600;background:#edf7f1;color:#2d7a4f;padding:1px 7px;border-radius:6px;">&#127942; Elegido</span>':'';
+        // Sección de evaluación por dimensiones
+        var dimHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;padding:10px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border2);" data-key="'+key+'">';
+        var dims = [{id:'comunicacion',label:'Comunicaci\u00f3n'},{id:'tecnico',label:'T\u00e9cnico'},{id:'actitud',label:'Actitud'},{id:'resultados',label:'Orientaci\u00f3n a resultados'}];
+        dims.forEach(function(d){
+          var val = fb&&fb[d.id] ? fb[d.id] : 0;
+          var starsD = '';
+          for (var s=1;s<=5;s++) {
+            starsD += '<span onclick="setDimStar(this,'+(s)+',\''+key+'\',\''+d.id+'\',\''+cEncL+'\',\''+pEncL+'\',\''+reqIdL+'\')" style="cursor:pointer;font-size:16px;color:'+(s<=val?'#E8623A':'#e0ddd8')+';">&#9733;</span>';
+          }
+          dimHtml += '<div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">'+d.label+'</div><div>'+starsD+'</div></div>';
+        });
+        dimHtml += '</div>';
+        // Comentario
+        var comentVal = fb&&fb.comentario ? fb.comentario : '';
+        var comentHtml = '<textarea data-key="'+key+'" id="fbComent_'+key+'" placeholder="Comentario sobre el candidato..." style="width:100%;font-size:12px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);resize:none;height:60px;box-sizing:border-box;margin-bottom:8px;">'+comentVal+'</textarea>';
+        // Info candidato
+        var infoHtml = '';
+        if (cand.disponibilidad) infoHtml += '<span style="font-size:11px;background:#EAF3DE;color:#0F6E56;padding:2px 8px;border-radius:10px;">&#128337; '+cand.disponibilidad+'</span> ';
+        if (cand.pretension) infoHtml += '<span style="font-size:11px;background:#FAEEDA;color:#854F0B;padding:2px 8px;border-radius:10px;">S/ '+cand.pretension+'</span> ';
+        // Botones
+        var BTN = 'font-size:11px;padding:4px 12px;';
+        var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'\u2713 Apto':'\u2713 Apto')+'</button>') : '';
+        var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">\u2717 No apto</button>') : '';
+        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">&#127942; Elegir</button>' : '';
+        var cEncLcv = encodeURIComponent(cand.candidato);
+        // Cachear base64 para preview
+        if (cand.cvBase64) { if (!window._cvPreviewCache) window._cvPreviewCache={}; window._cvPreviewCache[cand.candidato] = cand.cvBase64; }
+        var cvLink = cand.cvBase64
+          ? '<button onclick="mostrarPreviewCV(\''+cEncLcv+'\',\'base64\')" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV</button>'
+          : cand.cvUrl
+            ? '<a href="'+cand.cvUrl+'" target="_blank" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV &#8599;</a>'
+            : '';
+        // Comentario del reclutador
+        var recComent = cand.comentarioReclutador||cand.observacion||'';
+        var recHtml = recComent ? '<div style="font-size:11px;background:#f0f7ee;border-radius:6px;padding:6px 10px;color:#1e5c38;margin-bottom:8px;">&#128203; GTH: '+recComent+'</div>' : '';
+        return '<div style="padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:0.5px solid var(--border2);">'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'
             + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
             + '<div style="flex:1;"></div>'
-            + (function(){
-                if (fb && (fb.comunicacion||fb.tecnico||fb.actitud||fb.resultados)) {
-                  var promL = Math.round(((fb.comunicacion||0)+(fb.tecnico||0)+(fb.actitud||0)+(fb.resultados||0))/4);
-                  return renderStars(promL, starsColor(promL));
-                }
-                return '<span style="font-size:12px;color:var(--muted);">&#8212;</span>';
-              })()
-            + '<span style="font-size:11px;color:var(--muted);">'+cand.recomendacion+'</span>'
-            + aptoTag + elegidoTag
+            + aptoTag + elegidoTag + (cvLink ? ' '+cvLink : '')
           + '</div>'
-          + (!esElegido
-            ? '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'
-                + btnApto + btnNoApto + btnElegir
-              + '</div>'
-            : '')
-          + '</div>';
+          + (infoHtml ? '<div style="margin-bottom:8px;">'+infoHtml+'</div>' : '')
+          + recHtml
+          + dimHtml
+          + comentHtml
+          + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+            + btnApto + btnNoApto + btnElegir
+          + '</div>'
+        + '</div>';
       }).join('');
       html += '</div>';
     } else {
       html += '<div style="margin-top:16px;font-size:13px;color:var(--muted);">Aún no hay candidatos visibles para este proceso.</div>';
     }
-
-    // ── Feedback — renderizar directamente para este puesto ──
-    var candsFeedback = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim() && c.visibleLider!==false; });
-    if (candsFeedback.length) {
-      html += '<div style="margin-top:20px;border-top:0.5px solid var(--border2);padding-top:16px;">'
-        + '<div style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Feedback de entrevistas presenciales</div>'
-        + '<div id="feedbackPanelDetalle"></div>'
-        + '</div>';
-    }
-
     // ── Bitácora ──
     var bita = Array.isArray(r.bitacora) ? r.bitacora : [];
     if (bita.length) {
@@ -2453,14 +2537,13 @@ function renderDetalleProcesoSeleccionado(reqId) {
     panel.innerHTML = html;
 
     // Renderizar feedback dentro del panel para este puesto específico
-    if (candsFeedback.length) {
-      var fbPanel = document.getElementById('feedbackPanelDetalle');
-      if (fbPanel && typeof renderFeedbackParaPuesto === 'function') {
-        fbPanel.innerHTML = renderFeedbackParaPuesto(r.puesto, candsFeedback, fbs);
-      }
-    }
+    // Feedback ya integrado en las cards de candidatos
+    // (bloque anterior eliminado)
+
   });
 }
+
+
 
 function renderLiderCandidatos() {
   var panel = document.getElementById('liderCandidatos');
@@ -3842,6 +3925,104 @@ function setCmStar(n) {
   }
 }
 
+async 
+function procesarCVCandidato(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var status = document.getElementById('cvAutoFillStatus');
+  if (status) status.textContent = 'Leyendo CV...';
+
+  var ext = file.name.split('.').pop().toLowerCase();
+
+  function enviarAIA(base64Data, mediaType) {
+    if (status) status.textContent = 'Analizando con IA...';
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: mediaType === 'application/pdf' ? 'document' : 'text',
+              source: mediaType === 'application/pdf' ? {type:'base64', media_type:mediaType, data:base64Data} : undefined,
+              text: mediaType !== 'application/pdf' ? base64Data : undefined
+            },
+            { type: 'text', text: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown: {"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}. Solo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto.' }
+          ]
+        }]
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var txt = data.content && data.content[0] ? data.content[0].text : '';
+      try {
+        var clean = txt.replace(/```json|```/g,'').trim();
+        var parsed = JSON.parse(clean);
+        // Auto-completar campos del formulario
+        var campos = {
+          'cm_nombre': parsed.nombre, 'cm_dni': parsed.dni, 'cm_celular': parsed.celular,
+          'cm_correo': parsed.correo, 'cm_distrito': parsed.distrito,
+          'cm_expLaboral': parsed.expLaboral, 'cm_pretension': parsed.pretension,
+          'cm_disponibilidad': parsed.disponibilidad, 'cm_resumen': parsed.resumen
+        };
+        var completados = 0;
+        Object.keys(campos).forEach(function(id) {
+          if (campos[id]) {
+            var el = document.getElementById(id);
+            if (el && !el.value) { el.value = campos[id]; completados++; }
+          }
+        });
+        // Grado académico
+        if (parsed.gradoAcademico) {
+          var gradoEl = document.getElementById('cm_grado');
+          if (gradoEl) {
+            var mapped = mapearGrado(parsed.gradoAcademico);
+            for (var i=0; i<gradoEl.options.length; i++) {
+              if (gradoEl.options[i].value === mapped) { gradoEl.value = mapped; completados++; break; }
+            }
+          }
+        }
+        if (status) status.textContent = '✓ ' + completados + ' campos completados';
+        toast('✓ CV analizado — ' + completados + ' campos auto-completados');
+      } catch(e) {
+        if (status) status.textContent = 'No se pudo extraer la información';
+        toast('Error al procesar el CV');
+      }
+    })
+    .catch(function() {
+      if (status) status.textContent = 'Error al conectar con la IA';
+    });
+  }
+
+  if (ext === 'pdf') {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64 = e.target.result.split(',')[1];
+      enviarAIA(base64, 'application/pdf');
+    };
+    reader.readAsDataURL(file);
+  } else if (ext === 'docx' || ext === 'doc') {
+    // Usar mammoth para convertir Word a texto
+    if (typeof mammoth !== 'undefined') {
+      var reader2 = new FileReader();
+      reader2.onload = function(e) {
+        mammoth.extractRawText({arrayBuffer: e.target.result})
+          .then(function(result) { enviarAIA(result.value, 'text/plain'); })
+          .catch(function() { if (status) status.textContent = 'Error al leer el archivo Word'; });
+      };
+      reader2.readAsArrayBuffer(file);
+    } else {
+      // Cargar mammoth dinámicamente
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+      sc.onload = function() { procesarCVCandidato(input); };
+      document.head.appendChild(sc);
+    }
+  }
+}
+
 async function saveCandidatoManual() {
   var nombre = document.getElementById('cm_nombre').value.trim();
   var dni = document.getElementById('cm_dni').value.trim();
@@ -4071,7 +4252,11 @@ function compararTopLider(grupoEnc) {
   });
   // Calcular promedio combinado GTH + líder por candidato
   var conProm = candsPuesto.map(function(c) {
-    var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto; });
+    var fbL = feedbacks.find(function(f){
+      if (f.candidato!==c.candidato) return false;
+      if (c.reqId) return f.reqId===c.reqId || f.reqId===parseInt(c.reqId);
+      return f.puesto===c.puesto;
+    });
     var promedioLider = fbL ? Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4) : 0;
     var estGTH = parseInt(c.estrellas||c.puntaje||0)||0;
     // Promedio combinado: si líder evaluó, promediar ambos; si no, usar solo GTH
@@ -5300,11 +5485,12 @@ function parsearPandapeRows(rows) {
   // Buscar la fila de headers (contiene "Nombre" y "Apellido")
   var headerIdx = -1;
   var headers = [];
-  for (var i=0; i<Math.min(rows.length,10); i++) {
-    var row = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
+  for (var i=0; i<Math.min(rows.length,15); i++) {
+    if (!rows[i] || !rows[i].length) continue;
+    var row = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
     if (row.some(function(c){ return c==='nombre'; }) && row.some(function(c){ return c==='apellido'; })) {
       headerIdx = i;
-      headers = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
+      headers = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
       break;
     }
   }
@@ -5353,10 +5539,24 @@ function parsearPandapeRows(rows) {
     var expRaw = get(iExp);
     var expLaboral = expRaw ? expRaw.split('\n')[0].substring(0,80) : '';
 
-    // Grado: mapear a opciones del select desde campo Formación
+    // Grado Pandapé: formación es multilínea separada por '---------'
+    // Cada parte: 'Nivel , Institución Fecha Estado: ...'
+    // Evaluar todas las entradas, ignorar Interrumpido/Estudiando si hay completas, tomar el mayor
     var gradoRaw = get(iFormacion);
-    var gradoTexto = gradoRaw ? gradoRaw.split(',')[0].split('\n')[0].trim() : '';
-    var grado = mapearGrado(gradoTexto);
+    var grado = '';
+    if (gradoRaw) {
+      var partes = gradoRaw.split('---------');
+      partes.forEach(function(parte) {
+        var nivel = parte.split(',')[0].trim();
+        var estaEstudiando = /estudiando|cursando|interrumpido|en curso/i.test(parte);
+        var g = mapearGrado(nivel);
+        if (g) {
+          // Preferir niveles completos; aceptar incompletos solo si no hay nada mejor
+          if (!grado) { grado = estaEstudiando ? (mapearGrado(nivel+' incompleto') || g) : g; }
+          else { grado = gradoMayor(grado, estaEstudiando ? (mapearGrado(nivel+' incompleto') || g) : g); }
+        }
+      });
+    }
 
     var dniRaw = String(get(iDni)).replace(/[^0-9]/g,'');
     if (dniRaw === '0') dniRaw = ''; // DNI oculto por Pandapé
@@ -5385,12 +5585,13 @@ function parsearBumeranRows(rows) {
   // Bumeran xlsx: metadatos filas 1-3, headers en fila 5, datos desde fila 6
   var headerIdx = -1;
   var headers = [];
-  for (var i=0; i<Math.min(rows.length,10); i++) {
-    var row = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
+  for (var i=0; i<Math.min(rows.length,15); i++) {
+    if (!rows[i] || !rows[i].length) continue;
+    var row = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
     if (row.some(function(c){ return c==='nombre'; }) &&
         row.some(function(c){ return c==='apellido'; })) {
       headerIdx = i;
-      headers = rows[i].map(function(c){ return String(c||'').toLowerCase().trim(); });
+      headers = rows[i].map(function(c){ return String(c==null?'':c).toLowerCase().trim(); });
       break;
     }
   }
@@ -5446,11 +5647,20 @@ function parsearBumeranRows(rows) {
     var celPerfil = limpiarCelular(get(iTelCel)) || limpiarCelular(get(iTelOtro));
     var cel = celCuest || celPerfil;
 
-    // Pretensión: respetar texto tal cual si es corto (rango), fallback a numérico si es párrafo largo
+    // Pretensión Bumeran: cuestionario col[94] tiene el dato más actualizado
     var pretCuestRaw = get(iPretCuest).trim();
-    var pretCuest = pretCuestRaw.length > 0 && pretCuestRaw.length <= 40
-      ? pretCuestRaw  // ej: '4000 - 5000' o '3500' — respetar tal cual
-      : limpiarSalario(get(iSalPref));  // párrafo largo → usar valor numérico del perfil
+    var pretCuest = '';
+    if (pretCuestRaw.length > 0 && pretCuestRaw.length <= 40) {
+      // Texto corto: '4000 - 5000', '3500', '4300 soles a mas'
+      // Si es rango limpio conservar; si tiene texto libre extraer primer número
+      if (/^\d[\d\s,.\-]+\d$/.test(pretCuestRaw)) {
+        pretCuest = pretCuestRaw; // rango limpio: '4000 - 5000' o '3500'
+      } else {
+        var primerNum = pretCuestRaw.match(/\d[\d,.*]/);
+        pretCuest = primerNum ? primerNum[0].replace(/[^0-9]/g,'') : '';
+      }
+    }
+    // Párrafo largo o sin cuestionario → usar preferencia salarial del perfil
     var pretension = pretCuest || limpiarSalario(get(iSalPref));
 
     // Experiencia: construir resumen de exp[1]
@@ -5657,9 +5867,9 @@ function filtrarGerenciaCand() {
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
   var selPuesto = document.getElementById('filtroPuesto_cand');
   if (selPuesto) {
-    // Poblar con solicitudes activas filtradas por gerencia
+    // Poblar con solicitudes (incluyendo Cubiertas) filtradas por gerencia
     var reqsActF = requisiciones.filter(function(r){
-      return r.estado!=='Cubierto' && r.estado!=='Stand by' && (!gerencia || r.gerencia===gerencia);
+      return r.estado!=='Stand by' && (!gerencia || r.gerencia===gerencia);
     });
     var optsF = '<option value="">Todas las solicitudes</option>';
     reqsActF.forEach(function(r){
@@ -5677,7 +5887,6 @@ function filtrarGerenciaCand() {
 }
 
 function filtrarCandidatos() {
-  // No renderizar si el panel candidatos no está activo
   var panelCand = document.getElementById('tab-candidatos');
   if (panelCand && !panelCand.classList.contains('active')) return;
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
@@ -5685,16 +5894,15 @@ function filtrarCandidatos() {
   var puestoData = parsearValorPuesto(puestoVal);
   var soloVis = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
   var busqDni = ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
+  var mostrarCub = document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked;
+
   var filtered = _allResults.filter(function(r) {
     if (gerencia && r.gerencia!==gerencia) return false;
-    // Filtrar por solicitud específica (reqId) o por puesto como fallback
     if (puestoData.puesto) {
       if (puestoData.reqId) {
-        // Tiene reqId: filtrar por reqId exacto O por puesto si el candidato no tiene reqId (legacy)
         if (r.reqId && r.reqId !== puestoData.reqId) return false;
         if (!r.reqId && r.puesto && r.puesto.toLowerCase().trim() !== puestoData.puesto.toLowerCase().trim()) return false;
       } else {
-        // Solo puesto: filtrar por nombre del puesto
         if (r.puesto && r.puesto.toLowerCase().trim() !== puestoData.puesto.toLowerCase().trim()) return false;
       }
     }
@@ -5706,43 +5914,239 @@ function filtrarCandidatos() {
     }
     return true;
   });
-  var panel = document.getElementById('candidatosPorPuesto');
-  if (!panel) return;
-  if (!filtered.length) { panel.innerHTML='<div class="empty-state">No hay candidatos que coincidan con el filtro.</div>'; return; }
-  panel.innerHTML = renderTablaByPuesto(filtered);
+
+  var _cEl = document.getElementById('candidatosContador');
+  if (_cEl) _cEl.textContent = filtered.length + ' candidato' + (filtered.length!==1?'s':'') + ' en total';
+
+  // Renderizar sidebar y seleccionar req activa
+  renderCandSidebar(gerencia, puestoData, mostrarCub, busqDni, soloVis, filtered);
 }
 
-function renderTablaByPuesto(results) {
-  // Agrupar por reqId (solicitud específica) si existe, sino por puesto
-  var byGrupo = {};
-  results.forEach(function(r){
-    var key = r.reqId ? ('req_'+r.reqId) : ('puesto_'+r.puesto);
-    if (!byGrupo[key]) byGrupo[key] = [];
-    byGrupo[key].push(r);
+// ── renderCandSidebar — construye el sidebar de solicitudes agrupadas por gerencia ──
+function renderCandSidebar(gerencia, puestoData, mostrarCub, busqDni, soloVis, filtered) {
+  gerencia   = gerencia   || (document.getElementById('filtroGerencia_cand')||{}).value||'';
+  puestoData = puestoData || parsearValorPuesto((document.getElementById('filtroPuesto_cand')||{}).value||'');
+  mostrarCub = mostrarCub !== undefined ? mostrarCub : (document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked);
+  busqDni    = busqDni    !== undefined ? busqDni    : ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
+  soloVis    = soloVis    !== undefined ? soloVis    : (document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked);
+  filtered   = filtered   || _allResults;
+
+  var sidebar = document.getElementById('candSidebarList');
+  var footer  = document.getElementById('candSidebarFooter');
+  if (!sidebar) return;
+
+  // Requisiciones visibles según filtros
+  var reqs = requisiciones.filter(function(r) {
+    if (r.estado === 'Stand by') return false;
+    if (!mostrarCub && r.estado === 'Cubierto') return false;
+    if (gerencia && r.gerencia !== gerencia) return false;
+    if (puestoData && puestoData.reqId && r.id !== puestoData.reqId && r.id !== parseInt(puestoData.reqId)) return false;
+    return true;
   });
 
-  return Object.keys(byGrupo).map(function(grupoKey) {
-    var cands = byGrupo[grupoKey];
-    var firstCand = cands[0];
-    // Obtener info de la solicitud si existe reqId
-    var req = firstCand.reqId ? requisiciones.find(function(r){ return r.id===firstCand.reqId; }) : null;
-    var grupoKeyClean = grupoKey.indexOf('puesto_')===0 ? grupoKey.replace('puesto_','') : grupoKey;
-    var puesto = req ? (req.puesto||firstCand.puesto) : (firstCand.puesto||grupoKeyClean);
-    var grupoLabel = puesto || '(sin puesto)';
-    try {
-      if (req) {
-        var extras = [req.sede, req.nivel ? req.nivel.split('/')[0].trim() : null, req.fechaInicio].filter(Boolean);
-        if (extras.length) grupoLabel += ' <span style="font-size:11px;font-weight:400;color:var(--muted);">' + extras.join(' · ') + '</span>';
-      }
-    } catch(e) { console.warn('grupoLabel error:', e); }
-    cands.sort(function(a,b){
-      // visibleLider primero, luego por estrellas descendente
-      if (a.visibleLider && !b.visibleLider) return -1;
-      if (!a.visibleLider && b.visibleLider) return 1;
-      return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
+  // Ordenar: activos más antiguos primero, cubiertos al final
+  reqs.sort(function(a,b){
+    var ca = a.estado==='Cubierto'?1:0, cb = b.estado==='Cubierto'?1:0;
+    if (ca!==cb) return ca-cb;
+    return a.id-b.id;
+  });
+
+  // Agrupar por gerencia
+  var byGer = {};
+  var gerOrder = [];
+  reqs.forEach(function(r) {
+    var g = r.gerencia || '(Sin gerencia)';
+    if (!byGer[g]) { byGer[g]=[]; gerOrder.push(g); }
+    byGer[g].push(r);
+  });
+
+  // Buscar req seleccionada actualmente
+  var selReqId = window._candReqSeleccionada || null;
+  // Si hay filtro de req específica, forzar esa
+  if (puestoData && puestoData.reqId) selReqId = puestoData.reqId;
+  // Si no hay selección o la req ya no está visible, seleccionar la primera
+  var allReqIds = reqs.map(function(r){return r.id;});
+  if (!selReqId || allReqIds.indexOf(selReqId)===-1) {
+    selReqId = reqs.length ? reqs[0].id : null;
+  }
+  window._candReqSeleccionada = selReqId;
+
+  // Filtro de búsqueda en sidebar
+  var busqSol = ((document.getElementById('buscarSolicitud_cand')||{}).value||'').toLowerCase().trim();
+
+  // Cubiertos ocultos
+  var nCubOcultos = !mostrarCub ? requisiciones.filter(function(r){
+    return r.estado==='Cubierto' && r.estado!=='Stand by' && (!gerencia||r.gerencia===gerencia);
+  }).length : 0;
+
+  var html = '';
+  gerOrder.forEach(function(ger) {
+    var items = byGer[ger].filter(function(r){
+      if (!busqSol) return true;
+      return (r.puesto||'').toLowerCase().includes(busqSol) || (r.fechaInicio||'').includes(busqSol);
     });
-    var avanzar = cands.filter(function(c){ return c.visibleLider; }).length;
-    var avg = Math.round(cands.reduce(function(s,c){ return s+(c.estrellas||c.puntaje||0); },0)/cands.length);
+    if (!items.length) return;
+    html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 12px 4px;">'+ger+'</div>';
+    items.forEach(function(r) {
+      var nCands = filtered.filter(function(c){
+        if (c.reqId) return c.reqId===r.id||c.reqId===parseInt(r.id);
+        return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim();
+      }).length;
+      var nLider = filtered.filter(function(c){
+        if (!c.visibleLider) return false;
+        if (c.reqId) return c.reqId===r.id||c.reqId===parseInt(r.id);
+        return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim();
+      }).length;
+      var isActive = r.id===selReqId || r.id===parseInt(selReqId);
+      var dotColor = r.estado==='Cubierto'?'#534AB7' : (r.slaVencido||r.estado==='Vencido')?'#E24B4A' : (r.slaAmbar?'#EF9F27':'#e8623a');
+      var estadoExtra = r.estado==='Cubierto'
+        ? ' · <span style="color:#534AB7;font-weight:500;">Cubierto</span>'
+        : (r.slaVencido ? ' · <span style="color:#A32D2D;">⚠ Vencido</span>' : (r.slaAmbar ? ' · <span style="color:#854F0B;">⚠ Vence pronto</span>' : ''));
+      html += '<div onclick="seleccionarReqCand('+r.id+')" style="padding:8px 12px;margin:1px 6px;border-radius:8px;cursor:pointer;'+(isActive?'background:#fef0eb;border-left:2px solid #e8623a;padding-left:10px;':'')+'transition:background .1s;" data-req-id="'+r.id+'">'
+        +'<div style="display:flex;gap:6px;align-items:flex-start;">'
+          +'<span style="width:5px;height:5px;border-radius:50%;background:'+dotColor+';flex-shrink:0;margin-top:4px;display:inline-block;"></span>'
+          +'<div style="min-width:0;flex:1;">'
+            +'<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+(isActive?'color:#e8623a;':'')+'">'+r.puesto+'</div>'
+            +'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+(r.fechaInicio||'')+' · '+(nCands>0?nCands+' cand'+(nCands!==1?'s':''):'<span style="color:#993C1D;font-weight:500;">0 cands</span>')+(nLider>0?' · ✓ '+nLider:'')+(estadoExtra)+'</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    });
+  });
+
+  if (!html) html = '<div style="padding:20px 12px;font-size:12px;color:var(--muted);text-align:center;">No hay solicitudes</div>';
+  sidebar.innerHTML = html;
+
+  // Footer cubiertos ocultos
+  if (footer) {
+    if (nCubOcultos>0) {
+      footer.style.display='block';
+      footer.innerHTML = nCubOcultos+' cubierto'+(nCubOcultos!==1?'s':'')+' oculto'+(nCubOcultos!==1?'s':'')+' — <span style="color:#3C3489;cursor:pointer;text-decoration:underline;" onclick="var cb=document.getElementById(&quot;mostrarCubiertos_cand&quot;);if(cb){cb.checked=true;filtrarCandidatos();}">mostrar</span>';
+    } else {
+      footer.style.display='none';
+    }
+  }
+
+  // Renderizar panel derecho con la req seleccionada
+  if (selReqId) {
+    var reqSel = requisiciones.find(function(r){return r.id===selReqId||r.id===parseInt(selReqId);});
+    var candsSel = filtered.filter(function(c){
+      if (c.reqId) return c.reqId===selReqId||c.reqId===parseInt(selReqId);
+      return reqSel && c.puesto && reqSel.puesto && c.puesto.toLowerCase().trim()===reqSel.puesto.toLowerCase().trim();
+    });
+    renderPanelDerechoCand(reqSel, candsSel);
+  } else {
+    var header = document.getElementById('candMainHeader');
+    var panel  = document.getElementById('candidatosPorPuesto');
+    if (header) header.style.display='none';
+    if (panel) panel.innerHTML='<div class="empty-state">Selecciona una solicitud para ver sus candidatos.</div>';
+  }
+}
+
+// ── seleccionarReqCand — clic en sidebar ──
+function seleccionarReqCand(reqId) {
+  window._candReqSeleccionada = reqId;
+  var gerencia   = (document.getElementById('filtroGerencia_cand')||{}).value||'';
+  var soloVis    = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
+  var mostrarCub = document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked;
+  var busqDni    = ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
+
+  var filtered = _allResults.filter(function(r) {
+    if (gerencia && r.gerencia!==gerencia) return false;
+    if (soloVis && !r.visibleLider) return false;
+    if (busqDni) {
+      if (!r.candidato||!r.candidato.toLowerCase().includes(busqDni)) {
+        if (!r.dni||!r.dni.toLowerCase().includes(busqDni)) return false;
+      }
+    }
+    return true;
+  });
+
+  var puestoData = {puesto:'', reqId:null};
+  renderCandSidebar(gerencia, puestoData, mostrarCub, busqDni, soloVis, filtered);
+}
+
+// ── renderPanelDerechoCand — header + tabla de candidatos de una req ──
+function renderPanelDerechoCand(req, cands) {
+  var header = document.getElementById('candMainHeader');
+  var panel  = document.getElementById('candidatosPorPuesto');
+  if (!header || !panel) return;
+
+  if (!req) {
+    header.style.display='none';
+    panel.innerHTML='<div class="empty-state">Selecciona una solicitud.</div>';
+    return;
+  }
+
+  // Header
+  header.style.display='block';
+  var avanzar = cands.filter(function(c){return c.visibleLider;}).length;
+  var avg = cands.length ? Math.round(cands.reduce(function(s,c){return s+(c.estrellas||c.puntaje||0);},0)/cands.length) : 0;
+  var estadoBadge = req.estado==='Cubierto'
+    ? '<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#EEEDFE;color:#3C3489;font-weight:500;">Cubierto</span>'
+    : req.estado==='Pendiente'
+    ? '<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#FAEEDA;color:#854F0B;font-weight:500;">Pendiente</span>'
+    : '<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#FAECE7;color:#993C1D;font-weight:500;">En proceso</span>';
+  var slaHtml = '';
+  if (req.slaVencido) slaHtml = '<span style="font-size:10px;background:#FCEBEB;color:#A32D2D;padding:2px 7px;border-radius:6px;">⚠ Vencido</span>';
+  else if (req.slaAmbar) slaHtml = '<span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:2px 7px;border-radius:6px;">⚠ Vence pronto</span>';
+
+  header.innerHTML = ''
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+      +'<div>'
+        +'<div style="font-size:14px;font-weight:500;">'+req.puesto+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+(req.gerencia||'')+' · '+(req.sede||'')+' · '+(req.nivel?req.nivel.split('/')[0].trim()+' · ':'')+' Inicio: '+(req.fechaInicio||'')+' · Límite: '+(req.fechaLimite||req.fechaVencimiento||'—')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+        +estadoBadge
+        +slaHtml
+        +'<span style="font-size:11px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
+        +(avanzar>0?'<span style="font-size:11px;background:#edf7f1;color:#2d7a4f;padding:2px 8px;border-radius:6px;">✓ '+avanzar+' con el líder</span>':'')
+        +(avg>0?'<span style="font-size:11px;color:var(--muted);">Prom. '+renderStars(avg,starsColor(avg))+'</span>':'')
+        +(cands.length>=2?'<button class="btn btn-secondary btn-sm" onclick="compararTop(\u0022req_\u0022+'+req.id+')" style="font-size:11px;">Comparar top 5</button>':'')
+      +'</div>'
+    +'</div>';
+
+  // Tabla candidatos
+  if (!cands.length) {
+    panel.innerHTML = '<div class="empty-state" style="padding:60px 20px;"><div style="font-size:28px;margin-bottom:10px;">📭</div><div style="font-weight:500;margin-bottom:4px;">Sin candidatos aún</div><div>Aún no hay candidatos registrados para este proceso.</div></div>';
+    return;
+  }
+
+  // Ordenar: visibleLider primero, luego estrellas desc
+  cands.sort(function(a,b){
+    if (a.visibleLider&&!b.visibleLider) return -1;
+    if (!a.visibleLider&&b.visibleLider) return 1;
+    return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
+  });
+
+  // Col headers
+  var colHead = '<div style="display:flex;align-items:center;padding:6px 16px;background:var(--bg);border-bottom:0.5px solid var(--border2);position:sticky;top:0;z-index:2;gap:12px;">'
+    +'<div style="width:18px;flex-shrink:0;"></div>'
+    +'<div style="flex:1;min-width:0;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Nombre · celular · pretensión</div>'
+    +'<div style="width:80px;flex-shrink:0;text-align:center;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Eval. líder</div>'
+    +'<div style="width:65px;flex-shrink:0;text-align:center;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Avanza</div>'
+    +'<div style="width:90px;flex-shrink:0;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Estado</div>'
+    +'<div style="width:80px;flex-shrink:0;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Acciones</div>'
+    +'<div style="width:60px;flex-shrink:0;"></div>'
+    +'</div>';
+
+  var rows = renderTablaByPuesto(cands, {reqId: req.id, puesto: req.puesto});
+  panel.innerHTML = colHead + rows;
+}
+
+// ── renderTablaByPuesto — ahora genera solo las filas (sin el header de grupo) ──
+function renderTablaByPuesto(cands, filtros) {
+  // Genera las filas HTML de candidatos para el panel derecho
+  filtros = filtros || {};
+
+  if (!cands || !cands.length) return '';
+
+  cands.sort(function(a,b){
+    if (a.visibleLider&&!b.visibleLider) return -1;
+    if (!a.visibleLider&&b.visibleLider) return 1;
+    return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
+  });
 
     var rows = cands.map(function(c, cidx) {
       var badge = cidx===0 ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
@@ -5760,8 +6164,12 @@ function renderTablaByPuesto(results) {
       var pEnc = encodeURIComponent(c.puesto);
       var rowId = 'exp_'+cEnc+'_'+pEnc;
 
-      // Estrellas
-      var fbL = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+      // Estrellas — buscar feedback por reqId si existe, fallback por puesto
+      var fbL = feedbacks.find(function(f){
+        if (f.candidato !== c.candidato) return false;
+        if (c.reqId) return f.reqId === c.reqId || f.reqId === parseInt(c.reqId);
+        return f.puesto && c.puesto && f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim();
+      });
       var starsHtml;
       if (fbL && (fbL.comunicacion||fbL.tecnico||fbL.actitud||fbL.resultados)) {
         var promL = Math.round(((fbL.comunicacion||0)+(fbL.tecnico||0)+(fbL.actitud||0)+(fbL.resultados||0))/4);
@@ -5776,13 +6184,19 @@ function renderTablaByPuesto(results) {
         +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:14px;height:14px;">'
         +'</label>';
 
-      // Elegido / Ingreso
-      var reqC = requisiciones.filter(function(r){ return r.puesto && c.puesto && r.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
+      // Elegido / Ingreso — usar la req específica del candidato si tiene reqId
+      var reqC = c.reqId
+        ? requisiciones.filter(function(r){ return r.id===c.reqId || r.id===parseInt(c.reqId); })
+        : requisiciones.filter(function(r){ return r.puesto && c.puesto && r.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim(); });
       var lastR = reqC.length ? reqC[reqC.length-1] : null;
       var rId = lastR ? lastR.id : '';
       var etC = lastR && lastR.etapas ? lastR.etapas : {};
       var trOk = !!etC.tramites;
-      var fbCand = feedbacks.find(function(f){ return f.candidato===c.candidato && f.puesto===c.puesto && f.elegido; });
+      var fbCand = feedbacks.find(function(f){
+        if (f.candidato !== c.candidato || !f.elegido) return false;
+        if (c.reqId) return f.reqId === c.reqId || f.reqId === parseInt(c.reqId);
+        return f.puesto === c.puesto;
+      });
       var esElegido = !!fbCand;
       var elegidoBadge = esElegido ? '<span style="font-size:10px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 7px;border-radius:5px;">&#127942; Elegido</span>' : '';
       var trBtn = esElegido ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:10px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:2px 8px;border-radius:5px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--muted)')+';">'+(trOk?'✓ Ingreso':'○ Ingreso')+'</button>' : '';
@@ -5794,92 +6208,56 @@ function renderTablaByPuesto(results) {
         +'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:#c0392b;padding:1px 4px;" title="Eliminar">&#128465;</button>'
         +'</div>';
 
-      // Fila principal compacta
-      var rowMain = '<div class="cand-row" style="display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:0.5px solid var(--border2);background:var(--surface);overflow:hidden;" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">'
+      // Fila principal — nuevo diseño panel lateral
+      var rowMain = '<div style="display:flex;align-items:center;padding:9px 16px;gap:12px;border-bottom:0.5px solid var(--border2);background:var(--surface);" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">' 
         +'<input type="checkbox" class="cand-sel-cb" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onchange="actualizarBtnEliminarSel()" style="accent-color:var(--accent2);width:13px;height:13px;flex-shrink:0;cursor:pointer;">'
-        // Nombre (clickeable para modal)
-        +'<div style="flex:0 0 200px;min-width:0;overflow:hidden;">'
+        +'<div style="flex:1;min-width:0;">'
           +'<div style="font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="abrirModalCandidato(this)" title="Ver y editar perfil completo">'+c.candidato+badge+fuente+alertaBadge+'</div>'
+          +'<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+( c.celular||'')+( c.celular&&c.pretension?' · ':'')+( c.pretension?'S/ '+c.pretension:'')+( !c.celular&&!c.pretension?'&mdash;':'')+'</div>'
         +'</div>'
-        // Pretensión
-        +'<div style="flex:0 0 80px;font-size:12px;color:var(--muted);text-align:center;">'+(c.pretension?'S/ '+c.pretension:'&#8212;')+'</div>'
-        // Celular
-        +'<div style="flex:0 0 95px;font-size:12px;color:var(--muted);white-space:nowrap;">'+(c.celular||'&#8212;')+'</div>'
-        // Estrellas
-        +'<div style="flex:0 0 80px;display:flex;align-items:center;gap:2px;">'+starsHtml+'</div>'
-        // Avanza c/líder
-        +'<div style="flex:0 0 75px;display:flex;align-items:center;">'+switchVis+'</div>'
-        // Elegido + Ingreso
-        +'<div style="flex:0 0 90px;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
-        // Acciones
-        +'<div style="flex:0 0 70px;">'+acciones+'</div>'
-        // Ver más
-        +'<div style="margin-left:auto;">'
-          +'<button onclick="toggleExpandCand(\''+rowId+'\')" id="btnexp_'+rowId+'" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">Ver más &#9660;</button>'
+        +'<div style="width:80px;flex-shrink:0;text-align:center;">'+starsHtml+'</div>'
+        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;">'+switchVis+'</div>'
+        +'<div style="width:90px;flex-shrink:0;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
+        +'<div style="width:80px;flex-shrink:0;display:flex;align-items:center;gap:1px;">'+acciones+'</div>'
+        +'<div style="width:60px;flex-shrink:0;text-align:right;">'
+          +'<button onclick="toggleExpandCand(\''+ rowId+'\')" id="btnexp_'+rowId+'" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">Ver &#9660;</button>'
         +'</div>'
       +'</div>';
 
       // Panel expandido de detalle
+      var cEncLcv = encodeURIComponent(c.candidato);
+      if (c.cvBase64) { if (!window._cvPreviewCache) window._cvPreviewCache={}; window._cvPreviewCache[c.candidato] = c.cvBase64; }
       var cvLink = c.cvBase64
-        ? '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:12px;color:#3C3489;text-decoration:none;background:#EEEDFE;padding:3px 8px;border-radius:5px;">&#128196; Descargar CV</a>'
-        : (c.cvUrl ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:12px;color:#3C3489;">Ver CV &#8599;</a>' : '<span style="font-size:11px;color:var(--muted);">No cargado</span>');
+        ? '<button onclick="mostrarPreviewCV(\''+ cEncLcv+'\')" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV</button>'
+        : c.cvUrl
+          ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV &#8599;</a>'
+          : '<span style="font-size:11px;color:var(--muted);">No cargado</span>';
 
-      var rowExp = '<div id="'+rowId+'" style="display:none;background:var(--bg);border-bottom:0.5px solid var(--border2);">'
-        +'<div style="padding:12px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">DNI</div><div style="font-size:12px;">'+(c.dni||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Correo</div><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;">'+(c.correo||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Distrito</div><div style="font-size:12px;">'+(c.distrito||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Grado académico</div><div style="font-size:12px;">'+(c.gradoAcademico||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Experiencia</div><div style="font-size:12px;">'+(c.expLaboral||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Rem. actual</div><div style="font-size:12px;">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Disponibilidad</div><div style="font-size:12px;">'+(c.disponibilidad||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">CV</div>'+cvLink+'</div>'
-        +'</div>'
-        +(c.resumen ? '<div style="padding:0 14px 8px;font-size:12px;color:var(--muted);border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;color:var(--text);">Resumen:</span> '+c.resumen+'</div>' : '')
-        +(c.comentarioReclutador ? '<div style="padding:0 14px 8px;font-size:12px;color:#1e5c38;background:#f0faf5;border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;">Comentario para el líder:</span> '+c.comentarioReclutador+'</div>' : '')
-        +(c.notaInterna ? '<div style="padding:0 14px 8px;font-size:12px;color:#7a4d0a;background:#fef9f4;border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;">Nota interna GTH:</span> '+c.notaInterna+'</div>' : '')
-        +'<div style="padding:8px 14px;border-top:0.5px solid var(--border2);display:flex;gap:8px;">'
-          +'<button onclick="abrirModalCandidato(this)" data-nombre="'+c.candidato+'" data-puesto-modal="'+c.puesto+'" style="font-size:11px;padding:4px 12px;border-radius:6px;border:0.5px solid #3C3489;color:#3C3489;background:transparent;cursor:pointer;">&#9998; Editar perfil completo</button>'
-          +'<button onclick="toggleExpandCand(\''+rowId+'\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);color:var(--muted);background:transparent;cursor:pointer;margin-left:auto;">&#9650; Cerrar</button>'
-        +'</div>'
-      +'</div>';
+      var rowExp = '<div id="'+rowId+'" style="display:none;background:var(--bg);border-bottom:0.5px solid var(--border2);">';
+      rowExp += '<div style="padding:12px 16px 8px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">DNI</div><div style="font-size:12px;">'+(c.dni||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Correo</div><div style="font-size:11px;word-break:break-all;">'+(c.correo||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Distrito</div><div style="font-size:12px;">'+(c.distrito||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Grado académico</div><div style="font-size:12px;">'+(c.gradoAcademico||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Rem. actual</div><div style="font-size:12px;">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Disponibilidad</div><div style="font-size:12px;">'+(c.disponibilidad||'&#8212;')+'</div></div>';
+      rowExp += '</div>';
+      rowExp += '<div style="padding:0 16px 10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">CV</div>'+cvLink+'</div>';
+      if(c.expLaboral) rowExp += '<div style="padding:8px 16px 10px;border-top:0.5px solid var(--border2);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Experiencia</div><div style="font-size:12px;line-height:1.6;">'+c.expLaboral+'</div></div>';
+      if(c.resumen) rowExp += '<div style="padding:0 16px 8px;font-size:12px;color:var(--muted);border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;color:var(--text);">Resumen:</span> '+c.resumen+'</div>';
+      if(c.comentarioReclutador) rowExp += '<div style="padding:6px 16px 8px;font-size:12px;color:#1e5c38;background:#f0faf5;border-top:0.5px solid var(--border2);"><span style="font-weight:500;">Comentario para el líder:</span> '+c.comentarioReclutador+'</div>';
+      if(c.notaInterna) rowExp += '<div style="padding:6px 16px 8px;font-size:12px;color:#7a4d0a;background:#fef9f4;border-top:0.5px solid var(--border2);"><span style="font-weight:500;">Nota interna GTH:</span> '+c.notaInterna+'</div>';
+      rowExp += '<div style="padding:8px 16px;border-top:0.5px solid var(--border2);display:flex;gap:8px;">';
+      rowExp += '<button onclick="abrirModalCandidato(this)" data-nombre="'+c.candidato+'" data-puesto-modal="'+c.puesto+'" style="font-size:11px;padding:4px 12px;border-radius:6px;border:0.5px solid #3C3489;color:#3C3489;background:transparent;cursor:pointer;">&#9998; Editar perfil completo</button>';
+      rowExp += '<button onclick="toggleExpandCand(\''+rowId+'\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);color:var(--muted);background:transparent;cursor:pointer;margin-left:auto;">&#9650; Cerrar</button>';
+      rowExp += '</div></div>';
 
       return rowMain + rowExp;
     }).join('');
 
-    // Header del grupo + sub-header de columnas
-    var colHeader = '<div style="display:flex;align-items:center;padding:6px 14px;gap:10px;background:var(--bg);border-bottom:0.5px solid var(--border2);overflow:hidden;">'
-      +'<div style="flex:0 0 200px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Nombre</div>'
-      +'<div style="flex:0 0 80px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:center;">Pretensión</div>'
-      +'<div style="flex:0 0 95px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Celular</div>'
-      +'<div style="flex:0 0 80px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Eval.</div>'
-      +'<div style="flex:0 0 75px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Avanza</div>'
-      +'<div style="flex:0 0 90px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Estado</div>'
-      +'<div style="flex:0 0 70px;"></div>'
-      +'<div style="margin-left:auto;"></div>'
-    +'</div>';
 
-    var grupoId = encodeURIComponent(grupoKey);
-    return '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
-      +'<div data-puesto-id="'+grupoId+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
-        +'<div style="font-size:13px;font-weight:500;">'+grupoLabel+'</div>'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
-          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top 5</button>':'')
-          +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
-          +'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' con el l\u00edder</span>'
-          +'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>'
-        +'</div>'
-      +'</div>'
-      +'<div id="cands_'+grupoId+'" style="display:none;">'
-        +colHeader
-        +rows
-      +'</div>'
-    +'</div>';
-  }).join('');
+  return rows;
 }
-
-
-
 
 function renderCandidatosPorPuesto() {
   // Asegurar que el formulario manual esté cerrado
@@ -5895,12 +6273,16 @@ function renderCandidatosPorPuesto() {
     _allResults = (d&&d.results)?d.results:(JSON.parse(localStorage.getItem('rresults')||'[]'));
     if (!Array.isArray(_allResults)) _allResults = [];
     if (!_allResults.length) { panel.innerHTML='<div class="empty-state">A&uacute;n no hay candidatos.<br>Usa <strong>+ Candidato manual</strong> para agregar uno o comparte el link de entrevista.</div>'; return; }
+    // Asegurar que requisiciones está cargado antes de renderizar
+    if (!requisiciones || !requisiciones.length) {
+      requisiciones = JSON.parse(localStorage.getItem('rreqs')||'[]');
+    }
     poblarFiltrosCandidatos(_allResults);
     try {
-      panel.innerHTML = renderTablaByPuesto(_allResults);
+      filtrarCandidatos();
     } catch(e) {
-      console.error('renderTablaByPuesto error:', e);
-      panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al renderizar candidatos: '+e.message+'</div>';
+      console.error('renderCandidatos error:', e);
+      document.getElementById('candidatosPorPuesto').innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al renderizar: '+e.message+'</div>';
     }
   }).catch(function(err){ 
     console.error('Error cargando candidatos:', err);
@@ -6184,6 +6566,13 @@ function switchCandTab(tab) {
 function renderBancoTalentos() {
   var panel = document.getElementById('bancotalentos-content');
   if (!panel) return;
+  // Asegurar que los datos están cargados
+  if (!_allResults || !_allResults.length) {
+    _allResults = JSON.parse(localStorage.getItem('rresults')||'[]');
+  }
+  if (!feedbacks || !feedbacks.length) {
+    feedbacks = JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
+  }
   // Banco de talentos: candidatos marcados explícitamente O con buena evaluación del líder sin ser elegidos
   var talentos = _allResults.filter(function(r){
     if (r.enBancoTalentos) return true;
@@ -6204,7 +6593,11 @@ function renderBancoTalentos() {
     vistosDni[key] = true;
     return true;
   });
-  talentos.sort(function(a,b){ return (b.estrellas||0)-(a.estrellas||0); });
+  talentos.sort(function(a,b){
+    var pa=(a.puesto||'').toLowerCase(); var pb=(b.puesto||'').toLowerCase();
+    if(pa<pb) return -1; if(pa>pb) return 1;
+    return (b.estrellas||0)-(a.estrellas||0);
+  });
 
   if (!talentos.length) {
     panel.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--muted);">'
@@ -6215,21 +6608,37 @@ function renderBancoTalentos() {
     return;
   }
 
-  var rows = talentos.map(function(c){
+  var bancoBuscarVal = (document.getElementById('bancoBuscar')||{}).value||'';
+  var bancoFiltroPuestoVal = (document.getElementById('bancoFiltroPuesto')||{}).value||'';
+  var selBanco = document.getElementById('bancoFiltroPuesto');
+  if (selBanco && selBanco.options.length <= 1) {
+    var puestosUnicos = [...new Set(talentos.map(function(t){return t.puesto||'';}).filter(Boolean))].sort();
+    puestosUnicos.forEach(function(p){ var opt=document.createElement('option'); opt.value=p; opt.textContent=p; if(p===bancoFiltroPuestoVal) opt.selected=true; selBanco.appendChild(opt); });
+  }
+  var talentosFiltrados = talentos.filter(function(c){
+    if (bancoFiltroPuestoVal && c.puesto!==bancoFiltroPuestoVal) return false;
+    if (bancoBuscarVal) { var busq=bancoBuscarVal.toLowerCase(); return (c.candidato||'').toLowerCase().includes(busq)||(c.dni||'').includes(busq); }
+    return true;
+  });
+  var rows = talentosFiltrados.map(function(c){
     var est = parseInt(c.estrellas||c.puntaje||0)||0;
     var estHtml = est>0 ? renderStars(est,starsColor(est)) : '<span style="color:var(--muted);font-size:11px;">—</span>';
     var fb = feedbacks.find(function(f){ return f.candidato===c.candidato&&(c.reqId?f.reqId===c.reqId:f.puesto===c.puesto); });
     var resultado = fb&&fb.elegido ? '<span style="color:#2d7a4f;font-size:11px;">&#127942; Elegido</span>'
       : fb&&fb.apto===false ? '<span style="color:#A32D2D;font-size:11px;">&#10007; No apto</span>'
       : '<span style="color:var(--muted);font-size:11px;">—</span>';
-    var cvLink = c.cvBase64 ? '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:11px;color:#3C3489;text-decoration:none;">Ver CV</a>'
-      : (c.cvUrl ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:11px;color:#3C3489;">Ver CV &#8599;</a>' : '<span style="color:var(--muted);font-size:11px;">—</span>');
+    var cvLink = c.cvBase64 ? '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:11px;color:#3C3489;text-decoration:none;">Ver CV</a>' : (c.cvUrl ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:11px;color:#3C3489;">Ver CV &#8599;</a>' : '<span style="color:var(--muted);font-size:11px;">&#8212;</span>');
+    var dispBadge = c.disponibilidad ? '<span style="font-size:10px;background:#EAF3DE;color:#3B6D11;padding:2px 7px;border-radius:8px;">'+c.disponibilidad+'</span>' : '<span style="color:var(--muted);font-size:11px;">&#8212;</span>';
+    if (!requisiciones||!requisiciones.length) requisiciones=JSON.parse(localStorage.getItem('rreqs')||'[]');
+    var enProcesoActivo = requisiciones.find(function(r){ return r.estado!=='Cubierto'&&r.estado!=='Stand by'&&(c.reqId?r.id===c.reqId:(r.puesto&&c.puesto&&r.puesto.toLowerCase()===c.puesto.toLowerCase())); });
+    var procesoBadge = enProcesoActivo ? '<span style="font-size:10px;background:#EAF3DE;color:#0F6E56;padding:2px 7px;border-radius:8px;">&#10003; En proceso</span>' : '<span style="color:var(--muted);font-size:11px;">&#8212;</span>';
     return '<tr style="border-top:0.5px solid var(--border2);">'
       +'<td style="padding:9px 12px;font-size:12px;font-weight:500;">'+c.candidato+'</td>'
       +'<td style="padding:9px 12px;font-size:11px;color:var(--muted);">'+(c.puesto||'—')+'</td>'
       +'<td style="padding:9px 12px;font-size:11px;color:var(--muted);">'+(c.fechaBanco||c.fecha||'—')+'</td>'
       +'<td style="padding:9px 10px;">'+estHtml+'</td>'
-      +'<td style="padding:9px 12px;">'+resultado+'</td>'
+      +'<td style="padding:9px 12px;">'+dispBadge+'</td>'
+      +'<td style="padding:9px 12px;">'+procesoBadge+'</td>'
       +'<td style="padding:9px 12px;">'+cvLink+'</td>'
       +'<td style="padding:9px 10px;text-align:center;">'
         +'<button onclick="abrirCopiarCandidatosBanco(\''+encodeURIComponent(c.candidato)+'\',\''+encodeURIComponent(c.puesto)+'\')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid #534AB7;background:transparent;color:#534AB7;cursor:pointer;white-space:nowrap;">Copiar a solicitud</button>'
@@ -6245,6 +6654,7 @@ function renderBancoTalentos() {
         +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">Fecha</th>'
         +'<th style="padding:9px 10px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">Eval. GTH</th>'
         +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">Resultado</th>'
+        +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">En proceso</th>'
         +'<th style="padding:9px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;">CV</th>'
         +'<th style="padding:9px 10px;"></th>'
       +'</tr></thead>'
@@ -6436,7 +6846,71 @@ function confirmarMotivoRechazo(cand, puesto) {
   marcarApto(cand, puesto, false, motivo);
 }
 
+
+function setDimStar(el, val, key, dim, candEnc, puestoEnc, reqIdParam) {
+  // Guardar en fbTemp
+  if (!window._fbTemp) window._fbTemp = {};
+  if (!window._fbTemp[key]) window._fbTemp[key] = {};
+  window._fbTemp[key][dim] = val;
+  window._fbTemp[key].candidato = decodeURIComponent(candEnc);
+  window._fbTemp[key].puesto = decodeURIComponent(puestoEnc);
+  if (reqIdParam) window._fbTemp[key].reqId = parseInt(reqIdParam)||reqIdParam;
+
+  // Actualizar visual de estrellas
+  var stars = el.parentElement.querySelectorAll('span');
+  stars.forEach(function(s, i) {
+    s.style.color = (i < val) ? '#E8623A' : '#e0ddd8';
+  });
+
+  // Auto-guardar feedback
+  var cDec = decodeURIComponent(candEnc);
+  var pDec = decodeURIComponent(puestoEnc);
+  var comentEl = document.getElementById('fbComent_'+key);
+  var comentario = comentEl ? comentEl.value : '';
+
+  var fbData = window._fbTemp[key];
+  var existingFb = feedbacks.find(function(f){
+    return f.candidato===cDec && (fbData.reqId ? f.reqId===fbData.reqId : f.puesto===pDec);
+  });
+
+  var newFb = Object.assign({}, existingFb||{}, {
+    candidato: cDec, puesto: pDec,
+    reqId: fbData.reqId||null,
+    comunicacion: fbData.comunicacion||0,
+    tecnico: fbData.tecnico||0,
+    actitud: fbData.actitud||0,
+    resultados: fbData.resultados||0,
+    comentario: comentario,
+    fecha: new Date().toLocaleDateString('es-PE'),
+    timestamp: Date.now()
+  });
+
+  if (existingFb) {
+    feedbacks = feedbacks.map(function(f){
+      return (f.candidato===cDec && (fbData.reqId?f.reqId===fbData.reqId:f.puesto===pDec)) ? newFb : f;
+    });
+  } else {
+    feedbacks.push(newFb);
+  }
+  localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+  safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
+}
+
 function marcarApto(cand, puesto, valor, motivoParam) {
+  // Verificar que el líder haya evaluado las 4 dimensiones antes de marcar
+  var cDec0 = decodeURIComponent(cand);
+  var pDec0 = decodeURIComponent(puesto);
+  var key0 = (cDec0+'_'+pDec0).replace(/[^a-zA-Z0-9_]/g,'_');
+  var fbTemp0 = window._fbTemp && window._fbTemp[key0] ? window._fbTemp[key0] : {};
+  var com = fbTemp0.comunicacion||0; var tec = fbTemp0.tecnico||0;
+  var act = fbTemp0.actitud||0; var res = fbTemp0.resultados||0;
+  if (!com || !tec || !act || !res) {
+    toast('Por favor evalúa las 4 dimensiones antes de marcar apto o no apto');
+    // Scroll al formulario de feedback
+    var fbEl = document.querySelector('[data-key="'+key0+'"]');
+    if (fbEl) fbEl.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
   // Si es No apto y no viene motivo, mostrar popup primero
   if (!valor && !motivoParam) {
     mostrarPopupMotivoRechazo(cand, puesto);
@@ -6448,13 +6922,23 @@ function marcarApto(cand, puesto, valor, motivoParam) {
   var key = (cDec+'_'+pDec).replace(/[^a-zA-Z0-9_]/g,'_');
   var comentEl = document.getElementById('fb_'+key);
   var comentario = comentEl ? comentEl.value : '';
-  var existing = feedbacks.find(function(f){ return f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim(); });
-  var reqIdFb = cand ? (cand.reqId||null) : null;
-    var fb = Object.assign({candidato:cDec,puesto:pDec,reqId:reqIdFb,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false}, fbTemp[key]||{});
+  // Obtener reqId desde _fbTemp (seteado por setDimStar) o desde el candidato en _allResults
+  var reqIdFb = (window._fbTemp&&window._fbTemp[key]&&window._fbTemp[key].reqId) ? window._fbTemp[key].reqId
+    : (function(){ var co=_allResults.find(function(r){return r.candidato===cDec&&r.puesto===pDec;}); return co?co.reqId||null:null; })();
+  var existing = feedbacks.find(function(f){
+    if (f.candidato!==cDec) return false;
+    if (reqIdFb) return f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb);
+    return f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim();
+  });
+  var fb = Object.assign({candidato:cDec,puesto:pDec,reqId:reqIdFb||null,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false}, fbTemp[key]||{});
   if (existing) { fb.elegido = existing.elegido; }
   fb.apto = valor;
   if (!valor && motivoParam) fb.motivoRechazo = motivoParam;
-  feedbacks = feedbacks.filter(function(f){ return !(f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim()); });
+  feedbacks = feedbacks.filter(function(f){
+    if (f.candidato!==cDec) return true;
+    if (reqIdFb) return !(f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb));
+    return !(f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim());
+  });
   feedbacks.push(fb);
   localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
@@ -6476,28 +6960,44 @@ function elegirCandidato(cand, puesto) {
   var key = (cDec+'_'+pDec).replace(/[^a-zA-Z0-9_]/g,'_');
   var comentEl = document.getElementById('fb_'+key);
   var comentario = comentEl ? comentEl.value : '';
-  var existing = feedbacks.find(function(f){ return f.candidato===cDec && f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim(); });
+  var existing = feedbacks.find(function(f){
+    if (f.candidato!==cDec) return false;
+    if (c_reqId) return f.reqId===c_reqId || f.reqId===parseInt(c_reqId);
+    return f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim();
+  });
   if (!existing) {
-    var fb = Object.assign({candidato:cDec,puesto:pDec,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:true,elegido:false}, fbTemp[key]||{});
+    var fb = Object.assign({candidato:cDec,puesto:pDec,reqId:c_reqId||null,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:true,elegido:false}, fbTemp[key]||{});
     feedbacks.push(fb);
   } else {
     existing.comentario = comentario || existing.comentario;
     existing.apto = existing.apto !== false ? true : existing.apto;
   }
-  // Solo uno puede ser elegido por puesto
+  // Solo uno puede ser elegido por solicitud (o por puesto si no hay reqId)
   feedbacks = feedbacks.map(function(f){
+    if (c_reqId) {
+      // Mismo puesto y misma solicitud: desmarcar todos menos el elegido
+      var mismaSolicitud = f.reqId===c_reqId || f.reqId===parseInt(c_reqId);
+      var mismoPuesto = f.puesto && pDec && f.puesto.toLowerCase().trim()===pDec.toLowerCase().trim();
+      if (!mismaSolicitud && !mismoPuesto) return f;
+      if (mismaSolicitud) return Object.assign({}, f, {elegido: f.candidato===cDec});
+      return f; // diferente solicitud del mismo puesto — no tocar
+    }
     if (f.puesto !== pDec) return f;
     return Object.assign({}, f, {elegido: f.candidato===cDec});
   });
   localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
 
-  // Activar etapa 6 (oferta) automáticamente en la requisición del puesto
-  var reqsDePuesto = requisiciones.filter(function(r){ return r.puesto && pDec && r.puesto.toLowerCase().trim()===pDec.toLowerCase().trim() && r.estado!=='Cubierto'; });
-  if (reqsDePuesto.length) {
-    var lastReqId = reqsDePuesto[reqsDePuesto.length-1].id;
+  // Activar etapa oferta en la req específica del candidato (o última activa del puesto como fallback)
+  var targetReqId = c_reqId
+    ? c_reqId
+    : (function(){
+        var reqs = requisiciones.filter(function(r){ return r.puesto && pDec && r.puesto.toLowerCase().trim()===pDec.toLowerCase().trim() && r.estado!=='Cubierto'; });
+        return reqs.length ? reqs[reqs.length-1].id : null;
+      })();
+  if (targetReqId) {
     requisiciones = requisiciones.map(function(r){
-      if (r.id !== lastReqId) return r;
+      if (r.id !== targetReqId && r.id !== parseInt(targetReqId)) return r;
       var etapas = Object.assign({}, r.etapas||{});
       etapas.oferta = new Date().toLocaleDateString('es-PE');
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
@@ -6559,16 +7059,26 @@ function saveFeedbackBtn(el) {
 function deleteFeedbackBtn(el) {
   var candidato = decodeURIComponent(el.dataset.cand);
   var puesto = decodeURIComponent(el.dataset.puesto);
-  deleteFeedback(candidato, puesto);
+  var reqId = el.dataset.reqId ? (parseInt(el.dataset.reqId)||el.dataset.reqId) : null;
+  deleteFeedback(candidato, puesto, reqId);
 }
 
 function saveFeedback(candidato,puesto,key){
   var comentario=document.getElementById('fb_'+key)?document.getElementById('fb_'+key).value:'';
+  var reqIdFb = (window._fbTemp&&window._fbTemp[key]&&window._fbTemp[key].reqId) ? window._fbTemp[key].reqId : null;
   // Preservar apto/elegido existentes para no resetearlos al guardar comentario
-  var existing=feedbacks.find(function(f){return f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim();});
-  var fb=Object.assign({candidato:candidato,puesto:puesto,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false},fbTemp[key]||{});
+  var existing=feedbacks.find(function(f){
+    if (f.candidato!==candidato) return false;
+    if (reqIdFb) return f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb);
+    return f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim();
+  });
+  var fb=Object.assign({candidato:candidato,puesto:puesto,reqId:reqIdFb||null,comentario:comentario,fecha:new Date().toLocaleDateString('es-PE'),timestamp:Date.now(),apto:null,elegido:false},fbTemp[key]||{});
   if(existing){fb.apto=existing.apto;fb.elegido=existing.elegido;}
-  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());});
+  feedbacks=feedbacks.filter(function(f){
+    if (f.candidato!==candidato) return true;
+    if (reqIdFb) return !(f.reqId===reqIdFb || f.reqId===parseInt(reqIdFb));
+    return !(f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());
+  });
   feedbacks.push(fb);
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
@@ -6580,8 +7090,12 @@ function saveFeedback(candidato,puesto,key){
   }
 }
 
-function deleteFeedback(candidato,puesto){
-  feedbacks=feedbacks.filter(function(f){return!(f.candidato===candidato&&f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());});
+function deleteFeedback(candidato,puesto,reqId){
+  feedbacks=feedbacks.filter(function(f){
+    if (f.candidato!==candidato) return true;
+    if (reqId) return !(f.reqId===reqId || f.reqId===parseInt(reqId));
+    return !(f.puesto&&puesto&&f.puesto.toLowerCase().trim()===puesto.toLowerCase().trim());
+  });
   localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
   safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
   toast('Feedback eliminado');
@@ -7334,6 +7848,36 @@ function toast(msg) {
   clearTimeout(t._t);
   t._t = setTimeout(function(){ t.style.opacity='0'; t.classList.remove('show'); }, 2500);
 }
+// ── Preview de CV en modal ──
+function mostrarPreviewCV(candEnc) {
+  var nombre = decodeURIComponent(candEnc);
+  var base64 = window._cvPreviewCache && window._cvPreviewCache[nombre];
+  if (!base64) { toast('CV no disponible para preview'); return; }
+
+  // Crear overlay
+  var overlay = document.createElement('div');
+  overlay.id = 'cvPreviewOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+
+  overlay.innerHTML = ''
+    + '<div style="background:var(--surface);border-radius:14px;width:100%;max-width:780px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--border2);flex-shrink:0;">'
+        + '<div style="font-size:14px;font-weight:500;color:var(--text);">&#128196; CV — '+nombre+'</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<a href="'+base64+'" download="CV_'+nombre.replace(/\s+/g,'_')+'.pdf" style="font-size:12px;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:3px 12px;text-decoration:none;">&#11015; Descargar</a>'
+          + '<button onclick="var o=document.getElementById(&quot;cvPreviewOverlay&quot;);if(o)o.remove();" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--muted);line-height:1;">&#x2715;</button>'
+        + '</div>'
+      + '</div>'
+      + '<div style="flex:1;overflow:hidden;min-height:0;">'
+        + '<iframe src="'+base64+'" style="width:100%;height:100%;min-height:70vh;border:none;" title="CV '+nombre+'"></iframe>'
+      + '</div>'
+    + '</div>';
+
+  document.body.appendChild(overlay);
+}
+
+
 </script>
 </body>
 </html>
