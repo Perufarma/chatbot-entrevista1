@@ -538,9 +538,7 @@ a[title]{cursor:pointer;}
       <select id="filtroGerencia_cand" onchange="filtrarGerenciaCand()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);outline:none;min-width:160px;">
         <option value="">Todas las gerencias</option>
       </select>
-      <select id="filtroPuesto_cand" onchange="filtrarCandidatos()" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;">
-        <option value="">Todas las solicitudes</option>
-      </select>
+
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
         <input type="checkbox" id="soloVisibles" onchange="filtrarCandidatos()" style="accent-color:var(--accent2);">
         Solo visibles para el l&iacute;der
@@ -650,7 +648,25 @@ a[title]{cursor:pointer;}
       <button onclick="abrirCopiarCandidatos()" style="font-size:13px;font-weight:500;padding:10px 20px;border-radius:10px;border:none;background:#3C3489;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(60,52,137,.35);">&#128260; Copiar a otra solicitud (<span class="btnSelCount">0</span>)</button>
       <button onclick="eliminarSeleccionados()" style="font-size:13px;font-weight:500;padding:10px 20px;border-radius:10px;border:none;background:#A32D2D;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(163,45,45,.35);">&#128465; Eliminar seleccionados (<span id="btnEliminarSelCount">0</span>)</button>
     </div>
-    <div id="candidatosPorPuesto"></div>
+    <!-- Layout panel lateral candidatos -->
+    <div id="candLayoutWrap" style="display:flex;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;height:calc(100vh - 260px);min-height:520px;">
+
+      <!-- SIDEBAR solicitudes -->
+      <div id="candSidebar" style="width:230px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
+        <div style="padding:10px;border-bottom:0.5px solid var(--border2);">
+          <input id="buscarSolicitud_cand" oninput="renderCandSidebar()" placeholder="Buscar solicitud..." style="width:100%;font-size:12px;padding:6px 10px;border-radius:8px;border:0.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        </div>
+        <div id="candSidebarList" style="flex:1;overflow-y:auto;padding:4px 0;"></div>
+        <div id="candSidebarFooter" style="padding:8px 12px;border-top:0.5px solid var(--border2);font-size:11px;color:var(--muted);display:none;"></div>
+      </div>
+
+      <!-- PANEL DERECHO -->
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--surface);">
+        <div id="candMainHeader" style="padding:12px 16px;border-bottom:0.5px solid var(--border2);flex-shrink:0;display:none;"></div>
+        <div id="candidatosPorPuesto" style="flex:1;overflow-y:auto;"></div>
+      </div>
+
+    </div>
   </div>
   <!-- DASHBOARD -->
   <div class="panel" id="tab-dashboard">
@@ -5871,7 +5887,6 @@ function filtrarGerenciaCand() {
 }
 
 function filtrarCandidatos() {
-  // No renderizar si el panel candidatos no está activo
   var panelCand = document.getElementById('tab-candidatos');
   if (panelCand && !panelCand.classList.contains('active')) return;
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
@@ -5879,16 +5894,15 @@ function filtrarCandidatos() {
   var puestoData = parsearValorPuesto(puestoVal);
   var soloVis = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
   var busqDni = ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
+  var mostrarCub = document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked;
+
   var filtered = _allResults.filter(function(r) {
     if (gerencia && r.gerencia!==gerencia) return false;
-    // Filtrar por solicitud específica (reqId) o por puesto como fallback
     if (puestoData.puesto) {
       if (puestoData.reqId) {
-        // Tiene reqId: filtrar por reqId exacto O por puesto si el candidato no tiene reqId (legacy)
         if (r.reqId && r.reqId !== puestoData.reqId) return false;
         if (!r.reqId && r.puesto && r.puesto.toLowerCase().trim() !== puestoData.puesto.toLowerCase().trim()) return false;
       } else {
-        // Solo puesto: filtrar por nombre del puesto
         if (r.puesto && r.puesto.toLowerCase().trim() !== puestoData.puesto.toLowerCase().trim()) return false;
       }
     }
@@ -5900,107 +5914,239 @@ function filtrarCandidatos() {
     }
     return true;
   });
-  var panel = document.getElementById('candidatosPorPuesto');
-  if (!panel) return;
-  if (!filtered.length) { panel.innerHTML='<div class="empty-state">No hay candidatos que coincidan con el filtro.</div>'; return; }
-  panel.innerHTML = renderTablaByPuesto(filtered);
+
+  var _cEl = document.getElementById('candidatosContador');
+  if (_cEl) _cEl.textContent = filtered.length + ' candidato' + (filtered.length!==1?'s':'') + ' en total';
+
+  // Renderizar sidebar y seleccionar req activa
+  renderCandSidebar(gerencia, puestoData, mostrarCub, busqDni, soloVis, filtered);
 }
 
-function renderTablaByPuesto(results) {
-  // Agrupar por reqId (solicitud específica) si existe, sino por puesto
-  var byGrupo = {};
+// ── renderCandSidebar — construye el sidebar de solicitudes agrupadas por gerencia ──
+function renderCandSidebar(gerencia, puestoData, mostrarCub, busqDni, soloVis, filtered) {
+  gerencia   = gerencia   || (document.getElementById('filtroGerencia_cand')||{}).value||'';
+  puestoData = puestoData || parsearValorPuesto((document.getElementById('filtroPuesto_cand')||{}).value||'');
+  mostrarCub = mostrarCub !== undefined ? mostrarCub : (document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked);
+  busqDni    = busqDni    !== undefined ? busqDni    : ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
+  soloVis    = soloVis    !== undefined ? soloVis    : (document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked);
+  filtered   = filtered   || _allResults;
 
-  // Primero: inicializar grupos para TODAS las requisiciones (activas y cubiertas)
-  // así aparecen aunque aún no tengan candidatos
-  requisiciones.forEach(function(q){
-    if (q.estado === 'Stand by') return; // Stand by sí se oculta
-    var key = 'req_'+q.id;
-    if (!byGrupo[key]) byGrupo[key] = [];
+  var sidebar = document.getElementById('candSidebarList');
+  var footer  = document.getElementById('candSidebarFooter');
+  if (!sidebar) return;
+
+  // Requisiciones visibles según filtros
+  var reqs = requisiciones.filter(function(r) {
+    if (r.estado === 'Stand by') return false;
+    if (!mostrarCub && r.estado === 'Cubierto') return false;
+    if (gerencia && r.gerencia !== gerencia) return false;
+    if (puestoData && puestoData.reqId && r.id !== puestoData.reqId && r.id !== parseInt(puestoData.reqId)) return false;
+    return true;
   });
 
-  results.forEach(function(r){
-    if (r.reqId) {
-      // Candidato con reqId — asignar a su solicitud
-      var key = 'req_'+r.reqId;
-      if (!byGrupo[key]) byGrupo[key] = [];
-      byGrupo[key].push(r);
-    } else {
-      // Candidato legacy sin reqId — buscar solicitudes del mismo puesto
-      var reqsDelPuesto = requisiciones.filter(function(q){
-        return q.puesto && r.puesto && q.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim();
-      });
-      if (reqsDelPuesto.length === 0) {
-        // Sin solicitudes — agrupar por nombre del puesto
-        var key = 'puesto_'+r.puesto;
-        if (!byGrupo[key]) byGrupo[key] = [];
-        byGrupo[key].push(r);
-      } else {
-        // 1 o más solicitudes — aparecer en todas
-        reqsDelPuesto.forEach(function(q){
-          var key = 'req_'+q.id;
-          if (!byGrupo[key]) byGrupo[key] = [];
-          // Evitar duplicados
-          var yaEsta = byGrupo[key].find(function(x){ return x.candidato===r.candidato && x.dni===r.dni; });
-          if (!yaEsta) byGrupo[key].push(r);
-        });
-      }
-    }
+  // Ordenar: activos más antiguos primero, cubiertos al final
+  reqs.sort(function(a,b){
+    var ca = a.estado==='Cubierto'?1:0, cb = b.estado==='Cubierto'?1:0;
+    if (ca!==cb) return ca-cb;
+    return a.id-b.id;
   });
 
-  // Ordenar grupos: activos primero (más antiguos primero), luego cubiertos (más antiguos primero)
-  var grupoKeys = Object.keys(byGrupo);
-  grupoKeys.sort(function(a, b) {
-    var idA = a.indexOf('req_')===0 ? (parseInt(a.replace('req_',''))||0) : 0;
-    var idB = b.indexOf('req_')===0 ? (parseInt(b.replace('req_',''))||0) : 0;
-    var reqA = requisiciones.find(function(r){ return r.id===idA; });
-    var reqB = requisiciones.find(function(r){ return r.id===idB; });
-    var cubA = reqA && reqA.estado==='Cubierto' ? 1 : 0;
-    var cubB = reqB && reqB.estado==='Cubierto' ? 1 : 0;
-    if (cubA !== cubB) return cubA - cubB; // activos antes que cubiertos
-    return idA - idB; // dentro de cada grupo: más antiguos primero
+  // Agrupar por gerencia
+  var byGer = {};
+  var gerOrder = [];
+  reqs.forEach(function(r) {
+    var g = r.gerencia || '(Sin gerencia)';
+    if (!byGer[g]) { byGer[g]=[]; gerOrder.push(g); }
+    byGer[g].push(r);
   });
 
-  var mostrarCub = document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked;
-  var nCubiertos = grupoKeys.filter(function(k){
-    var id = k.indexOf('req_')===0 ? (parseInt(k.replace('req_',''))||0) : 0;
-    var r = requisiciones.find(function(r){ return r.id===id; });
-    return r && r.estado==='Cubierto';
-  }).length;
+  // Buscar req seleccionada actualmente
+  var selReqId = window._candReqSeleccionada || null;
+  // Si hay filtro de req específica, forzar esa
+  if (puestoData && puestoData.reqId) selReqId = puestoData.reqId;
+  // Si no hay selección o la req ya no está visible, seleccionar la primera
+  var allReqIds = reqs.map(function(r){return r.id;});
+  if (!selReqId || allReqIds.indexOf(selReqId)===-1) {
+    selReqId = reqs.length ? reqs[0].id : null;
+  }
+  window._candReqSeleccionada = selReqId;
 
-  var html = grupoKeys.map(function(grupoKey) {
-    var reqId2 = grupoKey.indexOf('req_')===0 ? (parseInt(grupoKey.replace('req_',''))||grupoKey.replace('req_','')) : null;
-    var reqCheck = reqId2 ? requisiciones.find(function(r){ return r.id===reqId2; }) : null;
-    var esCubierto = reqCheck && reqCheck.estado==='Cubierto';
-    if (esCubierto && !mostrarCub) return ''; // ocultar cubiertos si no está el toggle activo
-    return (function(grupoKey) {
-    var cands = byGrupo[grupoKey];
-    // Obtener la req directamente desde la key (formato 'req_ID') — funciona aunque no haya candidatos
-    var reqId = grupoKey.indexOf('req_')===0 ? (parseInt(grupoKey.replace('req_',''))||grupoKey.replace('req_','')) : null;
-    var req = reqId ? requisiciones.find(function(r){ return r.id===reqId; }) : null;
-    var firstCand = cands[0];
-    var grupoKeyClean = grupoKey.indexOf('puesto_')===0 ? grupoKey.replace('puesto_','') : grupoKey;
-    var puesto = req ? (req.puesto||'') : (firstCand ? firstCand.puesto : grupoKeyClean);
-    var grupoLabel = puesto || '(sin puesto)';
-    try {
-      if (req) {
-        var extras = [req.sede, req.nivel ? req.nivel.split('/')[0].trim() : null, req.fechaInicio].filter(Boolean);
-        if (extras.length) grupoLabel += ' <span style="font-size:11px;font-weight:400;color:var(--muted);">' + extras.join(' · ') + '</span>';
-      }
-    } catch(e) { console.warn('grupoLabel error:', e); }
-    cands.sort(function(a,b){
-      // visibleLider primero, luego por estrellas descendente
-      if (a.visibleLider && !b.visibleLider) return -1;
-      if (!a.visibleLider && b.visibleLider) return 1;
-      return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
+  // Filtro de búsqueda en sidebar
+  var busqSol = ((document.getElementById('buscarSolicitud_cand')||{}).value||'').toLowerCase().trim();
+
+  // Cubiertos ocultos
+  var nCubOcultos = !mostrarCub ? requisiciones.filter(function(r){
+    return r.estado==='Cubierto' && r.estado!=='Stand by' && (!gerencia||r.gerencia===gerencia);
+  }).length : 0;
+
+  var html = '';
+  gerOrder.forEach(function(ger) {
+    var items = byGer[ger].filter(function(r){
+      if (!busqSol) return true;
+      return (r.puesto||'').toLowerCase().includes(busqSol) || (r.fechaInicio||'').includes(busqSol);
     });
-    var avanzar = cands.filter(function(c){ return c.visibleLider; }).length;
-    var avg = cands.length ? Math.round(cands.reduce(function(s,c){ return s+(c.estrellas||c.puntaje||0); },0)/cands.length) : 0;
+    if (!items.length) return;
+    html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 12px 4px;">'+ger+'</div>';
+    items.forEach(function(r) {
+      var nCands = filtered.filter(function(c){
+        if (c.reqId) return c.reqId===r.id||c.reqId===parseInt(r.id);
+        return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim();
+      }).length;
+      var nLider = filtered.filter(function(c){
+        if (!c.visibleLider) return false;
+        if (c.reqId) return c.reqId===r.id||c.reqId===parseInt(r.id);
+        return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim();
+      }).length;
+      var isActive = r.id===selReqId || r.id===parseInt(selReqId);
+      var dotColor = r.estado==='Cubierto'?'#534AB7' : (r.slaVencido||r.estado==='Vencido')?'#E24B4A' : (r.slaAmbar?'#EF9F27':'#e8623a');
+      var estadoExtra = r.estado==='Cubierto'
+        ? ' · <span style="color:#534AB7;font-weight:500;">Cubierto</span>'
+        : (r.slaVencido ? ' · <span style="color:#A32D2D;">⚠ Vencido</span>' : (r.slaAmbar ? ' · <span style="color:#854F0B;">⚠ Vence pronto</span>' : ''));
+      html += '<div onclick="seleccionarReqCand('+r.id+')" style="padding:8px 12px;margin:1px 6px;border-radius:8px;cursor:pointer;'+(isActive?'background:#fef0eb;border-left:2px solid #e8623a;padding-left:10px;':'')+'transition:background .1s;" data-req-id="'+r.id+'">'
+        +'<div style="display:flex;gap:6px;align-items:flex-start;">'
+          +'<span style="width:5px;height:5px;border-radius:50%;background:'+dotColor+';flex-shrink:0;margin-top:4px;display:inline-block;"></span>'
+          +'<div style="min-width:0;flex:1;">'
+            +'<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+(isActive?'color:#e8623a;':'')+'">'+r.puesto+'</div>'
+            +'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+(r.fechaInicio||'')+' · '+(nCands>0?nCands+' cand'+(nCands!==1?'s':''):'<span style="color:#993C1D;font-weight:500;">0 cands</span>')+(nLider>0?' · ✓ '+nLider:'')+(estadoExtra)+'</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    });
+  });
 
-    // Estado de la solicitud para badge
-    var estadoBadge = '';
-    if (req && req.estado === 'Cubierto') {
-      estadoBadge = '<span style="font-size:10px;font-weight:500;background:#EEEDFE;color:#3C3489;padding:2px 8px;border-radius:6px;margin-left:4px;">Cubierto</span>';
+  if (!html) html = '<div style="padding:20px 12px;font-size:12px;color:var(--muted);text-align:center;">No hay solicitudes</div>';
+  sidebar.innerHTML = html;
+
+  // Footer cubiertos ocultos
+  if (footer) {
+    if (nCubOcultos>0) {
+      footer.style.display='block';
+      footer.innerHTML = nCubOcultos+' cubierto'+(nCubOcultos!==1?'s':'')+' oculto'+(nCubOcultos!==1?'s':'')+' — <span style="color:#3C3489;cursor:pointer;text-decoration:underline;" onclick="var cb=document.getElementById(&quot;mostrarCubiertos_cand&quot;);if(cb){cb.checked=true;filtrarCandidatos();}">mostrar</span>';
+    } else {
+      footer.style.display='none';
     }
+  }
+
+  // Renderizar panel derecho con la req seleccionada
+  if (selReqId) {
+    var reqSel = requisiciones.find(function(r){return r.id===selReqId||r.id===parseInt(selReqId);});
+    var candsSel = filtered.filter(function(c){
+      if (c.reqId) return c.reqId===selReqId||c.reqId===parseInt(selReqId);
+      return reqSel && c.puesto && reqSel.puesto && c.puesto.toLowerCase().trim()===reqSel.puesto.toLowerCase().trim();
+    });
+    renderPanelDerechoCand(reqSel, candsSel);
+  } else {
+    var header = document.getElementById('candMainHeader');
+    var panel  = document.getElementById('candidatosPorPuesto');
+    if (header) header.style.display='none';
+    if (panel) panel.innerHTML='<div class="empty-state">Selecciona una solicitud para ver sus candidatos.</div>';
+  }
+}
+
+// ── seleccionarReqCand — clic en sidebar ──
+function seleccionarReqCand(reqId) {
+  window._candReqSeleccionada = reqId;
+  var gerencia   = (document.getElementById('filtroGerencia_cand')||{}).value||'';
+  var soloVis    = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
+  var mostrarCub = document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked;
+  var busqDni    = ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
+
+  var filtered = _allResults.filter(function(r) {
+    if (gerencia && r.gerencia!==gerencia) return false;
+    if (soloVis && !r.visibleLider) return false;
+    if (busqDni) {
+      if (!r.candidato||!r.candidato.toLowerCase().includes(busqDni)) {
+        if (!r.dni||!r.dni.toLowerCase().includes(busqDni)) return false;
+      }
+    }
+    return true;
+  });
+
+  var puestoData = {puesto:'', reqId:null};
+  renderCandSidebar(gerencia, puestoData, mostrarCub, busqDni, soloVis, filtered);
+}
+
+// ── renderPanelDerechoCand — header + tabla de candidatos de una req ──
+function renderPanelDerechoCand(req, cands) {
+  var header = document.getElementById('candMainHeader');
+  var panel  = document.getElementById('candidatosPorPuesto');
+  if (!header || !panel) return;
+
+  if (!req) {
+    header.style.display='none';
+    panel.innerHTML='<div class="empty-state">Selecciona una solicitud.</div>';
+    return;
+  }
+
+  // Header
+  header.style.display='block';
+  var avanzar = cands.filter(function(c){return c.visibleLider;}).length;
+  var avg = cands.length ? Math.round(cands.reduce(function(s,c){return s+(c.estrellas||c.puntaje||0);},0)/cands.length) : 0;
+  var estadoBadge = req.estado==='Cubierto'
+    ? '<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#EEEDFE;color:#3C3489;font-weight:500;">Cubierto</span>'
+    : req.estado==='Pendiente'
+    ? '<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#FAEEDA;color:#854F0B;font-weight:500;">Pendiente</span>'
+    : '<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#FAECE7;color:#993C1D;font-weight:500;">En proceso</span>';
+  var slaHtml = '';
+  if (req.slaVencido) slaHtml = '<span style="font-size:10px;background:#FCEBEB;color:#A32D2D;padding:2px 7px;border-radius:6px;">⚠ Vencido</span>';
+  else if (req.slaAmbar) slaHtml = '<span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:2px 7px;border-radius:6px;">⚠ Vence pronto</span>';
+
+  header.innerHTML = ''
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+      +'<div>'
+        +'<div style="font-size:14px;font-weight:500;">'+req.puesto+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+(req.gerencia||'')+' · '+(req.sede||'')+' · '+(req.nivel?req.nivel.split('/')[0].trim()+' · ':'')+' Inicio: '+(req.fechaInicio||'')+' · Límite: '+(req.fechaLimite||req.fechaVencimiento||'—')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+        +estadoBadge
+        +slaHtml
+        +'<span style="font-size:11px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
+        +(avanzar>0?'<span style="font-size:11px;background:#edf7f1;color:#2d7a4f;padding:2px 8px;border-radius:6px;">✓ '+avanzar+' con el líder</span>':'')
+        +(avg>0?'<span style="font-size:11px;color:var(--muted);">Prom. '+renderStars(avg,starsColor(avg))+'</span>':'')
+        +(cands.length>=2?'<button class="btn btn-secondary btn-sm" onclick="compararTop(\u0022req_\u0022+'+req.id+')" style="font-size:11px;">Comparar top 5</button>':'')
+      +'</div>'
+    +'</div>';
+
+  // Tabla candidatos
+  if (!cands.length) {
+    panel.innerHTML = '<div class="empty-state" style="padding:60px 20px;"><div style="font-size:28px;margin-bottom:10px;">📭</div><div style="font-weight:500;margin-bottom:4px;">Sin candidatos aún</div><div>Aún no hay candidatos registrados para este proceso.</div></div>';
+    return;
+  }
+
+  // Ordenar: visibleLider primero, luego estrellas desc
+  cands.sort(function(a,b){
+    if (a.visibleLider&&!b.visibleLider) return -1;
+    if (!a.visibleLider&&b.visibleLider) return 1;
+    return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
+  });
+
+  // Col headers
+  var colHead = '<div style="display:flex;align-items:center;padding:6px 16px;background:var(--bg);border-bottom:0.5px solid var(--border2);position:sticky;top:0;z-index:2;gap:12px;">'
+    +'<div style="width:18px;flex-shrink:0;"></div>'
+    +'<div style="flex:1;min-width:0;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Nombre · celular · pretensión</div>'
+    +'<div style="width:80px;flex-shrink:0;text-align:center;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Eval. líder</div>'
+    +'<div style="width:65px;flex-shrink:0;text-align:center;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Avanza</div>'
+    +'<div style="width:90px;flex-shrink:0;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Estado</div>'
+    +'<div style="width:80px;flex-shrink:0;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Acciones</div>'
+    +'<div style="width:60px;flex-shrink:0;"></div>'
+    +'</div>';
+
+  var rows = renderTablaByPuesto(cands, {reqId: req.id, puesto: req.puesto});
+  panel.innerHTML = colHead + rows;
+}
+
+// ── renderTablaByPuesto — ahora genera solo las filas (sin el header de grupo) ──
+function renderTablaByPuesto(cands, filtros) {
+  // Genera las filas HTML de candidatos para el panel derecho
+  filtros = filtros || {};
+
+  if (!cands || !cands.length) return '';
+
+  cands.sort(function(a,b){
+    if (a.visibleLider&&!b.visibleLider) return -1;
+    if (!a.visibleLider&&b.visibleLider) return 1;
+    return (b.estrellas||b.puntaje||0)-(a.estrellas||a.puntaje||0);
+  });
 
     var rows = cands.map(function(c, cidx) {
       var badge = cidx===0 ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f4c430;color:white;margin-left:4px;">#1</span>'
@@ -6062,105 +6208,56 @@ function renderTablaByPuesto(results) {
         +'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:#c0392b;padding:1px 4px;" title="Eliminar">&#128465;</button>'
         +'</div>';
 
-      // Fila principal compacta
-      var rowMain = '<div class="cand-row" style="display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:0.5px solid var(--border2);background:var(--surface);overflow:hidden;" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">'
+      // Fila principal — nuevo diseño panel lateral
+      var rowMain = '<div style="display:flex;align-items:center;padding:9px 16px;gap:12px;border-bottom:0.5px solid var(--border2);background:var(--surface);" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">' 
         +'<input type="checkbox" class="cand-sel-cb" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onchange="actualizarBtnEliminarSel()" style="accent-color:var(--accent2);width:13px;height:13px;flex-shrink:0;cursor:pointer;">'
-        // Nombre (clickeable para modal)
-        +'<div style="flex:0 0 200px;min-width:0;overflow:hidden;">'
+        +'<div style="flex:1;min-width:0;">'
           +'<div style="font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="abrirModalCandidato(this)" title="Ver y editar perfil completo">'+c.candidato+badge+fuente+alertaBadge+'</div>'
+          +'<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+( c.celular||'')+( c.celular&&c.pretension?' · ':'')+( c.pretension?'S/ '+c.pretension:'')+( !c.celular&&!c.pretension?'&mdash;':'')+'</div>'
         +'</div>'
-        // Pretensión
-        +'<div style="flex:0 0 80px;font-size:12px;color:var(--muted);text-align:center;">'+(c.pretension?'S/ '+c.pretension:'&#8212;')+'</div>'
-        // Celular
-        +'<div style="flex:0 0 95px;font-size:12px;color:var(--muted);white-space:nowrap;">'+(c.celular||'&#8212;')+'</div>'
-        // Estrellas
-        +'<div style="flex:0 0 80px;display:flex;align-items:center;gap:2px;">'+starsHtml+'</div>'
-        // Avanza c/líder
-        +'<div style="flex:0 0 75px;display:flex;align-items:center;">'+switchVis+'</div>'
-        // Elegido + Ingreso
-        +'<div style="flex:0 0 90px;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
-        // Acciones
-        +'<div style="flex:0 0 70px;">'+acciones+'</div>'
-        // Ver más
-        +'<div style="margin-left:auto;">'
-          +'<button onclick="toggleExpandCand(\''+rowId+'\')" id="btnexp_'+rowId+'" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">Ver más &#9660;</button>'
+        +'<div style="width:80px;flex-shrink:0;text-align:center;">'+starsHtml+'</div>'
+        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;">'+switchVis+'</div>'
+        +'<div style="width:90px;flex-shrink:0;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
+        +'<div style="width:80px;flex-shrink:0;display:flex;align-items:center;gap:1px;">'+acciones+'</div>'
+        +'<div style="width:60px;flex-shrink:0;text-align:right;">'
+          +'<button onclick="toggleExpandCand(\''+ rowId+'\')" id="btnexp_'+rowId+'" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">Ver &#9660;</button>'
         +'</div>'
       +'</div>';
 
       // Panel expandido de detalle
+      var cEncLcv = encodeURIComponent(c.candidato);
+      if (c.cvBase64) { if (!window._cvPreviewCache) window._cvPreviewCache={}; window._cvPreviewCache[c.candidato] = c.cvBase64; }
       var cvLink = c.cvBase64
-        ? '<a href="'+c.cvBase64+'" download="CV.pdf" style="font-size:12px;color:#3C3489;text-decoration:none;background:#EEEDFE;padding:3px 8px;border-radius:5px;">&#128196; Descargar CV</a>'
-        : (c.cvUrl ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:12px;color:#3C3489;">Ver CV &#8599;</a>' : '<span style="font-size:11px;color:var(--muted);">No cargado</span>');
+        ? '<button onclick="mostrarPreviewCV(\''+ cEncLcv+'\')" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV</button>'
+        : c.cvUrl
+          ? '<a href="'+c.cvUrl+'" target="_blank" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV &#8599;</a>'
+          : '<span style="font-size:11px;color:var(--muted);">No cargado</span>';
 
-      var rowExp = '<div id="'+rowId+'" style="display:none;background:var(--bg);border-bottom:0.5px solid var(--border2);">'
-        +'<div style="padding:12px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">DNI</div><div style="font-size:12px;">'+(c.dni||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Correo</div><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;">'+(c.correo||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Distrito</div><div style="font-size:12px;">'+(c.distrito||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Grado académico</div><div style="font-size:12px;">'+(c.gradoAcademico||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Experiencia</div><div style="font-size:12px;">'+(c.expLaboral||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Rem. actual</div><div style="font-size:12px;">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Disponibilidad</div><div style="font-size:12px;">'+(c.disponibilidad||'&#8212;')+'</div></div>'
-          +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">CV</div>'+cvLink+'</div>'
-        +'</div>'
-        +(c.resumen ? '<div style="padding:0 14px 8px;font-size:12px;color:var(--muted);border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;color:var(--text);">Resumen:</span> '+c.resumen+'</div>' : '')
-        +(c.comentarioReclutador ? '<div style="padding:0 14px 8px;font-size:12px;color:#1e5c38;background:#f0faf5;border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;">Comentario para el líder:</span> '+c.comentarioReclutador+'</div>' : '')
-        +(c.notaInterna ? '<div style="padding:0 14px 8px;font-size:12px;color:#7a4d0a;background:#fef9f4;border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;">Nota interna GTH:</span> '+c.notaInterna+'</div>' : '')
-        +'<div style="padding:8px 14px;border-top:0.5px solid var(--border2);display:flex;gap:8px;">'
-          +'<button onclick="abrirModalCandidato(this)" data-nombre="'+c.candidato+'" data-puesto-modal="'+c.puesto+'" style="font-size:11px;padding:4px 12px;border-radius:6px;border:0.5px solid #3C3489;color:#3C3489;background:transparent;cursor:pointer;">&#9998; Editar perfil completo</button>'
-          +'<button onclick="toggleExpandCand(\''+rowId+'\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);color:var(--muted);background:transparent;cursor:pointer;margin-left:auto;">&#9650; Cerrar</button>'
-        +'</div>'
-      +'</div>';
+      var rowExp = '<div id="'+rowId+'" style="display:none;background:var(--bg);border-bottom:0.5px solid var(--border2);">';
+      rowExp += '<div style="padding:12px 16px 8px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">DNI</div><div style="font-size:12px;">'+(c.dni||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Correo</div><div style="font-size:11px;word-break:break-all;">'+(c.correo||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Distrito</div><div style="font-size:12px;">'+(c.distrito||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Grado académico</div><div style="font-size:12px;">'+(c.gradoAcademico||'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Rem. actual</div><div style="font-size:12px;">'+(c.remActual?'S/ '+c.remActual:'&#8212;')+'</div></div>';
+      rowExp += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Disponibilidad</div><div style="font-size:12px;">'+(c.disponibilidad||'&#8212;')+'</div></div>';
+      rowExp += '</div>';
+      rowExp += '<div style="padding:0 16px 10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">CV</div>'+cvLink+'</div>';
+      if(c.expLaboral) rowExp += '<div style="padding:8px 16px 10px;border-top:0.5px solid var(--border2);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Experiencia</div><div style="font-size:12px;line-height:1.6;">'+c.expLaboral+'</div></div>';
+      if(c.resumen) rowExp += '<div style="padding:0 16px 8px;font-size:12px;color:var(--muted);border-top:0.5px solid var(--border2);padding-top:8px;"><span style="font-weight:500;color:var(--text);">Resumen:</span> '+c.resumen+'</div>';
+      if(c.comentarioReclutador) rowExp += '<div style="padding:6px 16px 8px;font-size:12px;color:#1e5c38;background:#f0faf5;border-top:0.5px solid var(--border2);"><span style="font-weight:500;">Comentario para el líder:</span> '+c.comentarioReclutador+'</div>';
+      if(c.notaInterna) rowExp += '<div style="padding:6px 16px 8px;font-size:12px;color:#7a4d0a;background:#fef9f4;border-top:0.5px solid var(--border2);"><span style="font-weight:500;">Nota interna GTH:</span> '+c.notaInterna+'</div>';
+      rowExp += '<div style="padding:8px 16px;border-top:0.5px solid var(--border2);display:flex;gap:8px;">';
+      rowExp += '<button onclick="abrirModalCandidato(this)" data-nombre="'+c.candidato+'" data-puesto-modal="'+c.puesto+'" style="font-size:11px;padding:4px 12px;border-radius:6px;border:0.5px solid #3C3489;color:#3C3489;background:transparent;cursor:pointer;">&#9998; Editar perfil completo</button>';
+      rowExp += '<button onclick="toggleExpandCand(\''+rowId+'\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);color:var(--muted);background:transparent;cursor:pointer;margin-left:auto;">&#9650; Cerrar</button>';
+      rowExp += '</div></div>';
 
       return rowMain + rowExp;
     }).join('');
 
-    // Header del grupo + sub-header de columnas
-    var colHeader = '<div style="display:flex;align-items:center;padding:6px 14px;gap:10px;background:var(--bg);border-bottom:0.5px solid var(--border2);overflow:hidden;">'
-      +'<div style="flex:0 0 200px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Nombre</div>'
-      +'<div style="flex:0 0 80px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:center;">Pretensión</div>'
-      +'<div style="flex:0 0 95px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Celular</div>'
-      +'<div style="flex:0 0 80px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Eval.</div>'
-      +'<div style="flex:0 0 75px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Avanza</div>'
-      +'<div style="flex:0 0 90px;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Estado</div>'
-      +'<div style="flex:0 0 70px;"></div>'
-      +'<div style="margin-left:auto;"></div>'
-    +'</div>';
 
-    var grupoId = encodeURIComponent(grupoKey);
-    var htmlGrupo = '<div style="margin-bottom:16px;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;width:100%;box-sizing:border-box;">'
-      +'<div data-puesto-id="'+grupoId+'" onclick="toggleCandGroup(this.dataset.puestoId)" style="padding:11px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;">'
-        +'<div style="font-size:13px;font-weight:500;">'+grupoLabel+estadoBadge+'</div>'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
-          +(cands.length>=2?'<button class="btn btn-secondary btn-sm" data-puesto="'+grupoId+'" onclick="event.stopPropagation();compararTop(this.dataset.puesto)" style="font-size:11px;padding:3px 10px;">Comparar top 5</button>':'')
-          +'<span style="font-size:12px;color:var(--muted);">'+cands.length+' candidato'+(cands.length!==1?'s':'')+'</span>'
-          +(cands.length>0?'<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 '+avanzar+' con el l\u00edder</span>':'')
-          +(cands.length>0?'<span style="font-size:11px;background:var(--surface);color:var(--muted);border:0.5px solid var(--border2);padding:2px 8px;border-radius:6px;">Prom. '+renderStars(avg,starsColor(avg))+'</span>':'')
-        +'</div>'
-      +'</div>'
-      +'<div id="cands_'+grupoId+'" style="display:none;">'
-        +(cands.length>0 ? colHeader+rows : '<div style="padding:14px 16px;font-size:12px;color:var(--muted);">Aún no hay candidatos registrados para este proceso.</div>')
-      +'</div>'
-    +'</div>';
-    return htmlGrupo;
-    })(grupoKey);
-  }).filter(Boolean).join('');
-
-  // Actualizar contador
-  var _cEl=document.getElementById('candidatosContador'); if(_cEl) _cEl.textContent=results.length+' candidato'+(results.length!==1?'s':'')+' en total';
-
-  // Footer de cubiertos ocultos
-  if (!mostrarCub && nCubiertos > 0) {
-    html += '<div style="text-align:center;padding:10px 0 4px;font-size:12px;color:var(--muted);">'
-      + nCubiertos+' proceso'+(nCubiertos!==1?'s':'')+' cubierto'+(nCubiertos!==1?'s':'')+' oculto'+(nCubiertos!==1?'s':'')+' — '
-      + '<label style="cursor:pointer;color:#3C3489;text-decoration:underline;" onclick="var cb=document.getElementById(&quot;mostrarCubiertos_cand&quot;);if(cb){cb.checked=true;filtrarCandidatos();}">mostrar</label>'
-      + '</div>';
-  }
-  return html;
+  return rows;
 }
-
-
-
 
 function renderCandidatosPorPuesto() {
   // Asegurar que el formulario manual esté cerrado
@@ -6182,10 +6279,10 @@ function renderCandidatosPorPuesto() {
     }
     poblarFiltrosCandidatos(_allResults);
     try {
-      panel.innerHTML = renderTablaByPuesto(_allResults);
+      filtrarCandidatos();
     } catch(e) {
-      console.error('renderTablaByPuesto error:', e);
-      panel.innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al renderizar candidatos: '+e.message+'</div>';
+      console.error('renderCandidatos error:', e);
+      document.getElementById('candidatosPorPuesto').innerHTML = '<div style="font-size:13px;color:var(--muted);">Error al renderizar: '+e.message+'</div>';
     }
   }).catch(function(err){ 
     console.error('Error cargando candidatos:', err);
