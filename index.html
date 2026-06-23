@@ -453,7 +453,6 @@ a[title]{cursor:pointer;}
       </div>
       <div id="ns_plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#1e5c38;"></div>
     </div>
-    </div>
     <div style="padding:14px 20px;border-top:0.5px solid var(--border2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);">
       <button class="btn btn-secondary" onclick="cerrarModalSolicitud()">Cancelar</button>
       <button class="btn btn-accent" onclick="guardarModalSolicitud()">Crear solicitud &rarr;</button>
@@ -1679,6 +1678,13 @@ function showTab(id, btn) {
   if (cmf) cmf.classList.remove('open');
   var cpdf = document.getElementById('cargaPDFPanel');
   if (cpdf) cpdf.style.display = 'none';
+  // Limpiar panel de detalle de puesto al salir de puestos
+  if (id !== 'puestos') {
+    var jdp = document.getElementById('jobDetallePanelContent');
+    if (jdp) jdp.innerHTML = '';
+    var ajf = document.getElementById('addJobForm');
+    if (ajf) ajf.classList.remove('open');
+  }
   // Limpiar candidatos al salir de esa pestaña
   if (id !== 'candidatos') {
     var cpp = document.getElementById('candidatosPorPuesto');
