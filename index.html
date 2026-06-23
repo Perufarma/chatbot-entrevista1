@@ -242,7 +242,8 @@ a[title]{cursor:pointer;}
       </div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-secondary btn-sm" onclick="toggleCargaPDF()">&#128196; Cargar PDF</button>
-        <button class="btn btn-accent btn-sm" onclick="toggleForm()">+ Nuevo puesto</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleForm()">+ Nuevo perfil de puesto</button>
+<button class="btn btn-accent btn-sm" onclick="abrirModalSolicitud(null)">+ Nueva solicitud</button>
       </div>
     </div>
 
@@ -314,15 +315,18 @@ a[title]{cursor:pointer;}
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Email del l&iacute;der *</label>
-          <input type="email" id="f_emailLider" placeholder="Ej: lider@perufarma.com">
-        </div>
-        <div class="form-group">
-          <label>DNI del l&iacute;der *</label>
-          <input type="text" id="f_dniLider" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;">El líder usa este DNI para acceder a su portal.</div>
+          <label>Nivel del puesto *</label>
+          <select id="f_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
+            <option value="">Selecciona el nivel...</option>
+            <option value="60">Gerente / Sub Gerente (60 d&iacute;as)</option>
+            <option value="35">Jefe / Supervisor (35 d&iacute;as)</option>
+            <option value="30e">Especialista / Coordinador (30 d&iacute;as)</option>
+            <option value="30">Analista / Ejecutivo / T&eacute;cnico / Asistente (30 d&iacute;as)</option>
+            <option value="25">Practicante / Auxiliar (25 d&iacute;as)</option>
+          </select>
         </div>
       </div>
+      <div id="plazoInfoPerfil" style="display:none;padding:8px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#1e5c38;"></div>
 
       <!-- Sección 2: Nueva solicitud -->
       <div id="reqSection">
@@ -344,28 +348,7 @@ a[title]{cursor:pointer;}
             </div>
             <div class="form-group"><label>Horario *</label><input type="text" id="f_horario" placeholder="Ej: Lunes a sábado 8am-6pm"></div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nivel del puesto *</label>
-              <select id="f_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Selecciona el nivel...</option>
-                <option value="60">Gerente / Sub Gerente (60 d&iacute;as)</option>
-                <option value="35">Jefe / Supervisor (35 d&iacute;as)</option>
-                <option value="30e">Especialista / Coordinador (30 d&iacute;as)</option>
-                <option value="30">Analista / Ejecutivo (30 d&iacute;as)</option>
-                <option value="30">T&eacute;cnico / Asistente (30 d&iacute;as)</option>
-                <option value="25">Practicante / Auxiliar (25 d&iacute;as)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Motivo *</label>
-              <select id="f_motivo" onchange="toggleReemplazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Selecciona...</option>
-                <option value="reemplazo">Reemplazo</option>
-                <option value="nuevo">Nuevo puesto</option>
-              </select>
-            </div>
-          </div>
+
           <div id="plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#085041;line-height:1.5;"></div>
           <div id="reemplazoField" style="display:none;display:flex;flex-direction:column;gap:10px;">
             <div class="form-group">
@@ -401,6 +384,82 @@ a[title]{cursor:pointer;}
         <button class="btn btn-secondary" onclick="toggleForm()">Cancelar</button>
       </div>
     </div>
+
+
+<!-- ═══════ MODAL SOLICITUD DE CONVOCATORIA ═══════ -->
+<div id="modalSolicitudOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)cerrarModalSolicitud()">
+  <div style="background:var(--surface);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;">
+    <div style="padding:18px 20px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);" id="ns_modal_titulo">Nueva solicitud de convocatoria</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="ns_modal_puesto"></div>
+      </div>
+      <button onclick="cerrarModalSolicitud()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">&#10005;</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Datos del l&iacute;der</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email del l&iacute;der *</label>
+          <input type="email" id="ns_emailLider" placeholder="Ej: lider@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+        <div class="form-group">
+          <label>DNI del l&iacute;der *</label>
+          <input type="text" id="ns_dniLider" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">El l&iacute;der usa este DNI para acceder a su portal.</div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Convocatoria</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Sede *</label>
+          <select id="ns_sede" onchange="toggleOtraSede('ns_otraSede',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
+            <option value="">Selecciona...</option>
+            <option>Almac&eacute;n Arequipa</option><option>Almac&eacute;n Chiclayo</option>
+            <option>Central</option><option>Comunal</option><option value="Otras">Otras</option>
+          </select>
+          <input type="text" id="ns_otraSede" placeholder="Especifica la sede..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+        <div class="form-group">
+          <label>Horario *</label>
+          <input type="text" id="ns_horario" placeholder="Ej: Lunes a Viernes 8am-6pm" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Motivo *</label>
+        <select id="ns_motivo" onchange="toggleReemplazoNS()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
+          <option value="">Selecciona...</option>
+          <option value="reemplazo">Reemplazo</option>
+          <option value="nuevo">Nuevo puesto</option>
+        </select>
+      </div>
+      <div id="ns_reemplazoField" style="display:none;flex-direction:column;gap:10px;">
+        <div class="form-group">
+          <label>Nombre del colaborador a reemplazar *</label>
+          <input type="text" id="ns_reemplazo_nombre" placeholder="Ej: Juan P&eacute;rez Garc&iacute;a" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+        <div class="form-group">
+          <label>Fecha de cese *</label>
+          <input type="date" id="ns_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Requisitos deseables</label>
+        <textarea id="ns_deseables" style="height:80px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);resize:vertical;" placeholder="Ej: Ingl&eacute;s intermedio, Excel avanzado..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Fecha de inicio del proceso *</label>
+        <input type="date" id="ns_fechaInicio_modal" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+      </div>
+      <div id="ns_plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#1e5c38;"></div>
+    </div>
+    </div>
+    <div style="padding:14px 20px;border-top:0.5px solid var(--border2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);">
+      <button class="btn btn-secondary" onclick="cerrarModalSolicitud()">Cancelar</button>
+      <button class="btn btn-accent" onclick="guardarModalSolicitud()">Crear solicitud &rarr;</button>
+    </div>
+  </div>
+</div>
 
     <!-- Filtros -->
     <!-- Layout dos columnas: lista + detalle -->
@@ -814,6 +873,16 @@ a[title]{cursor:pointer;}
                 </select>
               </div>
             </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Horario *</label>
+                <input type="text" id="ll_horario" placeholder="Ej: Lunes a Viernes 8am-6pm" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+              </div>
+              <div class="form-group">
+                <label>Email del l&iacute;der *</label>
+                <input type="email" id="ll_emailLider" placeholder="Ej: jperez@perufarma.com.pe" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+              </div>
+            </div>
             <div class="form-group"><label>Motivo *</label>
               <select id="ll_motivo" onchange="toggleReemplazoLider('ll')" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
                 <option value="">Selecciona...</option>
@@ -832,7 +901,8 @@ a[title]{cursor:pointer;}
               </div>
             </div>
             <div class="form-group"><label>Descripci&oacute;n y requisitos *</label><textarea id="ll_desc" style="height:120px;" placeholder="Describe el perfil que necesitas..."></textarea></div>
-            <div class="form-group"><label>Tu DNI (para seguimiento)</label><input type="text" id="ll_dni" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+            <div class="form-group"><label>Requisitos deseables</label><textarea id="ll_deseables" style="height:80px;" placeholder="Ej: Inglés intermedio, manejo de Excel avanzado..." style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);resize:vertical;"></textarea></div>
+<div class="form-group"><label>Tu DNI (para seguimiento)</label><input type="text" id="ll_dni" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
             <button class="btn btn-accent" onclick="guardarSolicitudLogin()" style="width:100%;">Enviar solicitud &rarr;</button>
             <button class="btn btn-secondary" onclick="toggleFormLiderLogin()" style="width:100%;">Cancelar</button>
           </div>
@@ -1779,7 +1849,7 @@ function descargarBackup() {
   var hoy = new Date();
   var rowsPuestos = requisiciones.map(function(r) {
     var etapas = r.etapas || {};
-    var etapaActual = ['tramites','oferta','entrevista','evaluacion','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
+    var etapaActual = ['tramites','oferta','entrevista','validacionCVs','evaluacion','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
     var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria',evaluacion:'Evaluación',
       entrevista:'Entrevista',oferta:'Oferta',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
     var candPuesto = _allResults.filter(function(c){ return c.puesto&&r.puesto&&c.puesto.toLowerCase()===r.puesto.toLowerCase(); });
@@ -1879,12 +1949,13 @@ function accederLider() {
 // ETAPAS DEL PROCESO
 // ══════════════════════════════════
 var ETAPAS = [
-  { id:'hc',        label:'Validar HC y Presupuesto',          auto: false },
-  { id:'convoc',    label:'Convocatoria Interna/Externa',       auto: true  },
-  { id:'evaluacion',label:'Evaluación y Longlist',              auto: true  },
-  { id:'entrevista',label:'Entrevista Técnica y Feedback',      auto: true  },
-  { id:'oferta',    label:'Envío de Oferta Laboral',            auto: false },
-  { id:'tramites',  label:'Trámites de Ingreso',                auto: false }
+  { id:'hc',            label:'Validar HC y Presupuesto',          auto: false, lider: false },
+  { id:'convoc',        label:'Convocatoria y Evaluación GTH',     auto: true,  lider: false },
+  { id:'evaluacion',    label:'Evaluación GTH',                    auto: true,  lider: false },
+  { id:'validacionCVs', label:'Validación de CVs del Líder',       auto: false, lider: true  },
+  { id:'entrevista',    label:'Entrevista Técnica y Feedback',     auto: true,  lider: false },
+  { id:'oferta',        label:'Envío de Carta Oferta',             auto: false, lider: false },
+  { id:'tramites',      label:'Trámites de Ingreso',               auto: false, lider: false }
 ];
 
 
@@ -2016,17 +2087,19 @@ function calcularEtapaActual(req, candidatos, feedbacks) {
     return matchReq && c.visibleLider;
   });
   if (!hayVisibles) return 2;
-  // Etapa 3: Entrevista/Feedback — hay feedback del líder EN ESTA SOLICITUD
+  // Etapa 3: Validación de CVs del Líder — el líder activa "Programar entrevista"
+  if (!etapasCompletadas.validacionCVs) return 3;
+  // Etapa 4: Entrevista Técnica y Feedback — hay feedback del líder EN ESTA SOLICITUD
   var hayFeedback = feedbacks.some(function(f){
     if (f.reqId) return f.reqId === req.id || f.reqId === parseInt(req.id);
     return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
   });
-  if (!hayFeedback) return 3;
-  // Etapa 4: Oferta — manual
-  if (!etapasCompletadas.oferta) return 4;
-  // Etapa 5: Trámites — manual
-  if (!etapasCompletadas.tramites) return 5;
-  return 5;
+  if (!hayFeedback) return 4;
+  // Etapa 5: Oferta — manual
+  if (!etapasCompletadas.oferta) return 5;
+  // Etapa 6: Trámites — manual
+  if (!etapasCompletadas.tramites) return 6;
+  return 6;
 }
 
 function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
@@ -2057,9 +2130,13 @@ function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
     // Label
     html += '<div style="font-size:10px;color:'+(active?'#e8623a':done?'#2d7a4f':'var(--muted)')+';text-align:center;margin-top:5px;font-weight:'+(active?'600':'400')+';line-height:1.3;padding:0 2px;">'+e.label+'</div>';
 
-    // Botón manual si es reclutador y la etapa es manual y es la actual
-    if (isReclutador && !e.auto && active) {
-      html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:4px;font-size:10px;padding:2px 8px;background:#e8623a;color:white;border:none;border-radius:4px;cursor:pointer;">Confirmar</button>';
+    // Botón de avance según tipo de etapa y rol
+    if (active) {
+      if (e.id === 'validacionCVs') {
+        html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:6px;font-size:10px;padding:3px 8px;background:#2563A8;color:white;border:none;border-radius:5px;cursor:pointer;">Programar entrevista</button>';
+      } else if (isReclutador && !e.auto) {
+        html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:4px;font-size:10px;padding:2px 8px;background:#e8623a;color:white;border:none;border-radius:4px;cursor:pointer;">Confirmar</button>';
+      }
     }
     html += '</div>';
   });
@@ -2678,7 +2755,7 @@ function calcularSLAAlerts() {
         if (!r || r.estado==='Cubierto') return;
         var etapas = (r.etapas && typeof r.etapas==='object') ? r.etapas : {};
         var refMs = r.id && r.id > 1000000000000 ? r.id : hoy;
-        var etapasSLA = ['hc','convoc','evaluacion','entrevista','oferta']; // tramites sin SLA
+        var etapasSLA = ['hc','convoc','evaluacion','validacionCVs','entrevista','oferta']; // tramites sin SLA
         etapasSLA.forEach(function(e, i) {
           if (etapas[e]) return;
           var anteriorOk = i===0 || etapas[etapasSLA[i-1]];
@@ -2865,11 +2942,7 @@ function calcularPlazoNS() {
   pi.style.display='block';
   pi.textContent='Plazo estimado: '+dias+' días → límite '+hasta.toLocaleDateString('es-PE');
 }
-function toggleReemplazoNS() {
-  var m=document.getElementById('ns_motivo').value;
-  var rf=document.getElementById('ns_reemplazoField');
-  if(rf) rf.style.display=m==='Reemplazo'?'flex':'none';
-}
+
 function guardarNuevaSolicitud() {
   if (!_nuevoSolJobId) return;
   var g=function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
@@ -2985,17 +3058,15 @@ function editJob(id) {
 function saveJobOnly() {
   var titulo = getTituloForm();
   var desc = document.getElementById('f_desc').value.trim();
-  var emailLider = document.getElementById('f_emailLider').value.trim();
-  var dniLider = document.getElementById('f_dniLider').value.trim();
-  if (!titulo||!desc) { toast('Completa nombre y descripción'); return; }
-  if (!emailLider) { toast('Agrega el email del líder'); return; }
-  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
+  var nivelVal = document.getElementById('f_nivel') ? document.getElementById('f_nivel').value : '';
+  if (!titulo||!desc) { toast('Completa nombre y descripción del puesto'); return; }
+  if (!nivelVal) { toast('Selecciona el nivel del puesto'); return; }
 
   var jobData = {
     titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
     gerencia:document.getElementById('f_gerencia')?document.getElementById('f_gerencia').value:'',
     instrucciones:document.getElementById('f_instrucciones').value.trim(),
-    emailLider:emailLider, dniLider:dniLider
+    nivelVal:nivelVal
   };
 
   if (editingJobId) {
@@ -3184,54 +3255,90 @@ function renderHistorialSolicitudes(jobId) {
   var jobObj = jobs.find(function(j){ return j.id===jobId; });
   var reqs = getReqsForJob(jobId, jobObj ? jobObj.titulo : '');
   if (!reqs.length) return '';
-  var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:e==='Stand by'?{bg:'#EEEDFE',t:'#3C3489'}:e==='Cancelado'?{bg:'var(--surface2)',t:'var(--muted)'}:{bg:'#EEEDFE',t:'#3C3489'}; };
+  var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:e==='Stand by'?{bg:'#FEF3C7',t:'#854F0B'}:{bg:'var(--surface2)',t:'var(--muted)'}; };
   var html = '<div style="margin-top:14px;border-top:0.5px solid var(--border2);padding-top:12px;">';
   html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Historial de solicitudes</div>';
   html += reqs.slice().reverse().map(function(r) {
     var c = ec(r.estado);
     var snap = r.perfilSnapshot || {};
     var snapId = 'snap_' + r.id;
-    var h = '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;">';
-    var etapasReq = r.etapas || {}; var hcOkReq = !!etapasReq.hc;
-    h += '<div style="margin-bottom:6px;">';
-    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">';
-    h += '<div style="font-size:12px;font-weight:500;">Solicitud del '+r.fecha+'</div>';
+    var etapasReq = r.etapas || {};
+    var hcOkReq = !!etapasReq.hc;
+
+    var h = '<div style="background:var(--bg);border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:8px;">';
+
+    // ── Header ──
+    h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    h += '<div style="font-size:13px;font-weight:500;">Solicitud del '+r.fecha+'</div>';
     h += '<span style="font-size:11px;background:'+c.bg+';color:'+c.t+';padding:2px 8px;border-radius:6px;">'+r.estado+'</span>';
     if (!hcOkReq && (r.estado==='Pendiente'||r.estado==='En proceso')) {
-      h += '<button class="btn btn-primary btn-sm" data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="toggleHC(this)" style="font-size:11px;padding:3px 10px;">✓ Confirmar HC</button>';
+      h += '<button class="btn btn-primary btn-sm" data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="toggleHC(this)" style="font-size:10px;padding:2px 8px;">✓ Confirmar HC</button>';
     } else if (hcOkReq) {
       h += '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">✓ HC confirmado</span>';
     }
     h += '</div>';
-    h += '<div style="font-size:11px;color:var(--muted);">Inicio: '+(r.fechaInicio||'—')+' · Límite: '+(r.fechaLimite||'—')+(r.sede?' · '+r.sede:'')+(r.nivel?' · '+r.nivel:'')+'</div>';
+
+    // ── Grid de campos clave ──
+    h += '<div style="padding:10px 14px;">';
+    h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:0.5px solid var(--border2);border-radius:8px;overflow:hidden;margin-bottom:8px;">';
+    var celdas = [
+      {l:'Sede',         v: r.sede||'—'},
+      {l:'Horario',      v: r.horario||'—'},
+      {l:'Nivel',        v: r.nivel||'—'},
+      {l:'Motivo',       v: r.motivo ? (r.motivo.charAt(0).toUpperCase()+r.motivo.slice(1)) : '—'},
+      {l:'Inicio',       v: r.fechaInicio||'—'},
+      {l:'Límite',       v: r.fechaLimite||'—'},
+    ];
+    celdas.forEach(function(cel,ci) {
+      var borderR = (ci%3 < 2) ? 'border-right:0.5px solid var(--border2);' : '';
+      var borderB = (ci < 3)   ? 'border-bottom:0.5px solid var(--border2);' : '';
+      h += '<div style="padding:7px 10px;'+borderR+borderB+'">';
+      h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">'+cel.l+'</div>';
+      h += '<div style="font-size:12px;font-weight:500;color:var(--text);">'+cel.v+'</div>';
+      h += '</div>';
+    });
     h += '</div>';
-    h += '<div style="display:flex;align-items:center;gap:6px;">';
-    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:5px;padding:2px 8px;color:var(--muted);cursor:pointer;">Ver perfil usado</button>';
+
+    // ── Fila reemplazo (condicional) ──
+    if (r.motivo==='reemplazo' && (r.reemplazoNombre||r.cese)) {
+      h += '<div style="background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:6px;padding:6px 10px;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;">';
+      if (r.reemplazoNombre) h += '<div><span style="color:#633806;font-weight:500;">Reemplaza a:</span> '+r.reemplazoNombre+'</div>';
+      if (r.cese) h += '<div><span style="color:#633806;font-weight:500;">Fecha de cese:</span> '+r.cese+'</div>';
+      h += '</div>';
+    }
+
+    // ── Fila líder ──
+    if (r.emailLider||r.dniLider) {
+      h += '<div style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;padding:6px 10px;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;">';
+      if (r.emailLider) h += '<div style="color:var(--muted);">Líder: <span style="color:var(--text);font-weight:500;">'+r.emailLider+'</span></div>';
+      if (r.dniLider)   h += '<div style="color:var(--muted);">DNI: <span style="color:var(--text);font-weight:500;">'+r.dniLider+'</span></div>';
+      h += '</div>';
+    }
+
+    // ── Perfil colapsable (un solo botón) ──
+    h += '<div id="'+snapId+'" style="display:none;margin-bottom:8px;padding:10px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border2);font-size:12px;line-height:1.6;color:var(--text);">';
+    h += '<div style="font-size:11px;font-weight:500;color:var(--accent2);margin-bottom:6px;">Perfil usado en esta solicitud</div>';
+    if (snap.desc)         h += '<div><strong>Descripción:</strong> '+snap.desc+'</div>';
+    if (snap.exp)          h += '<div><strong>Experiencia:</strong> '+snap.exp+'</div>';
+    if (snap.skills)       h += '<div><strong>Habilidades:</strong> '+snap.skills+'</div>';
+    if (r.minimos)         h += '<div><strong>Requisitos mínimos:</strong> '+r.minimos+'</div>';
+    if (r.deseables)       h += '<div><strong>Deseables:</strong> '+r.deseables+'</div>';
+    if (snap.instrucciones)h += '<div><strong>Instrucciones IA:</strong> '+snap.instrucciones+'</div>';
     h += '</div>';
-    // Snapshot colapsable
-    h += '<div id="'+snapId+'" style="display:none;margin-top:8px;padding:10px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border2);font-size:12px;color:var(--muted);line-height:1.6;">';
-    h += '<div style="font-size:11px;font-weight:500;color:var(--accent2);margin-bottom:6px;">&#128247; Perfil exacto usado en esta solicitud ('+( snap.fechaSnapshot||r.fecha)+')</div>';
-    if (snap.desc) h += '<div><strong style="color:var(--text);">Descripción:</strong> '+snap.desc+'</div>';
-    if (snap.exp) h += '<div><strong style="color:var(--text);">Experiencia:</strong> '+snap.exp+'</div>';
-    if (snap.skills) h += '<div><strong style="color:var(--text);">Habilidades:</strong> '+snap.skills+'</div>';
-    if (r.minimos) h += '<div><strong style="color:var(--text);">Requisitos mínimos:</strong> '+r.minimos+'</div>';
-    if (r.deseables) h += '<div><strong style="color:var(--text);">Deseables:</strong> '+r.deseables+'</div>';
-    if (snap.instrucciones) h += '<div><strong style="color:var(--text);">Instrucciones IA:</strong> '+snap.instrucciones+'</div>';
-    if (r.sede) h += '<div><strong style="color:var(--text);">Sede:</strong> '+r.sede+' &nbsp;|&nbsp; <strong style="color:var(--text);">Horario:</strong> '+(r.horario||'—')+'</div>';
-    h += '</div>';
-    // Acciones por solicitud
-    h += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:0.5px solid var(--border2);margin-top:8px;">';
-    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:10px;padding:2px 8px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Ver perfil usado</button>';
+
+    // ── Acciones ──
+    h += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:0.5px solid var(--border2);">';
+    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;color:var(--muted);">Ver perfil usado</button>';
     h += '<div style="flex:1;"></div>';
-    if (r.estado === 'En proceso' || r.estado === 'Pendiente') {
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="ponerSolicitudStandBy(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #EF9F27;background:#FAEEDA;color:#854F0B;cursor:pointer;">&#9646; Stand by</button>';
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #F09595;background:#FCEBEB;color:#A32D2D;cursor:pointer;">✕ Eliminar</button>';
-    } else if (r.estado === 'Stand by') {
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="reactivarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #0F6E56;background:#E1F5EE;color:#0F6E56;cursor:pointer;">&#9654; Reactivar</button>';
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #F09595;background:#FCEBEB;color:#A32D2D;cursor:pointer;">✕ Eliminar</button>';
+    if (r.estado==='En proceso'||r.estado==='Pendiente') {
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="ponerSolicitudStandBy(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Stand by</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
+    } else if (r.estado==='Stand by') {
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="reactivarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Reactivar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
     }
     h += '</div>';
-    h += '</div>';
+    h += '</div></div>';
     return h;
   }).join('');
   html += '</div>';
@@ -3299,6 +3406,139 @@ function cambiarEstadoReq(id, estado) {
 }
 
 // Abre el formulario de edición con la sección de solicitud lista para ese puesto
+
+// ══════════════════════════════════════════════════
+// MODAL SOLICITUD DE CONVOCATORIA
+// ══════════════════════════════════════════════════
+var _modalSolJobId = null;
+
+function abrirModalSolicitud(jobId) {
+  _modalSolJobId = jobId;
+  var ov = document.getElementById('modalSolicitudOverlay');
+  if (!ov) return;
+  // Limpiar campos
+  ['ns_emailLider','ns_dniLider','ns_sede','ns_otraSede','ns_horario',
+   'ns_motivo','ns_reemplazo_nombre','ns_cese','ns_deseables','ns_fechaInicio_modal'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  var rf = document.getElementById('ns_reemplazoField');
+  if (rf) rf.style.display = 'none';
+  var pi = document.getElementById('ns_plazoInfo');
+  if (pi) pi.style.display = 'none';
+  // Precargar email/DNI del job si existen
+  if (jobId) {
+    var job = jobs.find(function(j){ return j.id===jobId; });
+    if (job) {
+      document.getElementById('ns_modal_puesto').textContent = job.titulo || '';
+      if (job.emailLider) document.getElementById('ns_emailLider').value = job.emailLider;
+      if (job.dniLider)   document.getElementById('ns_dniLider').value   = job.dniLider;
+      // Precargar nivel del job para calcular plazo
+      _modalSolNivel = job.nivelVal || '';
+    }
+  } else {
+    document.getElementById('ns_modal_puesto').textContent = '';
+    _modalSolNivel = '';
+  }
+  // Fecha inicio = hoy
+  document.getElementById('ns_fechaInicio_modal').value = new Date().toISOString().slice(0,10);
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+var _modalSolNivel = '';
+
+function cerrarModalSolicitud() {
+  var ov = document.getElementById('modalSolicitudOverlay');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function toggleReemplazoNS() {
+  var motivo = document.getElementById('ns_motivo').value;
+  var rf = document.getElementById('ns_reemplazoField');
+  if (rf) rf.style.display = motivo === 'reemplazo' ? 'flex' : 'none';
+}
+
+function guardarModalSolicitud() {
+  var jobId = _modalSolJobId;
+  var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+  var emailLider = g('ns_emailLider');
+  var dniLider   = g('ns_dniLider');
+  var sedeV      = g('ns_sede');
+  var sedeO      = g('ns_otraSede');
+  var sede       = sedeV === 'Otras' ? (sedeO||'Otras') : sedeV;
+  var horario    = g('ns_horario');
+  var motivo     = g('ns_motivo');
+  var deseables  = g('ns_deseables');
+  var fechaInicio= g('ns_fechaInicio_modal');
+  var reemplNombre = motivo==='reemplazo' ? g('ns_reemplazo_nombre') : '';
+  var cese         = motivo==='reemplazo' ? g('ns_cese') : '';
+
+  if (!emailLider) { toast('Agrega el email del líder'); return; }
+  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
+  if (!sede||!horario||!motivo||!fechaInicio) { toast('Completa todos los campos obligatorios'); return; }
+  if (motivo==='reemplazo'&&!reemplNombre) { toast('Ingresa el nombre del colaborador a reemplazar'); return; }
+
+  // Si jobId null → es solicitud desde "Nueva solicitud" sin puesto: seleccionar puesto
+  var job = jobId ? jobs.find(function(j){ return j.id===jobId; }) : null;
+  if (!job) { toast('Selecciona un puesto del catálogo primero'); return; }
+
+  // Obtener nivel del perfil
+  var nivel    = job.nivelVal || '';
+  var diasPlazo= nivel==='30e'?30:parseInt(nivel)||30;
+  var nivelLabel= PLAZOS[nivel]?PLAZOS[nivel].label:nivel;
+  var fechaLimDate = new Date(fechaInicio);
+  fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
+
+  // Actualizar email/DNI del job con los de esta solicitud
+  jobs = jobs.map(function(j){
+    return j.id===jobId ? Object.assign({},j,{emailLider:emailLider,dniLider:dniLider}) : j;
+  });
+  localStorage.setItem('rjobs', JSON.stringify(jobs));
+  syncJobsToServer(jobs);
+
+  var snapshot = {
+    titulo:job.titulo, area:job.area||'', desc:job.desc||'',
+    instrucciones:job.instrucciones||'', emailLider:emailLider, dniLider:dniLider,
+    fechaSnapshot:new Date().toLocaleDateString('es-PE')
+  };
+
+  var req = {
+    id:Date.now(), jobId:jobId,
+    fecha:new Date().toLocaleDateString('es-PE'),
+    fechaInicio:new Date(fechaInicio).toLocaleDateString('es-PE'), fechaInicioRaw:fechaInicio,
+    fechaLimite:fechaLimDate.toLocaleDateString('es-PE'), fechaLimiteRaw:fechaLimDate.toISOString(),
+    puesto:job.titulo, area:job.area||'', gerencia:job.gerencia||'',
+    sede:sede, horario:horario,
+    nivelVal:nivel, nivel:nivelLabel, diasPlazo:diasPlazo,
+    motivo:motivo, reemplazoNombre:reemplNombre, cese:cese,
+    minimos:job.desc||'', deseables:deseables,
+    emailLider:emailLider, dniLider:dniLider,
+    estado:'En proceso', desiderablesCompletados:false,
+    perfilSnapshot:snapshot
+  };
+
+  requisiciones.push(req);
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+
+  // Notificar al líder por email
+  var tplLider = getTemplates().email_lider;
+  var tplAsunto = getTemplates().email_lider_asunto;
+  var asunto = encodeURIComponent(aplicarVariables(tplAsunto,{puesto:job.titulo}));
+  var cuerpo = aplicarVariables(tplLider,{puesto:job.titulo,area:job.area||'',sede:sede||'',horario:horario||''});
+  var cuerpoEnc = encodeURIComponent(cuerpo);
+  if (emailLider) {
+    window.open('mailto:'+emailLider+'?subject='+asunto+'&body='+cuerpoEnc,'_blank');
+  }
+
+  cerrarModalSolicitud();
+  toast('Solicitud creada ✓');
+  renderJobsList();
+  setTimeout(function(){ abrirDetallePanelJob(jobId); }, 150);
+}
+
 function abrirNuevaSolicitud(id) {
   editJob(id);
   // Limpiar campos solicitud
@@ -3549,45 +3789,105 @@ function renderAlertaPropuestaLider(jobId) {
   var html = '';
   reqs.forEach(function(r){
     var p = r.propuestasLider;
-    var req = r;
     var reqOrig = {funciones:r.funciones||r.minimos||'', liderDeseables:r.liderDeseables||'', sede:r.sede||'', horario:r.horario||''};
-    html += '<div style="background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:10px;padding:14px 16px;margin-bottom:12px;">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-        +'<div style="font-size:12px;font-weight:500;color:#854F0B;">⚠ El líder propuso cambios al perfil — '+new Date(r.propuestasLiderFecha||Date.now()).toLocaleDateString('es-PE')+'</div>'
-      +'</div>';
-    // Mostrar diferencias
+    var rid = r.id;
+    html += '<div style="background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:10px;padding:14px 16px;margin-bottom:12px;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+    html += '<div style="font-size:12px;font-weight:500;color:#854F0B;">El lider propuso cambios — '+new Date(r.propuestasLiderFecha).toLocaleDateString('es-PE')+'</div>';
+    html += '</div>';
+
+    // Cada campo cambiado → textarea editable con valor propuesto
     if (p.funciones && p.funciones !== reqOrig.funciones) {
-      html += '<div style="margin-bottom:8px;">'
-        +'<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Funciones y Requisitos</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
-          +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+reqOrig.funciones+'</div>'
-          +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;line-height:1.5;">'+p.funciones+'</div>'
-        +'</div></div>';
+      html += '<div style="margin-bottom:10px;">';
+      html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Descripcion y requisitos</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;white-space:pre-wrap;">'+reqOrig.funciones+'</div>';
+      html += '<textarea id="edit_funciones_'+rid+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;border:0.5px solid #C0DD97;line-height:1.5;resize:vertical;min-height:80px;width:100%;">'+p.funciones+'</textarea>';
+      html += '</div></div>';
     }
     if (p.liderDeseables && p.liderDeseables !== reqOrig.liderDeseables) {
-      html += '<div style="margin-bottom:8px;">'
-        +'<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Requisitos deseables</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
-          +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+(reqOrig.liderDeseables||'—')+'</div>'
-          +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;line-height:1.5;">'+p.liderDeseables+'</div>'
-        +'</div></div>';
+      html += '<div style="margin-bottom:10px;">';
+      html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Requisitos deseables</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+reqOrig.liderDeseables+'</div>';
+      html += '<textarea id="edit_deseables_'+rid+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;border:0.5px solid #C0DD97;line-height:1.5;resize:vertical;min-height:60px;width:100%;">'+p.liderDeseables+'</textarea>';
+      html += '</div></div>';
     }
     if (p.sede && p.sede !== reqOrig.sede) {
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
-        +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:6px 10px;border-radius:6px;text-decoration:line-through;">Sede: '+reqOrig.sede+'</div>'
-        +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:6px 10px;border-radius:6px;">Sede: '+p.sede+'</div>'
-      +'</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:6px 10px;border-radius:6px;text-decoration:line-through;">Sede: '+reqOrig.sede+'</div>';
+      html += '<input id="edit_sede_'+rid+'" type="text" value="'+p.sede+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:6px 10px;border-radius:6px;border:0.5px solid #C0DD97;width:100%;">';
+      html += '</div>';
     }
-    // Botones de decisión
-    html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">'
-      +'<button class="btn btn-secondary btn-sm" data-req-id="'+r.id+'" onclick="rechazarCambiosLider(this.dataset.reqId)" style="font-size:11px;">&#10005; Rechazar</button>'
-      +'<button class="btn btn-secondary btn-sm" data-req-id="'+r.id+'" onclick="aprobarCambiosLider(this.dataset.reqId,\'solicitud\')" style="font-size:11px;border-color:#3B6D11;color:#3B6D11;">&#10003; Aplicar solo a esta solicitud</button>'
-      +'<button class="btn btn-accent btn-sm" data-req-id="'+r.id+'" onclick="aprobarCambiosLider(this.dataset.reqId,\'ambos\')" style="font-size:11px;">&#10003; Aplicar a solicitud y perfil base</button>'
-    +'</div>';
+    if (p.horario && p.horario !== reqOrig.horario) {
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:6px 10px;border-radius:6px;text-decoration:line-through;">Horario: '+reqOrig.horario+'</div>';
+      html += '<input id="edit_horario_'+rid+'" type="text" value="'+p.horario+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:6px 10px;border-radius:6px;border:0.5px solid #C0DD97;width:100%;">';
+      html += '</div>';
+    }
+
+    // Nota al reclutador
+    html += '<div style="font-size:11px;color:#854F0B;margin-bottom:10px;">Puedes editar los campos en verde antes de aprobar. Los cambios se aplicaran con tu revision.</div>';
+
+    // Botones
+    html += '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">';
+    html += '<button class="btn btn-secondary btn-sm" data-req-id="'+rid+'" onclick="rechazarCambiosLider(this.dataset.reqId)" style="font-size:11px;">Rechazar</button>';
+    html += '<button class="btn btn-secondary btn-sm" data-req-id="'+rid+'" onclick="aprobarCambiosLiderEditado(this.dataset.reqId,\'solicitud\')" style="font-size:11px;">Aprobar para esta solicitud</button>';
+    html += '<button class="btn btn-accent btn-sm" data-req-id="'+rid+'" onclick="aprobarCambiosLiderEditado(this.dataset.reqId,\'ambos\')" style="font-size:11px;">Aprobar y actualizar perfil base</button>';
+    html += '</div>';
     html += '</div>';
   });
   return html;
 }
+
+// Versión editada de aprobarCambiosLider — lee los campos editados por el reclutador
+function aprobarCambiosLiderEditado(reqId, scope) {
+  var numId = parseInt(reqId)||reqId;
+  var req = requisiciones.find(function(r){ return r.id===numId||String(r.id)===String(reqId); });
+  if (!req || !req.propuestasLider) return;
+  var p = req.propuestasLider;
+
+  // Leer valores editados (si existen los campos) con fallback al propuesto
+  function getEdited(field, fallback) {
+    var el = document.getElementById('edit_'+field+'_'+reqId);
+    return el ? el.value.trim() : fallback;
+  }
+
+  var updates = {};
+  if (p.funciones)      { var v=getEdited('funciones',p.funciones); updates.funciones=v; updates.minimos=v; }
+  if (p.liderDeseables) { updates.liderDeseables=getEdited('deseables',p.liderDeseables); }
+  if (p.sede)           { updates.sede=getEdited('sede',p.sede); }
+  if (p.horario)        { updates.horario=getEdited('horario',p.horario); }
+
+  var bita = Array.isArray(req.bitacora)?req.bitacora.slice():[];
+  bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+    texto:'Reclutador aprobó cambios propuestos por el líder'+(scope==='ambos'?' (aplicado también al perfil base)':'')});
+
+  requisiciones = requisiciones.map(function(r){
+    if (r.id===numId||String(r.id)===String(reqId))
+      return Object.assign({},r,updates,{propuestasLider:null,propuestasLiderEstado:'aprobado',bitacora:bita});
+    return r;
+  });
+
+  if (scope === 'ambos') {
+    var jobUpdates = {};
+    if (p.funciones)      { jobUpdates.desc=updates.funciones; jobUpdates.funciones=updates.funciones; jobUpdates.minimos=updates.funciones; }
+    if (p.liderDeseables) { jobUpdates.deseables=updates.liderDeseables; }
+    jobs = jobs.map(function(j){
+      if (j.id===req.jobId||j.titulo===req.puesto) return Object.assign({},j,jobUpdates);
+      return j;
+    });
+    localStorage.setItem('rjobs', JSON.stringify(jobs));
+    syncJobsToServer(jobs);
+  }
+
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  toast('Cambios aprobados ✓');
+  renderJobsList();
+  setTimeout(function(){ abrirDetallePanelJob(req.jobId); }, 150);
+}
+
 
 function aprobarCambiosLider(reqId, scope) {
   var numId = parseInt(reqId)||reqId;
@@ -3983,8 +4283,7 @@ function setCmStar(n) {
   }
 }
 
-async 
-function procesarCVCandidato(input) {
+async function procesarCVCandidato(input) {
   var file = input.files[0];
   if (!file) return;
   var status = document.getElementById('cvAutoFillStatus');
@@ -5226,14 +5525,7 @@ function abrirDetallePanelJob(id) {
     + '</div>'
 
     // ── Footer acciones ──
-    + '<div style="padding:12px 18px;border-top:0.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
-      + '<button class="btn btn-secondary btn-sm" onclick="editJob('+id+');scrollToForm()" style="font-size:11px;">&#9998; Editar perfil</button>'
-      + '<button class="btn btn-accent btn-sm" onclick="abrirNuevaSolicitud('+id+');scrollToForm()" style="font-size:11px;">+ Solicitud</button>'
-      + '<div style="margin-left:auto;">'
-        + '<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar</button>'
-      + '</div>'
-    + '</div>'
-  + '</div>';
++ '<div style="padding:12px 18px;border-top:0.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+ '<button class="btn btn-secondary btn-sm" onclick="editJob('+id+');scrollToForm()" style="font-size:11px;">&#9998; Editar perfil</button>'+ '<button class="btn btn-accent btn-sm" onclick="abrirModalSolicitud('+id+')" style="font-size:11px;">+ Solicitar</button>'+ '<div style="margin-left:auto;">'+ '<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar</button>'+ '</div>'+ '</div>'
 
   panel.innerHTML = html;
 }
@@ -7392,8 +7684,11 @@ function guardarSolicitudLogin() {
   var motivo  = document.getElementById('ll_motivo').value;
   var desc    = document.getElementById('ll_desc').value.trim();
   var dni     = document.getElementById('ll_dni').value.trim();
+  var horario  = (document.getElementById('ll_horario')||{}).value||'';
+  var emailLid = (document.getElementById('ll_emailLider')||{}).value||'';
+  var deseables= (document.getElementById('ll_deseables')||{}).value||'';
 
-  if (!puesto||!area||!sede||!nivel||!motivo||!desc) { toast('Completa todos los campos obligatorios'); return; }
+  if (!puesto||!area||!sede||!nivel||!motivo||!desc||!horario||!emailLid) { toast('Completa todos los campos obligatorios'); return; }
 
   var diasPlazo = nivel==='30e'?30:parseInt(nivel);
   var fechaLimDate = new Date(); fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
@@ -7412,7 +7707,7 @@ function guardarSolicitudLogin() {
       id: Date.now(),
       titulo: puesto, area: area, gerencia: gerencia,
       desc: desc, instrucciones: '',
-      emailLider: '', dniLider: dni || ''
+      emailLider: emailLid, dniLider: dni || ''
     };
     jobs.push(nuevoJob);
     jobId = nuevoJob.id;
@@ -7427,12 +7722,12 @@ function guardarSolicitudLogin() {
     fechaInicioRaw: new Date().toISOString().slice(0,10),
     fechaLimite: fechaLimDate.toLocaleDateString('es-PE'),
     fechaLimiteRaw: fechaLimDate.toISOString(),
-    puesto: puesto, area: area, gerencia: gerencia, sede: sede, horario: '—',
+    puesto: puesto, area: area, gerencia: gerencia, sede: sede, horario: horario,
     nivelVal: nivel, nivel: nivelLabel,
     diasPlazo: diasPlazo, motivo: motivo,
     reemplazoNombre: reemplazoNombreLL, cese: ceseLL,
-    minimos: desc, deseables: '',
-    emailLider: '', dniLider: dni,
+    minimos: desc, deseables: deseables,
+    emailLider: emailLid, dniLider: dni,
     estado: 'Pendiente', desiderablesCompletados: false,
     origenLider: true
   };
@@ -7700,7 +7995,7 @@ function renderDashboard() {
     });
     // Pipeline por etapa — una columna por etapa, procesos dentro
     var ETAPAS_N = ['HC','Convocatoria','Evaluación y Longlist','Entrevista','Oferta'];
-    var ETAPAS_K = ['hc','convoc','evaluacion','entrevista','oferta'];
+    var ETAPAS_K = ['hc','convoc','evaluacion','validacionCVs','entrevista','oferta'];
 
     // Agrupar procesos por etapa actual usando calcularEtapaActual
     var byEtapa = {};
