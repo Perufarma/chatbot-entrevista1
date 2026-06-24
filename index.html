@@ -47,8 +47,8 @@ a[title]{cursor:pointer;}
 .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent2);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-.add-job-form{background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;display:none;flex-direction:column;gap:14px;margin-bottom:20px;}
-.add-job-form.open{display:flex;}
+  .add-job-form{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;padding:16px;}
+  .add-job-form.open{display:flex;}
 
 /* MISC */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;line-height:1.6;}
@@ -243,11 +243,10 @@ a[title]{cursor:pointer;}
       <div style="display:flex;gap:6px;">
         <button class="btn btn-secondary btn-sm" onclick="toggleCargaPDF()">&#128196; Cargar PDF</button>
         <button class="btn btn-secondary btn-sm" onclick="toggleForm()">+ Nuevo perfil de puesto</button>
-<button class="btn btn-accent btn-sm" onclick="abrirModalSolicitud(null)">+ Nueva solicitud</button>
       </div>
     </div>
 
-    <!-- Formulario nuevo puesto + carga PDF (ocultos, se muestran con toggle) -->
+
     <div id="cargaPDFPanel" style="display:none;background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:24px;margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div>
@@ -269,8 +268,13 @@ a[title]{cursor:pointer;}
       <div id="pdfResultados" style="margin-top:16px;display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
-    <div class="add-job-form" id="addJobForm">
-      <div id="formTitle" style="font-size:14px;font-weight:500;">Nuevo puesto</div>
+    <div class="add-job-form" id="addJobForm" onclick="if(event.target===this)toggleForm()">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;">
+        <div style="padding:16px 20px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;flex-shrink:0;">
+          <div id="formTitle" style="font-size:15px;font-weight:600;color:var(--text);">Nuevo perfil de puesto</div>
+          <button onclick="toggleForm()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">&#10005;</button>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
 
       <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:0.5px solid var(--border2);margin-bottom:2px;">Perfil del puesto</div>
       <div class="form-group">
@@ -329,47 +333,6 @@ a[title]{cursor:pointer;}
       <div id="plazoInfoPerfil" style="display:none;padding:8px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#1e5c38;"></div>
 
       <!-- Sección 2: Nueva solicitud -->
-      <div id="reqSection">
-        <div style="height:0.5px;background:var(--border2);margin:4px 0 10px;"></div>
-        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:0.5px solid var(--border2);margin-bottom:10px;">Solicitud de convocatoria</div>
-        <div style="display:flex;flex-direction:column;gap:14px;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Sede *</label>
-              <select id="f_sede" onchange="toggleOtraSede('f_otraSede',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Selecciona...</option>
-                <option>Almacén Arequipa</option>
-                <option>Almacén Chiclayo</option>
-                <option>Central</option>
-                <option>Comunal</option>
-                <option value="Otras">Otras</option>
-              </select>
-              <input type="text" id="f_otraSede" placeholder="Especifica la sede..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-            <div class="form-group"><label>Horario *</label><input type="text" id="f_horario" placeholder="Ej: Lunes a sábado 8am-6pm"></div>
-          </div>
-
-          <div id="plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#085041;line-height:1.5;"></div>
-          <div id="reemplazoField" style="display:none;display:flex;flex-direction:column;gap:10px;">
-            <div class="form-group">
-              <label>Nombre del colaborador a reemplazar *</label>
-              <input type="text" id="f_reemplazo_nombre" placeholder="Ej: Juan Pérez García" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-            <div class="form-group">
-              <label>Fecha de cese *</label>
-              <input type="date" id="f_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Fecha de inicio del proceso *</label>
-            <input type="date" id="f_fechaInicio" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          </div>
-          <div>
-            <button class="btn btn-accent" onclick="saveJobAndCreateReq()" title="Guarda el perfil, registra la solicitud con fechas y plazos, y abre un correo al líder para notificarle">Crear solicitud y notificar l&iacute;der &rarr;</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Motivo del cambio (solo visible al editar) -->
       <div id="motivoCambioWrap" style="display:none;">
         <div class="form-group">
@@ -385,6 +348,8 @@ a[title]{cursor:pointer;}
       </div>
     </div>
 
+      </div>
+    </div>
 
 <!-- ═══════ MODAL SOLICITUD DE CONVOCATORIA ═══════ -->
 <div id="modalSolicitudOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)cerrarModalSolicitud()">
@@ -1673,6 +1638,7 @@ function showTab(id, btn) {
   document.getElementById('tab-'+id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (id === 'envio') { renderEnvioSelect(); renderReporteIngresos(); renderDocsBiblioteca(); }
+  if (id === 'puestos') { renderJobsList(); }
   // Cerrar formularios flotantes al cambiar de pestaña
   var cmf = document.getElementById('candManualForm');
   if (cmf) cmf.classList.remove('open');
@@ -1856,8 +1822,8 @@ function descargarBackup() {
   var rowsPuestos = requisiciones.map(function(r) {
     var etapas = r.etapas || {};
     var etapaActual = ['tramites','oferta','entrevista','validacionCVs','evaluacion','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
-    var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria',evaluacion:'Evaluación',
-      entrevista:'Entrevista',oferta:'Oferta',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
+    var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',evaluacion:'Evaluación GTH',validacionCVs:'Validación CVs Líder',
+      entrevista:'Entrevista Técnica',oferta:'Oferta Laboral',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
     var candPuesto = _allResults.filter(function(c){ return c.puesto&&r.puesto&&c.puesto.toLowerCase()===r.puesto.toLowerCase(); });
     var conLider = candPuesto.filter(function(c){ return c.visibleLider; }).length;
     var diasLimite = r.fechaLimiteRaw ? Math.ceil((new Date(r.fechaLimiteRaw)-hoy)/(1000*60*60*24)) : '';
@@ -2139,7 +2105,8 @@ function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
     // Botón de avance según tipo de etapa y rol
     if (active) {
       if (e.id === 'validacionCVs') {
-        html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:6px;font-size:10px;padding:3px 8px;background:#2563A8;color:white;border:none;border-radius:5px;cursor:pointer;">Programar entrevista</button>';
+        // El avance de esta etapa es via el checklist "Agendado" en la pestaña Candidatos
+        // No se muestra botón aquí
       } else if (isReclutador && !e.auto) {
         html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:4px;font-size:10px;padding:2px 8px;background:#e8623a;color:white;border:none;border-radius:4px;cursor:pointer;">Confirmar</button>';
       }
@@ -2642,20 +2609,17 @@ function renderDetalleProcesoSeleccionado(reqId) {
         // Comentario del reclutador
         var recComent = cand.comentarioReclutador||cand.observacion||'';
         var recHtml = recComent ? '<div style="font-size:11px;background:#f0f7ee;border-radius:6px;padding:6px 10px;color:#1e5c38;margin-bottom:8px;">&#128203; GTH: '+recComent+'</div>' : '';
-        return '<div style="padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:0.5px solid var(--border2);">'
-          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'
-            + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
-            + '<div style="flex:1;"></div>'
-            + aptoTag + elegidoTag + (cvLink ? ' '+cvLink : '')
-          + '</div>'
-          + (infoHtml ? '<div style="margin-bottom:8px;">'+infoHtml+'</div>' : '')
-          + recHtml
-          + dimHtml
-          + comentHtml
-          + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
-            + btnApto + btnNoApto + btnElegir
-          + '</div>'
-        + '</div>';
+        // Botón programar entrevista — en el header de cada candidato
+        var btnProgramar = !cand.agendado
+          ? '<button style="font-size:11px;padding:4px 10px;background:#2563A8;color:white;border:none;border-radius:6px;">Programar entrevista</button>'
+          : '<span style="font-size:10px;background:#EAF3DE;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 Entrevista agendada</span>';
+        // Evaluación solo si agendada
+        var evalBlock = cand.agendado
+          ? (recHtml + dimHtml + comentHtml
+             + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+             + btnApto + btnNoApto + btnElegir + '</div>')
+          : '<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic;">La evaluacion estara disponible una vez que el reclutador agende la entrevista.</div>';
+        return '<div style="padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:0.5px solid var(--border2);">'          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'          + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'          + '<div style="flex:1;"></div>'          + aptoTag + elegidoTag + (cvLink ? ' '+cvLink : '') + ' ' + btnProgramar          + '</div>'          + (infoHtml ? '<div style="margin-bottom:8px;">'+infoHtml+'</div>' : '')          + evalBlock          + '</div>';
       }).join('');
       html += '</div>';
     } else {
@@ -2748,13 +2712,13 @@ function guardarDesiderablesLider(id) {
 // ══════════════════════════════════
 // ALERTAS VENCIMIENTO
 // ══════════════════════════════════
-var SLA_ETAPA = {hc:2,convoc:3,evaluacion:8,entrevista:5,oferta:3,tramites:5};
+var SLA_ETAPA = {hc:2,convoc:3,evaluacion:8,validacionCVs:3,entrevista:5,oferta:3,tramites:5};
 
 function calcularSLAAlerts() {
   var alerts = [];
   try {
     var hoy = Date.now();
-    var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria',eval:'Evaluaci\u00f3n GTH',longlist:'Longlist',entrevista:'Entrevista/Feedback',oferta:'Oferta Laboral',tramites:'Tr\u00e1mites'};
+var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',evaluacion:'Evaluación GTH',validacionCVs:'Validación CVs Líder',entrevista:'Entrevista Técnica',oferta:'Oferta Laboral',tramites:'Trámites'};
     if (!Array.isArray(requisiciones)) return alerts;
     requisiciones.forEach(function(r) {
       try {
@@ -2780,7 +2744,7 @@ function calcularSLAAlerts() {
 
 function irAPuesto(jid) {
   showTab('puestos', document.getElementById('btn-puestos'));
-  setTimeout(function(){ abrirDetalleJob(jid); }, 200);
+  setTimeout(function(){ abrirDetalleJob(jid); }, 400);
 }
 
 function verificarAlertas() {
@@ -2865,44 +2829,33 @@ function verificarAlertas() {
 // ══════════════════════════════════
 var editingJobId = null;
 
-function scrollToForm() {
-  setTimeout(function(){
-    var f = document.getElementById('addJobForm');
-    if (f && f.classList.contains('open')) {
-      f.scrollIntoView({behavior:'smooth', block:'start'});
-    }
-  }, 100);
-}
+function scrollToForm() { /* form es modal — no scroll necesario */ }
 
 function toggleForm() {
   editingJobId = null;
   var f = document.getElementById('addJobForm');
-  f.classList.toggle('open');
-  // Restaurar título al abrir en modo creación
-  if (f.classList.contains('open')) {
+  var isOpen = f.classList.contains('open');
+  if (isOpen) {
+    // Cerrar modal
+    f.classList.remove('open');
+    document.body.style.overflow = '';
+  } else {
+    // Abrir modal en modo creación
+    f.classList.add('open');
+    document.body.style.overflow = 'hidden';
     var ft = document.getElementById('formTitle');
-    if (ft) ft.innerHTML = 'Nuevo puesto';
-  }
-  if (f.classList.contains('open')) {
-    ['f_area','f_desc','f_instrucciones','f_emailLider','f_dniLider','f_horario','f_cese','f_reemplazo_nombre'].forEach(function(id){
+    if (ft) ft.innerHTML = 'Nuevo perfil de puesto';
+    // Limpiar campos del perfil
+    ['f_area','f_desc','f_instrucciones'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.value='';
     });
-    ['f_sede','f_nivel','f_motivo'].forEach(function(id){
-      var el=document.getElementById(id); if(el) el.value='';
-    });
-    document.getElementById('plazoInfo').style.display='none';
-    document.getElementById('reemplazoField').style.display='none';
-    document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
-    document.getElementById('formTitle').textContent = 'Nuevo puesto';
-    document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
+    var nivEl = document.getElementById('f_nivel'); if(nivEl) nivEl.value='';
+    var sb = document.getElementById('saveJobBtn'); if(sb) sb.textContent='Guardar perfil';
     var mcw = document.getElementById('motivoCambioWrap'); if(mcw) mcw.style.display='none';
     var mc = document.getElementById('f_motivoCambio'); if(mc) mc.value='';
-    // Resetear selector de puesto
     poblarSelectPuestosDefault();
-    var inp = document.getElementById('f_titulo');
-    if (inp) { inp.value = ''; inp.style.display = 'none'; }
-    document.getElementById('reqSection').style.display = 'block';
-    f.scrollIntoView({behavior:'smooth'});
+    var inp = document.getElementById('f_titulo'); if(inp){inp.value='';inp.style.display='none';}
+    var pp = document.getElementById('plazoInfoPerfil'); if(pp) pp.style.display='none';
   }
 }
 
@@ -2991,14 +2944,18 @@ function editJob(id) {
   editingJobId = id;
   var f = document.getElementById('addJobForm');
   f.classList.add('open');
+  document.body.style.overflow = 'hidden';
   // Actualizar título dinámico
   var ft = document.getElementById('formTitle');
   if (ft) ft.innerHTML = '&#9998; Editando: <span style="color:var(--accent2);">' + (job.titulo||'puesto') + '</span>';
   // Solo poblar campos del puesto (no solicitud)
-  var campos = {f_area:'area',f_desc:'desc',f_instrucciones:'instrucciones',f_emailLider:'emailLider',f_dniLider:'dniLider'};
+  var campos = {f_area:'area',f_desc:'desc',f_instrucciones:'instrucciones'};
   Object.keys(campos).forEach(function(elId){
     var el=document.getElementById(elId); if(el) el.value=job[campos[elId]]||'';
   });
+  // Precargar nivel del puesto
+  var nivEl = document.getElementById('f_nivel');
+  if (nivEl) nivEl.value = job.nivelVal || '';
   // Poblar selectores y mostrar valores actuales del puesto
   poblarSelectAreas();
   var areaSel  = document.getElementById('f_area_sel');
@@ -3056,7 +3013,7 @@ function editJob(id) {
     document.getElementById('plazoInfo').style.display='none';
     document.getElementById('reemplazoField').style.display='none';
   }
-  document.getElementById('reqSection').style.display = 'block';
+
   f.scrollIntoView({behavior:'smooth'});
 }
 
@@ -3083,59 +3040,12 @@ function saveJobOnly() {
     jobs.push(jobData);
     toast('Puesto guardado');
   }
+  // Cerrar modal
+  document.getElementById('addJobForm').classList.remove('open');
+  document.body.style.overflow = '';
   // Guardar jobId antes de resetear editingJobId
   var savedJobId = editingJobId || jobData.id;
 
-  // Si hay campos de solicitud completos, crear o actualizar requisición
-  var sedeSelect2 = document.getElementById('f_sede').value;
-  var sedeOtra2   = document.getElementById('f_otraSede') ? document.getElementById('f_otraSede').value.trim() : '';
-  var sede2       = sedeSelect2 === 'Otras' ? (sedeOtra2||'Otras') : sedeSelect2;
-  var horario2    = document.getElementById('f_horario').value.trim();
-  var nivel2      = document.getElementById('f_nivel').value;
-  var motivo2     = document.getElementById('f_motivo').value;
-  var fechaInicio2 = document.getElementById('f_fechaInicio').value;
-  var cese2       = document.getElementById('f_cese') ? document.getElementById('f_cese').value : '';
-  var rnombre2    = document.getElementById('f_reemplazo_nombre') ? document.getElementById('f_reemplazo_nombre').value.trim() : '';
-
-  if (sede2 || horario2 || nivel2 || motivo2) {
-    var diasPlazo2 = nivel2==='30e'?30:parseInt(nivel2)||0;
-    var fechaLimDate2 = fechaInicio2 ? new Date(fechaInicio2) : new Date();
-    if (diasPlazo2) fechaLimDate2.setDate(fechaLimDate2.getDate()+diasPlazo2);
-    var nivelLabel2 = PLAZOS[nivel2] ? PLAZOS[nivel2].label : nivel2;
-    var reqData2 = {
-      sede:sede2, horario:horario2, nivelVal:nivel2, nivel:nivelLabel2,
-      motivo:motivo2, fechaInicioRaw:fechaInicio2,
-      fechaInicio:fechaInicio2?new Date(fechaInicio2).toLocaleDateString('es-PE'):'',
-      diasPlazo:diasPlazo2,
-      fechaLimiteRaw:fechaLimDate2.toISOString(),
-      fechaLimite:fechaLimDate2.toLocaleDateString('es-PE'),
-      reemplazoNombre:rnombre2, cese:cese2
-    };
-
-    // Buscar requisiciones de este puesto
-    var jobReqs2 = requisiciones.filter(function(r){ return r.jobId===savedJobId; });
-    if (jobReqs2.length) {
-      // Actualizar la última
-      var lastReqId2 = jobReqs2[jobReqs2.length-1].id;
-      requisiciones = requisiciones.map(function(r){
-        return r.id===lastReqId2 ? Object.assign({},r,reqData2) : r;
-      });
-    } else {
-      // Crear una nueva requisición básica con estos datos
-      var job2 = jobs.find(function(j){ return j.id===savedJobId; }) || jobData;
-      requisiciones.push(Object.assign({
-        id: Date.now(), jobId: savedJobId,
-        fecha: new Date().toLocaleDateString('es-PE'),
-        puesto: job2.titulo||titulo, area: job2.area||'',
-        gerencia: job2.gerencia||'',
-        emailLider: job2.emailLider||'', dniLider: job2.dniLider||'',
-        estado: 'Pendiente', desiderablesCompletados: false,
-        minimos: job2.desc||desc, deseables: ''
-      }, reqData2));
-    }
-    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
-    syncReqsToServer(requisiciones);
-  }
 
   // Guardar historial de cambio
   var motivoCambio = document.getElementById('f_motivoCambio') ? document.getElementById('f_motivoCambio').value.trim() : '';
@@ -3160,103 +3070,7 @@ function saveJobOnly() {
 }
 
 // ── Crear solicitud con snapshot del perfil actual ──
-function saveJobAndCreateReq() {
-  var titulo = getTituloForm();
-  var desc = document.getElementById('f_desc').value.trim();
-  var emailLider = document.getElementById('f_emailLider').value.trim();
-  var dniLider = document.getElementById('f_dniLider').value.trim();
-  var sedeSelect = document.getElementById('f_sede').value;
-  var sedeOtra  = document.getElementById('f_otraSede') ? document.getElementById('f_otraSede').value.trim() : '';
-  var sede      = sedeSelect === 'Otras' ? (sedeOtra || 'Otras') : sedeSelect;
-  var nivel = document.getElementById('f_nivel').value;
-  var motivo = document.getElementById('f_motivo').value;
-  var horario = document.getElementById('f_horario').value.trim();
-  var fechaInicio = document.getElementById('f_fechaInicio').value;
 
-  if (!titulo||!desc) { toast('Completa nombre y descripción del puesto'); return; }
-  if (!emailLider) { toast('Agrega el email del líder'); return; }
-  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
-  if (!sede||!nivel||!motivo||!horario||!fechaInicio) { toast('Completa todos los campos de la solicitud'); return; }
-  var minimos = desc; // Los requisitos mínimos son la descripción del puesto
-
-  // Primero guardar/actualizar el puesto
-  var jobData = {
-    titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
-    gerencia:document.getElementById('f_gerencia')?document.getElementById('f_gerencia').value:'',
-    instrucciones:document.getElementById('f_instrucciones').value.trim(),
-    emailLider:emailLider, dniLider:dniLider
-  };
-  var jobId;
-  if (editingJobId) {
-    jobId = editingJobId;
-    jobs = jobs.map(function(j){ return j.id===jobId?Object.assign({},j,jobData):j; });
-  } else {
-    jobId = Date.now();
-    jobData.id = jobId;
-    jobs.push(jobData);
-  }
-  localStorage.setItem('rjobs', JSON.stringify(jobs));
-  syncJobsToServer(jobs);
-
-  // Crear snapshot del perfil completo al momento de la solicitud
-  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
-  var fechaLimiteDate = new Date(fechaInicio);
-  fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
-
-  var snapshot = {
-    titulo:titulo, area:jobData.area, desc:desc,
-    exp:jobData.exp, skills:jobData.skills, instrucciones:jobData.instrucciones,
-    emailLider:emailLider, dniLider:dniLider,
-    fechaSnapshot:new Date().toLocaleDateString('es-PE')
-  };
-
-  var req = {
-    id: Date.now()+1,
-    jobId: jobId,
-    fecha: new Date().toLocaleDateString('es-PE'),
-    fechaInicio: new Date(fechaInicio).toLocaleDateString('es-PE'),
-    fechaInicioRaw: fechaInicio,
-    fechaLimite: fechaLimiteDate.toLocaleDateString('es-PE'),
-    fechaLimiteRaw: fechaLimiteDate.toISOString(),
-    puesto: titulo, area: jobData.area,
-    sede: sede, horario: horario,
-    nivelVal: nivel, nivel: PLAZOS[nivel]?PLAZOS[nivel].label:nivel,
-    diasPlazo: diasPlazo, motivo: motivo,
-    cese: motivo==='reemplazo'?document.getElementById('f_cese').value:'',
-    reemplazoNombre: motivo==='reemplazo'?(document.getElementById('f_reemplazo_nombre')?document.getElementById('f_reemplazo_nombre').value.trim():''):'',
-    minimos: minimos, deseables: '',
-    emailLider: emailLider, dniLider: dniLider,
-    estado: 'En proceso', desiderablesCompletados: false,
-    perfilSnapshot: snapshot  // <-- perfil congelado al momento de la solicitud
-  };
-
-  requisiciones.push(req);
-  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-
-  // mailto al líder
-  var tplLider = getTemplates().email_lider;
-  var tplLiderAsunto = getTemplates().email_lider_asunto;
-  var asunto = encodeURIComponent(aplicarVariables(tplLiderAsunto, {puesto:titulo}));
-  var cuerpoBase = aplicarVariables(tplLider, {
-    puesto:titulo, area:jobData.area||'', sede:sede||'',
-    nivel:PLAZOS[nivel]?PLAZOS[nivel].label:nivel,
-    fechaLimite:fechaLimiteDate.toLocaleDateString('es-PE'),
-    funciones:minimos||'', link:(window.location.origin+'/lider')
-  });
-  var cuerpo = encodeURIComponent(cuerpoBase);
-
-
-
-  editingJobId = null;
-  renderJobsList();
-  verificarAlertas();
-  document.getElementById('addJobForm').classList.remove('open');
-  window.location.href = 'mailto:'+emailLider+'?subject='+asunto+'&body='+cuerpo;
-  toast('Solicitud creada — abriendo correo al líder...');
-}
-
-// Renderiza historial de solicitudes de un puesto con su snapshot
 function renderHistorialSolicitudes(jobId) {
   var jobObj = jobs.find(function(j){ return j.id===jobId; });
   var reqs = getReqsForJob(jobId, jobObj ? jobObj.titulo : '');
@@ -3546,16 +3360,8 @@ function guardarModalSolicitud() {
 }
 
 function abrirNuevaSolicitud(id) {
-  editJob(id);
-  // Limpiar campos solicitud
-  ['f_horario','f_cese','f_reemplazo_nombre'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
-  ['f_sede','f_nivel','f_motivo'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
-  document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
-  document.getElementById('plazoInfo').style.display='none';
-  document.getElementById('reemplazoField').style.display='none';
-  document.getElementById('reqSection').style.display='block';
-  // Scroll a sección solicitud
-  setTimeout(function(){ var rs=document.getElementById('reqSection'); if(rs) rs.scrollIntoView({behavior:'smooth'}); }, 300);
+  // Redirige al nuevo modal de solicitud
+  abrirModalSolicitud(id);
 }
 
 function deleteJob(id) {
@@ -3571,10 +3377,11 @@ function deleteJob(id) {
 
 function calcularPlazo() {
   var nivel = document.getElementById('f_nivel').value;
-  var info = document.getElementById('plazoInfo');
+  var info = document.getElementById('plazoInfoPerfil') || document.getElementById('plazoInfo');
+  if (!nivel || !info) return;
   if (!nivel) { info.style.display='none'; return; }
   var p = PLAZOS[nivel];
-  var fi = document.getElementById('f_fechaInicio').value;
+  var fi = '';
   var base = fi ? new Date(fi) : new Date();
   base.setDate(base.getDate()+p.dias);
   info.style.display='block';
@@ -5207,6 +5014,22 @@ function toggleVisibilidad(el) {
 
 
 
+
+function toggleAgendado(el) {
+  var candidato = decodeURIComponent(el.dataset.id);
+  var puesto    = decodeURIComponent(el.dataset.puesto);
+  var agendado  = el.checked;
+  _allResults = _allResults.map(function(r) {
+    return (r.candidato===candidato && r.puesto===puesto)
+      ? Object.assign({},r,{agendado:agendado})
+      : r;
+  });
+  localStorage.setItem('rresults', JSON.stringify(_allResults));
+  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  toast(agendado ? 'Entrevista agendada ✓' : 'Entrevista desagendada');
+  reordenarGrupoCandidatos(puesto);
+}
+
 function abrirCopiarCandidatos() {
   var cbs = Array.from(document.querySelectorAll('.cand-sel-cb:checked'));
   if (!cbs.length) return;
@@ -6585,7 +6408,7 @@ function renderTablaByPuesto(cands, filtros) {
           +'<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+( c.celular||'')+( c.celular&&c.pretension?' · ':'')+( c.pretension?'S/ '+c.pretension:'')+( !c.celular&&!c.pretension?'&mdash;':'')+'</div>'
         +'</div>'
         +'<div style="width:80px;flex-shrink:0;text-align:center;">'+starsHtml+'</div>'
-        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;">'+switchVis+'</div>'
+        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Líder</div>'+switchVis+'</div>'+'<div style="width:70px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Agendado</div>'+'<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;">'+'<input type="checkbox" '+(c.agendado?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleAgendado(this)" style="width:14px;height:14px;accent-color:#2563A8;">'+'</label>'+'</div>'
         +'<div style="width:90px;flex-shrink:0;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
         +'<div style="width:80px;flex-shrink:0;display:flex;align-items:center;gap:1px;">'+acciones+'</div>'
         +'<div style="width:60px;flex-shrink:0;text-align:right;">'
@@ -8000,7 +7823,7 @@ function renderDashboard() {
       }
     });
     // Pipeline por etapa — una columna por etapa, procesos dentro
-    var ETAPAS_N = ['HC','Convocatoria','Evaluación y Longlist','Entrevista','Oferta'];
+    var ETAPAS_N = ['HC y Presupuesto','Convocatoria GTH','Evaluación GTH','Validación CVs Líder','Entrevista Técnica','Oferta Laboral'];
     var ETAPAS_K = ['hc','convoc','evaluacion','validacionCVs','entrevista','oferta'];
 
     // Agrupar procesos por etapa actual usando calcularEtapaActual
