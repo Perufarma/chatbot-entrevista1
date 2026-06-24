@@ -2636,7 +2636,7 @@ function renderDetalleProcesoSeleccionado(reqId) {
       bita.slice().reverse().forEach(function(b){
         html += '<div style="font-size:12px;line-height:1.7;display:flex;gap:8px;align-items:flex-start;">'
           + '<span style="color:var(--muted);white-space:nowrap;">'+b.fecha+' '+b.hora+'</span>'
-          + '<span style="color:var(--text);">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+b.msg+'</span>'
+          + '<span style="color:var(--text);">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+(b.msg||b.texto||'')+'</span>'
           + '</div>';
       });
       html += '</div>';
@@ -3790,7 +3790,7 @@ function aprobarCambiosLider(reqId, scope) {
   requisiciones = requisiciones.map(function(r){
     if (r.id===numId||String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),texto:'Cambios del líder aprobados por GTH'+(scope==='ambos'?' (aplicados a solicitud y perfil base)':' (solo esta solicitud)')});
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Cambios del líder aprobados por GTH'+(scope==='ambos'?' (aplicados a solicitud y perfil base)':' (solo esta solicitud)')});
       return Object.assign({},r,updates,{propuestasLider:null,propuestasLiderEstado:'aprobado',bitacora:bita});
     }
     return r;
@@ -3824,7 +3824,7 @@ function rechazarCambiosLider(reqId) {
   requisiciones = requisiciones.map(function(r){
     if (r.id===numId||String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),texto:'Cambios del líder rechazados por GTH'});
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Cambios del líder rechazados por GTH'});
       return Object.assign({},r,{propuestasLider:null,propuestasLiderEstado:'rechazado',bitacora:bita});
     }
     return r;
