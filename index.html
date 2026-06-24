@@ -578,6 +578,7 @@ a[title]{cursor:pointer;}
         <button onclick="switchTemplateTab('email_lider')" id="tplTabLider" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email líder</button>
         <button onclick="switchTemplateTab('email_adm')" id="tplTabAdm" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Adm.</button>
         <button onclick="switchTemplateTab('email_seg')" id="tplTabSeg" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Seguridad</button>
+<button onclick="switchTemplateTab('reporte_ingresos')" id="tplTabReporte" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;">Reporte de Ingresos</button>
       </div>
       <div id="templateEditorContent"></div>
     </div>
@@ -1390,7 +1391,9 @@ var DEFAULT_TEMPLATES = {
   email_seg_asunto: 'Nuevo ingreso — Activar accesos: {nombre}',
   email_seg: 'Estimado equipo de Seguridad,\n\nLes comunicamos el ingreso del siguiente colaborador:\n\n• Nombre: {nombre}\n• DNI: {dni}\n• Puesto: {puesto}\n• Sede: {sede}\n• Fecha de ingreso: {fechaIngreso}\n\nAcciones requeridas:\n• Activar acceso a las instalaciones\n• Uniforme — Talla: {tallaUniforme}\n• EPPs — Calzado: {tallaCalzado} / Casco: {tallaCasco}\n\nAnte cualquier consulta, contáctenos.\n\nEquipo GTH — Perufarma S.A.',
   email_lider_alta_asunto: 'Alta de nuevo colaborador: {nombre} — {puesto}',
-  email_lider_alta: 'Hola {nombreLider},\n\nTe informamos que {nombre} se incorporará como {puesto} a partir del {fechaIngreso} en {sede}.\n\nTe pedimos coordinar:\n• Inducción al puesto y equipo\n• Acceso a herramientas y sistemas del área\n\nAnte cualquier consulta, contáctenos.\n\nEquipo GTH — Perufarma S.A.'
+  email_lider_alta: 'Hola {nombreLider},\n\nTe informamos que {nombre} se incorporará como {puesto} a partir del {fechaIngreso} en {sede}.\n\nTe pedimos coordinar:\n• Inducción al puesto y equipo\n• Acceso a herramientas y sistemas del área\n\nAnte cualquier consulta, contáctenos.\n\nEquipo GTH — Perufarma S.A.',
+  reporte_ingresos_asunto: 'Reporte de Ingresos — Perufarma S.A. — {fecha}',
+  reporte_ingresos: 'Estimado equipo,\n\nLes comunicamos los candidatos que iniciarán sus trámites de ingreso:\n\n{tabla}\n{docs}\nSaludos,\nEquipo de Gestión del Talento Humano - Perufarma S.A.',
 };
 
 function getTemplates() {
@@ -1418,8 +1421,8 @@ function mostrarTemplateEditor(tab) {
 }
 
 function switchTemplateTab(tab) {
-  var tabs = ['whatsapp','email_cand','email_lider','email_adm','email_seg'];
-  var btnIds = ['tplTabWA','tplTabEmail','tplTabLider','tplTabAdm','tplTabSeg'];
+  var tabs = ['whatsapp','email_cand','email_lider','email_adm','email_seg','reporte_ingresos'];
+  var btnIds = ['tplTabWA','tplTabEmail','tplTabLider','tplTabAdm','tplTabSeg','tplTabReporte'];
   var activeStyle = 'font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;';
   var inactiveStyle = 'font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;';
   tabs.forEach(function(t,i){
@@ -1439,7 +1442,7 @@ function switchTemplateTab(tab) {
     email_seg: '{nombre} · {dni} · {puesto} · {sede} · {fechaIngreso} · {tallaUniforme} · {tallaCalzado} · {tallaCasco}'
   };
 
-  var label = {whatsapp:'WhatsApp al candidato', email_cand:'Email al candidato', email_lider:'Email al líder (nueva solicitud)', email_adm:'Email Adm. Personal (onboarding)', email_seg:'Email Seguridad (onboarding)'}[tab];
+  var label = {whatsapp:'WhatsApp al candidato', email_cand:'Email al candidato', email_lider:'Email al líder (nueva solicitud)', email_adm:'Email Adm. Personal (onboarding)', email_seg:'Email Seguridad (onboarding)', reporte_ingresos:'Reporte de Ingresos'}[tab];
   var hasAsunto = tab !== 'whatsapp';
   var asuntoKey = tab + '_asunto';
 
@@ -3153,9 +3156,11 @@ function renderHistorialSolicitudes(jobId) {
     if (r.estado==='En proceso'||r.estado==='Pendiente') {
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="ponerSolicitudStandBy(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Stand by</button>';
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="abrirEditarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:#2563A8;color:white;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;">✎ Editar solicitud</button>';
     } else if (r.estado==='Stand by') {
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="reactivarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Reactivar</button>';
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="abrirEditarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:#2563A8;color:white;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;">✎ Editar solicitud</button>';
     }
     h += '</div>';
     h += '</div></div>';
@@ -3272,6 +3277,12 @@ function cerrarModalSolicitud() {
   var ov = document.getElementById('modalSolicitudOverlay');
   if (ov) ov.style.display = 'none';
   document.body.style.overflow = '';
+  _editarReqId = null;
+  // Restaurar título y botón
+  var titulo = document.getElementById('ns_modal_titulo');
+  if (titulo) titulo.textContent = 'Nueva solicitud de convocatoria';
+  var btn = document.querySelector('#modalSolicitudOverlay button.btn-accent');
+  if (btn) btn.textContent = 'Crear solicitud →';
 }
 
 function toggleReemplazoNS() {
@@ -3282,6 +3293,7 @@ function toggleReemplazoNS() {
 
 function guardarModalSolicitud() {
   var jobId = _modalSolJobId;
+  // Si venimos de editar, _editarReqId tiene el id de la req a actualizar
   var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
   var emailLider = g('ns_emailLider');
   var dniLider   = g('ns_dniLider');
@@ -3339,7 +3351,27 @@ function guardarModalSolicitud() {
     perfilSnapshot:snapshot
   };
 
-  requisiciones.push(req);
+  if (_editarReqId) {
+    // Actualizar req existente
+    requisiciones = requisiciones.map(function(r) {
+      return (r.id===_editarReqId || String(r.id)===String(_editarReqId))
+        ? Object.assign({}, r, {
+            sede:req.sede, horario:req.horario, motivo:req.motivo,
+            reemplazoNombre:req.reemplazoNombre, cese:req.cese,
+            deseables:req.deseables, emailLider:req.emailLider,
+            dniLider:req.dniLider, fechaInicio:req.fechaInicio,
+            fechaInicioRaw:req.fechaInicioRaw, fechaLimite:req.fechaLimite,
+            fechaLimiteRaw:req.fechaLimiteRaw, diasPlazo:req.diasPlazo,
+            nivel:req.nivel, nivelVal:req.nivelVal
+          })
+        : r;
+    });
+    _editarReqId = null;
+    toast('Solicitud actualizada ✓');
+  } else {
+    requisiciones.push(req);
+    toast('Solicitud creada ✓');
+  }
   localStorage.setItem('rreqs', JSON.stringify(requisiciones));
   syncReqsToServer(requisiciones);
 
@@ -3354,9 +3386,50 @@ function guardarModalSolicitud() {
   }
 
   cerrarModalSolicitud();
-  toast('Solicitud creada ✓');
   renderJobsList();
   setTimeout(function(){ abrirDetallePanelJob(jobId); }, 150);
+}
+
+
+// ── Editar solicitud existente ──
+var _editarReqId = null;
+
+function abrirEditarSolicitud(reqId, jobId) {
+  var numId = parseInt(reqId) || reqId;
+  var req = requisiciones.find(function(r){ return r.id===numId || String(r.id)===String(reqId); });
+  if (!req) { toast('Solicitud no encontrada'); return; }
+
+  _editarReqId = numId;
+  abrirModalSolicitud(parseInt(jobId) || jobId);
+
+  // Sobreescribir campos con datos de la req existente
+  setTimeout(function() {
+    var g = function(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.value = val || '';
+    };
+    g('ns_emailLider',        req.emailLider || '');
+    g('ns_dniLider',          req.dniLider || '');
+    g('ns_sede',              req.sede || '');
+    g('ns_horario',           req.horario || '');
+    g('ns_motivo',            req.motivo || '');
+    g('ns_reemplazo_nombre',  req.reemplazoNombre || '');
+    g('ns_cese',              req.cese || '');
+    g('ns_deseables',         req.deseables || '');
+    g('ns_fechaInicio_modal', req.fechaInicioRaw || '');
+
+    // Mostrar campo reemplazo si aplica
+    var rf = document.getElementById('ns_reemplazoField');
+    if (rf) rf.style.display = req.motivo === 'reemplazo' ? 'flex' : 'none';
+
+    // Actualizar título del modal
+    var titulo = document.getElementById('ns_modal_titulo');
+    if (titulo) titulo.textContent = 'Editar solicitud';
+
+    // Cambiar botón guardar
+    var btn = document.querySelector('#modalSolicitudOverlay button.btn-accent');
+    if (btn) btn.textContent = 'Guardar cambios →';
+  }, 50);
 }
 
 function abrirNuevaSolicitud(id) {
@@ -8308,28 +8381,32 @@ function enviarReporteIngresos() {
   if (!destinatarios) { toast('Configura los emails de destino primero'); return; }
 
   var fecha = new Date().toLocaleDateString('es-PE', {day:'2-digit', month:'long', year:'numeric'});
-  var asunto = encodeURIComponent('Reporte de Ingresos — Perufarma S.A. — ' + fecha);
+  var tpls = getTemplates();
 
-  // Cuerpo del email con tabla de candidatos
+  // Tabla formateada
   var filas = pendientes.map(function(p) {
-    return '- ' + p.nombre + ' | DNI: ' + p.dni + ' | Puesto: ' + p.puesto + ' | Gerencia: ' + p.gerencia + ' | Pretensión: ' + p.pretension + ' | Disponibilidad: ' + p.disponibilidad;
+    return '  \u2022 ' + p.nombre + ' | DNI: ' + p.dni + ' | Puesto: ' + p.puesto
+      + ' | Gerencia: ' + p.gerencia + ' | Pretensi\u00f3n: S/ ' + (p.pretension||'\u2014')
+      + (p.disponibilidad ? ' | Disponibilidad: ' + p.disponibilidad : '');
   }).join('\n');
 
   var docs = cfg.docsIngreso || [];
   var docsTexto = docs.length
-    ? '\n\nDocumentos requeridos para tramites:\n' + docs.map(function(d){ return '- ' + d.nombre + ': ' + d.url; }).join('\n')
+    ? 'Documentos requeridos:\n' + docs.map(function(d){ return '  \u2022 ' + d.nombre + ': ' + d.url; }).join('\n')
     : '';
 
-  var cuerpo = encodeURIComponent(
-    'Estimado equipo,\n\n'
-    + 'Se adjunta el reporte de candidatos que iniciaran sus tramites de ingreso:\n\n'
-    + filas
-    + docsTexto
-    + '\n\nSaludos,\nEquipo de Gestion del Talento Humano - Perufarma S.A.'
-  );
+  // Usar template editable
+  var cuerpoTpl = aplicarVariables(tpls.reporte_ingresos || DEFAULT_TEMPLATES.reporte_ingresos, {
+    fecha: fecha, tabla: filas, docs: docsTexto
+  });
+  var asuntoTpl = aplicarVariables(tpls.reporte_ingresos_asunto || DEFAULT_TEMPLATES.reporte_ingresos_asunto, {
+    fecha: fecha
+  });
 
-  // Abrir cliente de email
-  window.location.href = 'mailto:' + destinatarios + '?subject=' + asunto + '&body=' + cuerpo;
+  var asunto = encodeURIComponent(asuntoTpl);
+  var cuerpo = encodeURIComponent(cuerpoTpl);
+
+    window.location.href = 'mailto:' + destinatarios + '?subject=' + asunto + '&body=' + cuerpo;
 
   // Marcar candidatos como notificados
   setTimeout(function() {
