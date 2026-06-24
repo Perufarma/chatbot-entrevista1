@@ -225,7 +225,7 @@ a[title]{cursor:pointer;}
     <button class="nav-tab" id="btn-envio" onclick="showTab('envio',this)">Env&iacute;o masivo</button>
     <button class="nav-tab" id="btn-candidatos" onclick="showTab('candidatos',this);renderCandidatosPorPuesto()">Candidatos</button>
     <button class="nav-tab" id="btn-dashboard" onclick="showTab('dashboard',this);renderDashboard()">Dashboard</button>
-    <button class="nav-tab" id="btn-lider" onclick="mostrarLider()">L&iacute;der</button>
+    <button class="nav-tab" id="btn-lider" onclick="showTab('lider',this);renderLiderEnTab()">L&iacute;der</button>
     <button class="nav-tab" onclick="descargarBackup()" title="Descarga un backup completo de todos los datos del sistema" style="font-size:11px;opacity:.7;">&#128190; Backup</button>
     <button class="nav-tab" onclick="mostrarPanelCambioPassword()" title="Cambiar contraseña de acceso al sistema" style="font-size:11px;opacity:.7;">&#128273; Clave</button>
   </nav>
@@ -323,9 +323,9 @@ a[title]{cursor:pointer;}
           <select id="f_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
             <option value="">Selecciona el nivel...</option>
             <option value="60">Gerente / Sub Gerente (60 d&iacute;as)</option>
-            <option value="35">Jefe / Supervisor (35 d&iacute;as)</option>
-            <option value="30e">Especialista / Coordinador (30 d&iacute;as)</option>
-            <option value="30">Analista / Ejecutivo / T&eacute;cnico / Asistente (30 d&iacute;as)</option>
+            <option value="45">Jefe / Supervisor (45 d&iacute;as)</option>
+            <option value="35e">Especialista / Coordinador (35 d&iacute;as)</option>
+            <option value="30">Analista / Asistente (30 d&iacute;as)</option>
             <option value="25">Practicante / Auxiliar (25 d&iacute;as)</option>
           </select>
         </div>
@@ -427,10 +427,10 @@ a[title]{cursor:pointer;}
 
     <!-- Filtros -->
     <!-- Layout dos columnas: lista + detalle -->
-    <div id="puestosLayout" style="display:grid;grid-template-columns:260px 1fr;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;min-height:520px;">
+    <div id="puestosLayout" style="display:grid;grid-template-columns:220px 1fr;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;min-height:520px;">
 
       <!-- COLUMNA IZQUIERDA: lista de puestos -->
-      <div style="border-right:0.5px solid var(--border2);display:flex;flex-direction:column;background:var(--surface);">
+      <div style="border-right:0.5px solid var(--border2);display:flex;flex-direction:column;background:var(--surface2);">
         <!-- Buscador -->
         <div style="padding:10px 12px;border-bottom:0.5px solid var(--border2);">
           <input type="text" id="filtroTexto" oninput="renderJobsList()" placeholder="&#128269; Buscar puesto..." style="width:100%;font-size:12px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:7px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
@@ -481,106 +481,149 @@ a[title]{cursor:pointer;}
 
   <!-- ENVÍO MASIVO -->
   <div class="panel" id="tab-envio">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
-      <div><div class="section-title">Envío masivo</div><div class="section-sub">Gestiona links de entrevista, mensajes y configuración de onboarding</div></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+      <div><div class="section-title">Envío masivo</div><div class="section-sub">Links, mensajes y configuración de onboarding</div></div>
     </div>
 
-<!-- Sección 4: Reporte de ingresos -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Reporte de ingresos</div>
-        <button class="btn btn-secondary btn-sm" onclick="renderReporteIngresos()">&#8635; Actualizar</button>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Candidatos en Trámites de Ingreso pendientes de notificar a Administración de Personal y Seguridad.</div>
-      <div id="reporteIngresosPanel">
-        <div style="font-size:12px;color:var(--muted);font-style:italic;">Cargando...</div>
-      </div>
-    </div>
+    <!-- Layout lateral -->
+    <div style="display:flex;gap:0;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;min-height:400px;">
 
-    <!-- Sección 5: Biblioteca de documentos -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Documentos de trámites de ingreso</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Links de documentos que se incluirán automáticamente en el email de comunicación al candidato elegido.</div>
-      <div id="docsBiblioteca" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-      <button class="btn btn-secondary btn-sm" onclick="agregarDocIngreso()">+ Agregar documento</button>
-    </div>
+      <!-- Nav lateral -->
+      <div style="width:220px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);padding:8px 0;">
+        <div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;">Links</div>
+        <button onclick="switchEnvioSec('links',this)" id="envioNav-links" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:var(--surface);color:var(--text);cursor:pointer;font-weight:500;border-right:2px solid #e8623a;margin-right:-1px;display:flex;align-items:center;gap:7px;">&#128279; Links</button>
+        <div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;">Comunicación</div>
+        <button onclick="switchEnvioSec('whatsapp',this)" id="envioNav-whatsapp" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#128172; WhatsApp</button>
+        <button onclick="switchEnvioSec('templates',this)" id="envioNav-templates" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#9998; Templates</button>
+        <div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;">Configuración</div>
+        <button onclick="switchEnvioSec('reporte',this)" id="envioNav-reporte" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#128196; Reporte</button>
+        <button onclick="switchEnvioSec('docs',this)" id="envioNav-docs" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#128193; Documentos</button>
+        <button onclick="switchEnvioSec('onboarding',this)" id="envioNav-onboarding" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#9881; Onboarding</button>
+      </div>
 
-    <!-- Sección 6: Configuración de onboarding -->
-    <div class="card" id="onboardingConfigSection">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Configuración de onboarding</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Emails que recibirán notificación automática cuando se confirme el ingreso de un candidato</div>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#534AB7;flex-shrink:0;">AP</div>
-            <span style="font-size:12px;color:var(--text);">Adm. Personal</span>
-          </div>
-          <input type="email" id="emailAdmPersonal" placeholder="admpersonal@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
-        </div>
-        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3B6D11;flex-shrink:0;">SE</div>
-            <span style="font-size:12px;color:var(--text);">Seguridad</span>
-          </div>
-          <input type="email" id="emailSeguridad" placeholder="seguridad@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
-        </div>
-        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:#FAEEDA;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#854F0B;flex-shrink:0;">LI</div>
-            <span style="font-size:12px;color:var(--text);">Líder</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);padding:7px 10px;background:var(--surface2);border-radius:8px;border:0.5px solid var(--border2);">Se toma del perfil del puesto automáticamente</div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:4px;">
-          <button class="btn btn-accent" onclick="guardarConfigOnboarding()">Guardar configuración</button>
-        </div>
-      </div>
-    </div>
-<!-- Sección 1: Link de entrevista IA -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Link de entrevista IA</div>
-      <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 14px;">
-        <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareUrl">cargando...</span>
-        <button class="btn btn-secondary btn-sm" onclick="copyLink()" style="flex-shrink:0;">Copiar link</button>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Comparte este link con candidatos para que completen la entrevista inicial con IA</div>
-    </div>
+      <!-- Contenido -->
+      <div style="flex:1;min-width:0;padding:20px;background:var(--surface);overflow-y:auto;">
 
-    <!-- Sección 2: Envío masivo WhatsApp -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Envío masivo por WhatsApp</div>
-        <button onclick="mostrarTemplateEditor('whatsapp')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">&#9998; Editar template</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lista de candidatos</label>
-            <textarea id="candidatosList" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;resize:none;height:110px;color:var(--text);box-sizing:border-box;" placeholder="Nombre, teléfono&#10;Juan Pérez, 987654321&#10;María López, 912345678"></textarea>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px;">Un candidato por línea: Nombre, teléfono</div>
+        <!-- Links -->
+        <div id="envioSec-links">
+          <div class="card" style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Link del portal líder</div>
+            <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;">
+              <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareLiderUrl">cargando...</span>
+              <button class="btn btn-secondary btn-sm" onclick="copiarLinkLider()" style="flex-shrink:0;">Copiar link</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;">Comparte con líderes para acceder con su DNI</div>
           </div>
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Puesto al que aplican</label>
-            <select id="envioJobSelect" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none;"></select>
+          <div class="card">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Link de entrevista IA</div>
+            <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;">
+              <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareUrl">cargando...</span>
+              <button class="btn btn-secondary btn-sm" onclick="copyLink()" style="flex-shrink:0;">Copiar link</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;">Comparte con candidatos para la entrevista inicial</div>
           </div>
-          <button class="btn btn-accent" onclick="generarMensajes()" style="align-self:flex-start;">Generar mensajes</button>
         </div>
-        <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:10px;"></div>
-      </div>
-    </div>
 
-    <!-- Sección 3: Templates de mensajes -->
-    <div class="card" style="margin-bottom:16px;" id="templateEditorSection" style="display:none;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Templates de mensajes</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:0.5px solid var(--border2);padding-bottom:12px;">
-        <button onclick="switchTemplateTab('whatsapp')" id="tplTabWA" style="font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;">WhatsApp candidato</button>
-        <button onclick="switchTemplateTab('email_cand')" id="tplTabEmail" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email candidato</button>
-        <button onclick="switchTemplateTab('email_lider')" id="tplTabLider" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email líder</button>
-        <button onclick="switchTemplateTab('email_adm')" id="tplTabAdm" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Adm.</button>
-        <button onclick="switchTemplateTab('email_seg')" id="tplTabSeg" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Seguridad</button>
-<button onclick="switchTemplateTab('reporte_ingresos')" id="tplTabReporte" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;">Reporte de Ingresos</button>
+        <!-- WhatsApp -->
+        <div id="envioSec-whatsapp" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Envío masivo por WhatsApp</div>
+              <button onclick="mostrarTemplateEditor('whatsapp')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">&#9998; Editar template</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div>
+                  <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lista de candidatos</label>
+                  <textarea id="candidatosList" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;resize:none;height:110px;color:var(--text);box-sizing:border-box;" placeholder="Nombre, teléfono&#10;Juan Pérez, 987654321&#10;María López, 912345678"></textarea>
+                  <div style="font-size:10px;color:var(--muted);margin-top:3px;">Un candidato por línea: Nombre, teléfono</div>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Puesto al que aplican</label>
+                  <select id="envioJobSelect" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none;"></select>
+                </div>
+                <button class="btn btn-accent" onclick="generarMensajes()" style="align-self:flex-start;">Generar mensajes</button>
+              </div>
+              <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:10px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Templates -->
+        <div id="envioSec-templates" style="display:none;">
+          <div class="card" id="templateEditorSection">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Templates de mensajes</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;border-bottom:0.5px solid var(--border2);padding-bottom:12px;">
+              <button onclick="switchTemplateTab('whatsapp')" id="tplTabWA" style="font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;">WhatsApp candidato</button>
+              <button onclick="switchTemplateTab('email_cand')" id="tplTabEmail" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email candidato</button>
+              <button onclick="switchTemplateTab('email_lider')" id="tplTabLider" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email líder</button>
+              <button onclick="switchTemplateTab('email_adm')" id="tplTabAdm" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Adm.</button>
+              <button onclick="switchTemplateTab('email_seg')" id="tplTabSeg" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Seguridad</button>
+              <button onclick="switchTemplateTab('reporte_ingresos')" id="tplTabReporte" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;">Reporte de Ingresos</button>
+            </div>
+            <div id="templateEditorContent"></div>
+          </div>
+        </div>
+
+        <!-- Reporte -->
+        <div id="envioSec-reporte" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Reporte de ingresos</div>
+              <button class="btn btn-secondary btn-sm" onclick="renderReporteIngresos()">&#8635; Actualizar</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Candidatos en Trámites de Ingreso pendientes de notificar a Administración de Personal y Seguridad.</div>
+            <div id="reporteIngresosPanel">
+              <div style="font-size:12px;color:var(--muted);font-style:italic;">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documentos -->
+        <div id="envioSec-docs" style="display:none;">
+          <div class="card">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Documentos de trámites de ingreso</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Links incluidos automáticamente en el email al candidato elegido.</div>
+            <div id="docsBiblioteca" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+            <button class="btn btn-secondary btn-sm" onclick="agregarDocIngreso()">+ Agregar documento</button>
+          </div>
+        </div>
+
+        <!-- Onboarding -->
+        <div id="envioSec-onboarding" style="display:none;">
+          <div class="card" id="onboardingConfigSection">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Configuración de onboarding</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Emails que recibirán notificación cuando se confirme el ingreso de un candidato.</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#534AB7;flex-shrink:0;">AP</div>
+                  <span style="font-size:12px;color:var(--text);">Adm. Personal</span>
+                </div>
+                <input type="email" id="emailAdmPersonal" placeholder="admpersonal@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
+              </div>
+              <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3B6D11;flex-shrink:0;">SE</div>
+                  <span style="font-size:12px;color:var(--text);">Seguridad</span>
+                </div>
+                <input type="email" id="emailSeguridad" placeholder="seguridad@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
+              </div>
+              <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#FAEEDA;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#854F0B;flex-shrink:0;">LI</div>
+                  <span style="font-size:12px;color:var(--text);">Líder</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);padding:7px 10px;background:var(--surface2);border-radius:8px;border:0.5px solid var(--border2);">Se toma del perfil del puesto automáticamente</div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+                <button class="btn btn-accent" onclick="guardarConfigOnboarding()">Guardar configuración</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <div id="templateEditorContent"></div>
     </div>
 
       </div>
@@ -718,7 +761,7 @@ a[title]{cursor:pointer;}
     <div id="candLayoutWrap" style="display:flex;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;height:calc(100vh - 260px);min-height:520px;">
 
       <!-- SIDEBAR solicitudes -->
-      <div id="candSidebar" style="width:230px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
+      <div id="candSidebar" style="width:220px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
         <div style="padding:10px;border-bottom:0.5px solid var(--border2);">
           <input id="buscarSolicitud_cand" oninput="renderCandSidebar()" placeholder="Buscar solicitud..." style="width:100%;font-size:12px;padding:6px 10px;border-radius:8px;border:0.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
         </div>
@@ -750,6 +793,11 @@ a[title]{cursor:pointer;}
       </div>
     </div>
     <div id="dashboardContent"><div class="empty-state">Cargando métricas...</div></div>
+  </div>
+
+  <!-- VISTA LÍDER (pestaña interna del reclutador) -->
+  <div class="panel" id="tab-lider">
+    <div id="tabLiderContent"></div>
   </div>
 
 </div><!-- /reclutadorApp -->
@@ -830,10 +878,9 @@ a[title]{cursor:pointer;}
                 <select id="ll_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
                   <option value="">Selecciona...</option>
                   <option value="60">Gerente / Sub Gerente</option>
-                  <option value="35">Jefe / Supervisor</option>
-                  <option value="30e">Especialista / Coordinador</option>
-                  <option value="30">Analista / Ejecutivo</option>
-                  <option value="30">T&eacute;cnico / Asistente</option>
+                  <option value="45">Jefe / Supervisor</option>
+                  <option value="35e">Especialista / Coordinador</option>
+                  <option value="30">Analista / Asistente</option>
                   <option value="25">Practicante / Auxiliar</option>
                 </select>
               </div>
@@ -982,10 +1029,9 @@ a[title]{cursor:pointer;}
             <select id="lf_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
               <option value="60">Gerente / Sub Gerente (60 días)</option>
-              <option value="35">Jefe / Supervisor (35 días)</option>
-              <option value="30e">Especialista / Coordinador (30 días)</option>
-              <option value="30">Analista / Ejecutivo (30 días)</option>
-              <option value="30">Técnico / Asistente (30 días)</option>
+              <option value="45">Jefe / Supervisor (45 días)</option>
+              <option value="35e">Especialista / Coordinador (35 días)</option>
+              <option value="30">Analista / Asistente (30 días)</option>
               <option value="25">Practicante / Auxiliar (25 días)</option>
             </select>
           </div>
@@ -1028,7 +1074,7 @@ a[title]{cursor:pointer;}
       <div style="display:flex;gap:0;border:0.5px solid var(--border2);border-radius:14px;overflow:hidden;min-height:600px;">
 
         <!-- Columna izquierda: lista de procesos -->
-        <div style="width:260px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
+        <div style="width:220px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
           <div style="padding:14px 16px;border-bottom:0.5px solid var(--border2);">
             <div style="font-size:13px;font-weight:500;color:var(--text);">Mis procesos</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;">Clic en un proceso para gestionar</div>
@@ -1216,9 +1262,9 @@ function cargarPuestosDefault() {
 
 const PLAZOS = {
   '60':{label:'Gerente / Sub Gerente',dias:60},
-  '35':{label:'Jefe / Supervisor',dias:35},
-  '30e':{label:'Especialista / Coordinador',dias:30},
-  '30':{label:'Analista / Ejecutivo / Técnico / Asistente',dias:30},
+  '45':{label:'Jefe / Supervisor',dias:45},
+  '35e':{label:'Especialista / Coordinador',dias:35},
+  '30':{label:'Analista / Asistente',dias:30},
   '25':{label:'Practicante / Auxiliar',dias:25}
 };
 
@@ -1415,8 +1461,7 @@ function aplicarVariables(template, vars) {
 }
 
 function mostrarTemplateEditor(tab) {
-  var sec = document.getElementById('templateEditorSection');
-  if (sec) { sec.style.display = 'block'; sec.scrollIntoView({behavior:'smooth'}); }
+  switchEnvioSec('templates', null);
   switchTemplateTab(tab || 'whatsapp');
 }
 
@@ -1552,7 +1597,15 @@ var _appInitialised = false;
   }
 })();
 
-var candidateUrl = window.location.origin + '/candidato.html';
+function _getBaseUrl() {
+  var origin = window.location.origin;
+  if (!origin || origin === 'null') origin = 'https://recruitai.perufarma.com.pe';
+  var path = window.location.pathname || '/';
+  return { origin: origin, path: path };
+}
+
+var _base = _getBaseUrl();
+var candidateUrl = _base.origin + '/candidato.html';
 var _suEl = document.getElementById('shareUrl'); if (_suEl) _suEl.textContent = candidateUrl;
 poblarSelectPuestosDefault();
 
@@ -1640,7 +1693,7 @@ function showTab(id, btn) {
   document.querySelectorAll('#reclutadorApp .nav-tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('tab-'+id).classList.add('active');
   if (btn) btn.classList.add('active');
-  if (id === 'envio') { renderEnvioSelect(); renderReporteIngresos(); renderDocsBiblioteca(); }
+  if (id === 'envio') { renderEnvioSelect(); _poblarLinkLider(); switchEnvioSec('links', null); }
   if (id === 'puestos') { renderJobsList(); }
   // Cerrar formularios flotantes al cambiar de pestaña
   var cmf = document.getElementById('candManualForm');
@@ -1665,6 +1718,16 @@ function showTab(id, btn) {
       cpp2.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
     }
   }
+  // Si se sale del tab líder, devolver el liderApp a su contenedor original
+  if (id !== 'lider') {
+    var liderApp = document.getElementById('liderApp');
+    var tabLiderContent = document.getElementById('tabLiderContent');
+    if (liderApp && tabLiderContent && tabLiderContent.contains(liderApp)) {
+      tabLiderContent.removeChild(liderApp);
+      liderApp.style.display = 'none';
+      document.body.appendChild(liderApp);
+    }
+  }
 }
 
 // ══════════════════════════════════
@@ -1673,14 +1736,44 @@ function showTab(id, btn) {
 function mostrarLider() {
   // Guardar modo líder en storage Y actualizar URL para persistir en recargas
   sessionStorage.setItem('recruitai_modo', 'lider');
+  try {
     if (window.history && window.history.pushState) {
-    window.history.pushState({}, '', '?rol=lider');
-  }
+      window.history.pushState({}, '', '?rol=lider');
+    }
+  } catch(e) { /* pushState no disponible en este entorno */ }
   document.getElementById('reclutadorApp').style.display = 'none';
   document.getElementById('liderApp').style.display = 'block';
   document.getElementById('liderLoginView').style.display = 'flex';
   document.getElementById('liderDashboard').style.display = 'none';
   document.getElementById('liderNombreNav').textContent = '';
+  liderDni = null;
+  setTimeout(function(){
+    var inp = document.getElementById('liderDniInput');
+    if (inp) { inp.value = ''; inp.focus(); }
+    poblarSelectPuestosDefault();
+  }, 100);
+}
+
+// ══════════════════════════════════
+// LÍDER — vista de prueba dentro del panel reclutador (pestaña Líder)
+// Mueve el liderApp al contenedor de la pestaña sin cambiar la URL
+// ══════════════════════════════════
+function renderLiderEnTab() {
+  var contenedor = document.getElementById('tabLiderContent');
+  var liderApp = document.getElementById('liderApp');
+  if (!contenedor || !liderApp) return;
+  // Mover el contenido del liderApp dentro del tab (sin clonarlo, para preservar listeners)
+  contenedor.innerHTML = '';
+  contenedor.appendChild(liderApp);
+  liderApp.style.display = 'block';
+  liderApp.style.minHeight = '';
+  // Resetear al login del líder
+  var loginView = document.getElementById('liderLoginView');
+  var dashboard = document.getElementById('liderDashboard');
+  var nombreNav = document.getElementById('liderNombreNav');
+  if (loginView) loginView.style.display = 'flex';
+  if (dashboard) dashboard.style.display = 'none';
+  if (nombreNav) nombreNav.textContent = '';
   liderDni = null;
   setTimeout(function(){
     var inp = document.getElementById('liderDniInput');
@@ -1824,9 +1917,9 @@ function descargarBackup() {
   var hoy = new Date();
   var rowsPuestos = requisiciones.map(function(r) {
     var etapas = r.etapas || {};
-    var etapaActual = ['tramites','oferta','entrevista','validacionCVs','evaluacion','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
-    var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',evaluacion:'Evaluación GTH',validacionCVs:'Validación CVs Líder',
-      entrevista:'Entrevista Técnica',oferta:'Oferta Laboral',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
+    var etapaActual = ['tramites','oferta','entrevista','validacionCVs','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
+    var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',validacionCVs:'Validación CVs Líder',
+      entrevista:'Entrevista Técnica',oferta:'Candidato Elegido / Carta Oferta',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
     var candPuesto = _allResults.filter(function(c){ return c.puesto&&r.puesto&&c.puesto.toLowerCase()===r.puesto.toLowerCase(); });
     var conLider = candPuesto.filter(function(c){ return c.visibleLider; }).length;
     var diasLimite = r.fechaLimiteRaw ? Math.ceil((new Date(r.fechaLimiteRaw)-hoy)/(1000*60*60*24)) : '';
@@ -1872,16 +1965,21 @@ function verificarRecordatorioBackup() {
 // LINK DEL LÍDER
 // ══════════════════════════════════
 function copiarLinkLider() {
-  var url = window.location.origin + '/lider';
+  var url = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(function() {
-      toast('Link del líder copiado ✓ — ' + url);
+      toast('Link del portal líder copiado ✓');
     }).catch(function() {
       prompt('Copia este link y compártelo con el líder:', url);
     });
   } else {
     prompt('Copia este link y compártelo con el líder:', url);
   }
+}
+
+function _poblarLinkLider() {
+  var el = document.getElementById('shareLiderUrl');
+  if (el) el.textContent = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
 }
 
 function cerrarSesionLider() {
@@ -1926,10 +2024,9 @@ function accederLider() {
 var ETAPAS = [
   { id:'hc',            label:'Validar HC y Presupuesto',          auto: false, lider: false },
   { id:'convoc',        label:'Convocatoria y Evaluación GTH',     auto: true,  lider: false },
-  { id:'evaluacion',    label:'Evaluación GTH',                    auto: true,  lider: false },
-  { id:'validacionCVs', label:'Validación de CVs del Líder',       auto: false, lider: true  },
+  { id:'validacionCVs', label:'Validación de CVs del Líder',       auto: true,  lider: true  },
   { id:'entrevista',    label:'Entrevista Técnica y Feedback',     auto: true,  lider: false },
-  { id:'oferta',        label:'Envío de Carta Oferta',             auto: false, lider: false },
+  { id:'oferta',        label:'Candidato Elegido / Carta Oferta',  auto: true,  lider: false },
   { id:'tramites',      label:'Trámites de Ingreso',               auto: false, lider: false }
 ];
 
@@ -1959,7 +2056,7 @@ function exportarReportes() {
     var etapaIdx = calcularEtapaNumero(r);
     var etapaLabel = ETAPAS[etapaIdx] ? ETAPAS[etapaIdx].label : '—';
     var dias = r.fechaInicio ? Math.floor((new Date()-new Date(r.fechaInicio.split('/').reverse().join('-')))/(1000*60*60*24)) : '—';
-    var sla = r.nivel ? (parseInt(r.nivel)||30) : 30;
+    var sla = r.diasPlazo || (PLAZOS[r.nivelVal||r.nivel] ? PLAZOS[r.nivelVal||r.nivel].dias : 30);
     var avance = Math.round((etapaIdx/ETAPAS.length)*100);
     var candsPuesto = _allResults.filter(function(c){ return String(c.reqId)===String(r.id)||(c.puesto===r.puesto&&!c.reqId); });
     var aptos = feedbacks.filter(function(f){ return (r.reqId?String(f.reqId)===String(r.id):f.puesto===r.puesto) && f.apto===true; }).length;
@@ -1987,7 +2084,7 @@ function exportarReportes() {
     var etapaIdx = calcularEtapaNumero(r);
     var etapaLabel = ETAPAS[etapaIdx] ? ETAPAS[etapaIdx].label : '—';
     var diasTrans = '—', diasRest = '—', estadoSLA = '—';
-    var sla = parseInt(r.nivel)||30;
+    var sla = r.diasPlazo || (PLAZOS[r.nivelVal||r.nivel] ? PLAZOS[r.nivelVal||r.nivel].dias : 30);
     if (r.fechaInicio) {
       var inicio = new Date(r.fechaInicio.split('/').reverse().join('-'));
       diasTrans = Math.floor((new Date()-inicio)/(1000*60*60*24));
@@ -2034,12 +2131,9 @@ function exportarReportes() {
 function calcularEtapaNumero(r) {
   if (!r || !r.etapas) return 0;
   var e = r.etapas;
-  if (e.tramites) return 6;
-  if (e.oferta)   return 5;
-  if (e.entrevista||e.feedback) return 4;
-  if (e.evaluacion||e.longlist) return 3;
-  if (e.convocatoria) return 2;
-  if (e.hc) return 1;
+  if (e.tramites) return 5;
+  if (e.oferta)   return 4;
+  if (e.hc)       return 1;
   return 0;
 }
 
@@ -2047,34 +2141,39 @@ function calcularEtapaActual(req, candidatos, feedbacks) {
   if (!req) return 0;
   var etapasCompletadas = req.etapas || {};
 
-  // Etapa 0: HC — manual
+  // Etapa 0: HC — manual (reclutador confirma)
   if (!etapasCompletadas.hc) return 0;
-  // Etapa 1: Convocatoria — automática cuando hay candidatos registrados EN ESTA SOLICITUD
+
+  // Etapa 1: Convocatoria y Evaluación GTH — auto cuando hay candidatos registrados en la req
   var hayCandidatos = candidatos.some(function(c){
     if (c.reqId) return c.reqId === req.id || c.reqId === parseInt(req.id);
     return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
   });
   if (!hayCandidatos) return 1;
-  // Etapa 2: Evaluación y Longlist — candidatos visibles para el líder EN ESTA SOLICITUD
+
+  // Etapa 2: Validación de CVs del Líder — auto cuando hay candidatos visibles al líder
   var hayVisibles = candidatos.some(function(c){
     var matchReq = c.reqId ? (c.reqId === req.id || c.reqId === parseInt(req.id))
                            : (c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim());
     return matchReq && c.visibleLider;
   });
   if (!hayVisibles) return 2;
-  // Etapa 3: Validación de CVs del Líder — el líder activa "Programar entrevista"
-  if (!etapasCompletadas.validacionCVs) return 3;
-  // Etapa 4: Entrevista Técnica y Feedback — hay feedback del líder EN ESTA SOLICITUD
-  var hayFeedback = feedbacks.some(function(f){
-    if (f.reqId) return f.reqId === req.id || f.reqId === parseInt(req.id);
-    return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
+
+  // Etapa 3: Entrevista Técnica y Feedback — auto cuando al menos 1 candidato de la req tiene agendado=true
+  var hayAgendado = candidatos.some(function(c){
+    var matchReq = c.reqId ? (c.reqId === req.id || c.reqId === parseInt(req.id))
+                           : (c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim());
+    return matchReq && c.agendado;
   });
-  if (!hayFeedback) return 4;
-  // Etapa 5: Oferta — manual
-  if (!etapasCompletadas.oferta) return 5;
-  // Etapa 6: Trámites — manual
-  if (!etapasCompletadas.tramites) return 6;
-  return 6;
+  if (!hayAgendado) return 3;
+
+  // Etapa 4: Candidato Elegido / Carta Oferta — auto cuando elegirCandidato() graba etapas.oferta
+  if (!etapasCompletadas.oferta) return 4;
+
+  // Etapa 5: Trámites de Ingreso — manual (reclutador confirma) → marca req Cubierto
+  if (!etapasCompletadas.tramites) return 5;
+
+  return 5;
 }
 
 function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
@@ -2105,14 +2204,9 @@ function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
     // Label
     html += '<div style="font-size:10px;color:'+(active?'#e8623a':done?'#2d7a4f':'var(--muted)')+';text-align:center;margin-top:5px;font-weight:'+(active?'600':'400')+';line-height:1.3;padding:0 2px;">'+e.label+'</div>';
 
-    // Botón de avance según tipo de etapa y rol
-    if (active) {
-      if (e.id === 'validacionCVs') {
-        // El avance de esta etapa es via el checklist "Agendado" en la pestaña Candidatos
-        // No se muestra botón aquí
-      } else if (isReclutador && !e.auto) {
-        html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:4px;font-size:10px;padding:2px 8px;background:#e8623a;color:white;border:none;border-radius:4px;cursor:pointer;">Confirmar</button>';
-      }
+    // Botón de avance solo para etapas manuales (hc y tramites) — el resto son automáticas
+    if (active && isReclutador && !e.auto) {
+      html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:4px;font-size:10px;padding:2px 8px;background:#e8623a;color:white;border:none;border-radius:4px;cursor:pointer;">Confirmar</button>';
     }
     html += '</div>';
   });
@@ -2186,7 +2280,7 @@ function renderLiderKpis() {
       return misPuestos.length===0||misPuestos.indexOf(c.puesto)!==-1;
     });
     var pendientes = misCands.filter(function(c){return !fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
-    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/5*100);});
+    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/4*100);});
     var avanceProm = avances.length ? Math.round(avances.reduce(function(s,v){return s+v;},0)/avances.length) : 0;
 
     var elActivos = document.getElementById('kpiActivos');
@@ -2229,7 +2323,7 @@ function renderLiderDashboard() {
     var noAptos = evaluados.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&f.apto===false;});});
 
     // % avance promedio procesos activos
-    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/5*100);});
+    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/4*100);});
     var avanceProm = avances.length ? Math.round(avances.reduce(function(s,v){return s+v;},0)/avances.length) : 0;
     var avanceColor = avanceProm>=66?'#2d7a4f':avanceProm>=33?'#b8760a':'#c0392b';
 
@@ -2337,7 +2431,7 @@ function liderDashClick(tipo) {
       if (!lista.length) { html += '<div style="color:var(--muted);font-size:13px;">Sin procesos.</div>'; }
       lista.forEach(function(r){
         var etapa = calcularEtapaActual(r,results,fbs);
-        var av = Math.round(etapa/5*100);
+        var av = Math.round(etapa/4*100);
         html += '<div onclick="switchLiderTab(&apos;procesos&apos;);setTimeout(function(){seleccionarProceso('+r.id+')},100)" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border2);cursor:pointer;">'
           +'<span style="font-size:13px;color:var(--text);">'+r.puesto+'</span>'
           +'<span style="font-size:12px;color:var(--muted);">'+av+'% avance</span>'
@@ -2345,7 +2439,7 @@ function liderDashClick(tipo) {
       });
     } else if (tipo==='avance') {
       activos.forEach(function(r){
-        var etapa=calcularEtapaActual(r,results,fbs); var av=Math.round(etapa/5*100);
+        var etapa=calcularEtapaActual(r,results,fbs); var av=Math.round(etapa/4*100);
         var c=av>=66?'#2d7a4f':av>=33?'#b8760a':'#c0392b';
         html += '<div onclick="switchLiderTab(&apos;procesos&apos;);setTimeout(function(){seleccionarProceso('+r.id+')},100)" style="padding:8px 0;border-bottom:0.5px solid var(--border2);cursor:pointer;">'
           +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text);">'+r.puesto+'</span><span style="font-size:12px;font-weight:500;color:'+c+';">'+av+'%</span></div>'
@@ -2537,24 +2631,24 @@ function renderDetalleProcesoSeleccionado(reqId) {
         +'<div><div style="font-size:12px;font-weight:500;color:#854F0B;margin-bottom:1px;">Propuesta de cambio al perfil enviada</div>'
           +'<div style="font-size:11px;color:#854F0B;">Pendiente de aprobación por el equipo GTH.</div></div>'
       +'</div>';
-    } else if (r.estado === 'Pendiente' || etapaActual <= 1) {
+    } else if (r.estado === 'Pendiente' || etapaActual === 0) {
       bannerHtml = '<div style="background:#EEEDFE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
         +'<div style="width:28px;height:28px;border-radius:50%;background:#534AB7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:500;color:white;">i</div>'
         +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#3C3489;margin-bottom:1px;">Revisa el perfil del puesto antes de iniciar la búsqueda</div>'
           +'<div style="font-size:11px;color:#534AB7;">Opcional · Tus cambios pasarán por validación del equipo GTH.</div></div>'
         +'<button onclick="toggleEditPerfilLider('+r.id+')" style="font-size:11px;padding:4px 12px;border-radius:7px;border:0.5px solid #534AB7;background:transparent;color:#534AB7;cursor:pointer;flex-shrink:0;white-space:nowrap;">Revisar perfil</button>'
       +'</div>';
+    } else if (etapaActual === 1) {
+      bannerHtml = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--muted);">&#8987;</div>'
+        +'<div><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px;">El equipo GTH está evaluando candidatos</div>'
+          +'<div style="font-size:11px;color:var(--muted);">Pronto tendrás CVs disponibles para revisar.</div></div>'
+      +'</div>';
     } else if (etapaActual >= 2 && candsPendientes > 0) {
       bannerHtml = '<div style="background:#EAF3DE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
         +'<div style="width:28px;height:28px;border-radius:50%;background:#3B6D11;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:white;">↓</div>'
         +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#27500A;margin-bottom:1px;">Tienes '+candsPendientes+' candidato'+(candsPendientes>1?'s':'')+' pendiente'+(candsPendientes>1?'s':'')+' de evaluación</div>'
           +'<div style="font-size:11px;color:#3B6D11;">Evalúalo'+(candsPendientes>1?'s':'')+' con estrellas para avanzar el proceso.</div></div>'
-      +'</div>';
-    } else if (etapaActual >= 1 && cands.length === 0) {
-      bannerHtml = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
-        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--muted);">&#8987;</div>'
-        +'<div><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px;">El equipo GTH está buscando candidatos</div>'
-          +'<div style="font-size:11px;color:var(--muted);">Te notificaremos cuando haya perfiles listos para evaluar.</div></div>'
       +'</div>';
     }
     html += bannerHtml;
@@ -2715,26 +2809,42 @@ function guardarDesiderablesLider(id) {
 // ══════════════════════════════════
 // ALERTAS VENCIMIENTO
 // ══════════════════════════════════
-var SLA_ETAPA = {hc:2,convoc:3,evaluacion:8,validacionCVs:3,entrevista:5,oferta:3,tramites:5};
+// SLA por etapa según nivel del puesto (días calendario)
+// hc=3 y oferta=3 fijos para todos. Sumas cierran exactas con el plazo total por nivel.
+var SLA_POR_NIVEL = {
+  '25': {hc:3, convoc:9,  validacionCVs:3, entrevista:7,  oferta:3}, // Practicante/Auxiliar  — 25d
+  '30': {hc:3, convoc:14, validacionCVs:3, entrevista:7,  oferta:3}, // Analista/Técnico      — 30d
+  '35e':{hc:3, convoc:14, validacionCVs:8, entrevista:7,  oferta:3}, // Especialista/Coordinador — 35d
+  '45': {hc:3, convoc:14, validacionCVs:7, entrevista:14, oferta:7}, // Jefe/Supervisor       — 45d
+  '60': {hc:3, convoc:26, validacionCVs:7, entrevista:21, oferta:3}  // Gerente               — 60d
+};
+
+function getSLAParaNivel(nivelVal) {
+  return SLA_POR_NIVEL[nivelVal] || SLA_POR_NIVEL['30'];
+}
+
+// SLA_ETAPA mantiene el fallback de Analista/Técnico para compatibilidad
+var SLA_ETAPA = SLA_POR_NIVEL['30'];
 
 function calcularSLAAlerts() {
   var alerts = [];
   try {
     var hoy = Date.now();
-var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',evaluacion:'Evaluación GTH',validacionCVs:'Validación CVs Líder',entrevista:'Entrevista Técnica',oferta:'Oferta Laboral',tramites:'Trámites'};
+var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',validacionCVs:'Validación CVs Líder',entrevista:'Entrevista Técnica',oferta:'Candidato Elegido / Carta Oferta',tramites:'Trámites'};
     if (!Array.isArray(requisiciones)) return alerts;
     requisiciones.forEach(function(r) {
       try {
         if (!r || r.estado==='Cubierto') return;
         var etapas = (r.etapas && typeof r.etapas==='object') ? r.etapas : {};
         var refMs = r.id && r.id > 1000000000000 ? r.id : hoy;
-        var etapasSLA = ['hc','convoc','evaluacion','validacionCVs','entrevista','oferta']; // tramites sin SLA
+        var slaTabla = getSLAParaNivel(r.nivelVal || r.nivel);
+        var etapasSLA = ['hc','convoc','validacionCVs','entrevista','oferta']; // tramites sin SLA
         etapasSLA.forEach(function(e, i) {
           if (etapas[e]) return;
           var anteriorOk = i===0 || etapas[etapasSLA[i-1]];
           if (!anteriorOk) return;
           var diasEnEtapa = Math.floor((hoy - refMs) / (1000*60*60*24));
-          var slaMax = (SLA_ETAPA && SLA_ETAPA[e]) ? SLA_ETAPA[e] : 5;
+          var slaMax = slaTabla[e] || SLA_ETAPA[e] || 5;
           if (diasEnEtapa > slaMax) {
             alerts.push({puesto:r.puesto||'—', area:r.area||'', etapa:ETAPA_NOMBRES[e]||e, dias:diasEnEtapa, sla:slaMax, jobId:r.jobId||null});
           }
@@ -2864,32 +2974,6 @@ function toggleForm() {
 
 
 
-function guardarEditarPerfil() {
-  if (!_editPerfilJobId) return;
-  var g=function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
-  var titulo=g('ep_titulo'), desc=g('ep_desc');
-  if (!titulo) { toast('El nombre del puesto es obligatorio'); return; }
-  if (!desc)   { toast('Las funciones y requisitos son obligatorias'); return; }
-  var updates = {
-    gerencia:g('ep_gerencia'), area:g('ep_area'), titulo:titulo,
-    desc:desc, funciones:desc, minimos:desc,
-    deseables:g('ep_deseables'), liderDeseables:g('ep_deseables'),
-    emailLider:g('ep_emailLider'), dniLider:g('ep_dniLider')
-  };
-  jobs = jobs.map(function(j){ return j.id===_editPerfilJobId?Object.assign({},j,updates):j; });
-  requisiciones = requisiciones.map(function(r){
-    if (r.jobId===_editPerfilJobId||r.id===_editPerfilJobId)
-      return Object.assign({},r,{puesto:titulo,area:updates.area,gerencia:updates.gerencia,minimos:desc,emailLider:updates.emailLider,dniLider:updates.dniLider});
-    return r;
-  });
-  localStorage.setItem('rjobs',JSON.stringify(jobs));
-  localStorage.setItem('rreqs',JSON.stringify(requisiciones));
-  syncJobsToServer(jobs); syncReqsToServer(requisiciones);
-  cerrarModalEditarPerfil(); renderJobsList();
-  var jid = _editPerfilJobId;
-  setTimeout(function(){ abrirDetallePanelJob(jid); }, 150);
-  toast('Perfil actualizado ✓');
-}
 
 
 function calcularPlazoNS() {
@@ -2897,7 +2981,7 @@ function calcularPlazoNS() {
   var fi=document.getElementById('ns_fechaInicio').value;
   var pi=document.getElementById('ns_plazoInfo');
   if (!nivel||!pi) return;
-  var dias=nivel==='30e'?30:parseInt(nivel)||0;
+  var dias=nivel==='35e'?35:parseInt(nivel)||0;
   if (!dias){pi.style.display='none';return;}
   var desde=fi?new Date(fi):new Date();
   var hasta=new Date(desde); hasta.setDate(hasta.getDate()+dias);
@@ -2905,39 +2989,6 @@ function calcularPlazoNS() {
   pi.textContent='Plazo estimado: '+dias+' días → límite '+hasta.toLocaleDateString('es-PE');
 }
 
-function guardarNuevaSolicitud() {
-  if (!_nuevoSolJobId) return;
-  var g=function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
-  var sedeV=g('ns_sede'), sedeO=g('ns_otraSede');
-  var sede=sedeV==='Otras'?(sedeO||'Otras'):sedeV;
-  var horario=g('ns_horario'), nivel=g('ns_nivel'), motivo=g('ns_motivo'), fechaInicio=g('ns_fechaInicio');
-  if (!sede||!horario||!nivel||!motivo||!fechaInicio){toast('Completa todos los campos obligatorios');return;}
-  var job=jobs.find(function(j){return j.id===_nuevoSolJobId;}); if(!job) return;
-  var dias=nivel==='30e'?30:parseInt(nivel)||0;
-  var labels={'15':'Practicante / Auxiliar','20':'Analista / Coordinador','25':'Jefe / Supervisor','30':'Gerente / Subgerente','30e':'Especialista / Consultor'};
-  var nivelLabel=labels[nivel]||nivel;
-  var fechaLimDate=new Date(fechaInicio); if(dias) fechaLimDate.setDate(fechaLimDate.getDate()+dias);
-  var nuevaReq={
-    id:Date.now(), jobId:_nuevoSolJobId,
-    fecha:new Date().toLocaleDateString('es-PE'), fechaCreacion:new Date().toISOString(),
-    puesto:job.titulo, area:job.area||'', gerencia:job.gerencia||'',
-    emailLider:job.emailLider||'', dniLider:job.dniLider||'',
-    sede:sede, horario:horario, nivelVal:nivel, nivel:nivelLabel, motivo:motivo,
-    reemplazoNombre:g('ns_reemplazo_nombre'), cese:g('ns_cese'),
-    fechaInicioRaw:fechaInicio, fechaInicio:new Date(fechaInicio).toLocaleDateString('es-PE'),
-    diasPlazo:dias, fechaLimiteRaw:fechaLimDate.toISOString(),
-    fechaLimite:fechaLimDate.toLocaleDateString('es-PE'),
-    estado:'Pendiente', minimos:job.desc||job.minimos||'',
-    deseables:job.deseables||'', desiderablesCompletados:false, etapas:{}
-  };
-  requisiciones.push(nuevaReq);
-  localStorage.setItem('rreqs',JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-  cerrarModalNuevaSolicitud(); renderJobsList();
-  var jid=_nuevoSolJobId;
-  setTimeout(function(){ abrirDetallePanelJob(jid); },200);
-  toast('Solicitud creada ✓');
-}
 
 function toggleEditJob(id) { editJob(id); scrollToForm(); }
 
@@ -3318,7 +3369,7 @@ function guardarModalSolicitud() {
 
   // Obtener nivel del perfil
   var nivel    = job.nivelVal || '';
-  var diasPlazo= nivel==='30e'?30:parseInt(nivel)||30;
+  var diasPlazo= nivel==='35e'?35:parseInt(nivel)||30;
   var nivelLabel= PLAZOS[nivel]?PLAZOS[nivel].label:nivel;
   var fechaLimDate = new Date(fechaInicio);
   fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
@@ -3378,8 +3429,12 @@ function guardarModalSolicitud() {
   // Notificar al líder por email
   var tplLider = getTemplates().email_lider;
   var tplAsunto = getTemplates().email_lider_asunto;
+  var linkLider = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
   var asunto = encodeURIComponent(aplicarVariables(tplAsunto,{puesto:job.titulo}));
-  var cuerpo = aplicarVariables(tplLider,{puesto:job.titulo,area:job.area||'',sede:sede||'',horario:horario||''});
+  var cuerpo = aplicarVariables(tplLider,{
+    puesto:job.titulo, area:job.area||'', sede:sede||'', horario:horario||'',
+    nivel:nivel||'', fechaLimite:fechaLimite||'', link:linkLider
+  });
   var cuerpoEnc = encodeURIComponent(cuerpo);
   if (emailLider) {
     window.open('mailto:'+emailLider+'?subject='+asunto+'&body='+cuerpoEnc,'_blank');
@@ -3461,11 +3516,6 @@ function calcularPlazo() {
   info.innerHTML='Plazo: <strong>'+p.dias+' días</strong>. Fecha límite estimada: <strong>'+base.toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})+'</strong>';
 }
 
-function toggleReemplazo() {
-  var show = document.getElementById('f_motivo').value === 'reemplazo';
-  var el = document.getElementById('reemplazoField');
-  if (el) { el.style.display = show ? 'flex' : 'none'; el.style.flexDirection = 'column'; }
-}
 
 function toggleReemplazoLider(prefix) {
   var show = (document.getElementById(prefix+'_motivo')||{}).value === 'reemplazo';
@@ -4023,18 +4073,31 @@ function actualizarEtapasReq(reqId, etapas, bitacoraMsg, candidato) {
 }
 
 
-function togglePuesto(id) {
-  var body = document.getElementById('body-'+id);
-  var chev = document.getElementById('chevron-'+id);
-  if (!body) return;
-  body.classList.toggle('open');
-  if (chev) chev.innerHTML = body.classList.contains('open') ? '&#9650;' : '&#9660;';
-}
 
 
 // ══════════════════════════════════
 // ENVÍO MASIVO
 // ══════════════════════════════════
+function switchEnvioSec(sec, btn) {
+  var secs = ['links','whatsapp','templates','reporte','docs','onboarding'];
+  secs.forEach(function(s) {
+    var el = document.getElementById('envioSec-'+s);
+    if (el) el.style.display = s === sec ? 'block' : 'none';
+    var nav = document.getElementById('envioNav-'+s);
+    if (nav) {
+      nav.style.background = s === sec ? 'var(--surface)' : 'transparent';
+      nav.style.color = s === sec ? 'var(--text)' : 'var(--muted)';
+      nav.style.fontWeight = s === sec ? '500' : '400';
+      nav.style.borderRight = s === sec ? '2px solid #e8623a' : 'none';
+      nav.style.marginRight = s === sec ? '-1px' : '0';
+    }
+  });
+  // Side effects por sección
+  if (sec === 'reporte') renderReporteIngresos();
+  if (sec === 'docs') renderDocsBiblioteca();
+  if (sec === 'onboarding') cargarConfigOnboarding();
+}
+
 function renderEnvioSelect() {
   var sel = document.getElementById('envioJobSelect');
   if (!sel) return;
@@ -4817,10 +4880,19 @@ function toggleTramites(btn) {
         if (r.id!==reqId) return r;
         var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
         bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Trámites revertidos (Oferta también): '+motivo,candidato:cand});
-        return Object.assign({},r,{etapas:etapas,estado:'En proceso',bitacora:bita});
+        return Object.assign({},r,{etapas:etapas,estado:'En proceso',bitacora:bita,candidatoElegido:''});
       });
       localStorage.setItem('rreqs',JSON.stringify(requisiciones));
       syncReqsToServer(requisiciones);
+      // Desmarcar elegido en feedbacks
+      feedbacks = feedbacks.map(function(f){
+        if (f.candidato!==cand) return f;
+        var matchReq = reqId ? (String(f.reqId)===String(reqId)) : true;
+        if (!matchReq) return f;
+        return Object.assign({},f,{elegido:false});
+      });
+      localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
+      safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
       renderCandidatosPorPuesto(); renderJobsList(); verificarAlertas();
       toast('Trámites revertidos — proceso continúa');
     });
@@ -5534,11 +5606,6 @@ function renderCatalogoPuestos() {
   list.innerHTML = html || '<div class="empty-state" style="padding:20px;text-align:center;font-size:13px;color:var(--muted);">No hay puestos que mostrar.</div>';
 }
 
-function verDetalleJobCatalogo(jobId) {
-  // Ir a pestaña Puestos y abrir el detalle
-  switchPuestosTab('procesos');
-  setTimeout(function(){ irAPuesto(jobId); }, 100);
-}
 
 function editarJobCatalogo(jobId) {
   switchPuestosTab('procesos');
@@ -5551,18 +5618,7 @@ function editarJobCatalogo(jobId) {
   }, 100);
 }
 
-function crearSolicitudDesdeCatalogo(jobId) {
-  // Ir a Puestos y hacer click en + Solicitud del job
-  switchPuestosTab('procesos');
-  setTimeout(function(){
-    irAPuesto(jobId);
-  }, 100);
-}
 
-function irAProcesoDesdeRRHH(jobId) {
-  switchPuestosTab('procesos');
-  setTimeout(function(){ irAPuesto(jobId); }, 100);
-}
 
 
 // ══════════════════════════════════════════════════════════════════
@@ -6123,10 +6179,6 @@ async function confirmarImportacion() {
 }
 
 
-function toggleCandGroup(puestoId) {
-  var el = document.getElementById('cands_'+puestoId);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
 
 function filtrarGerenciaCand() {
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
@@ -6464,6 +6516,7 @@ function renderTablaByPuesto(cands, filtros) {
       });
       var esElegido = !!fbCand;
       var elegidoBadge = esElegido ? '<span style="font-size:10px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 7px;border-radius:5px;">&#127942; Elegido</span>' : '';
+      var revertirOfertaBtn = esElegido && !trOk ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" onclick="revertirOferta(this.dataset.reqId,this.dataset.cand)" style="font-size:10px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:2px 8px;border-radius:5px;cursor:pointer;border:0.5px solid rgba(194,59,34,0.4);background:#fef2ee;color:#c23b22;" title="Revertir elección">↩ Revertir</button>' : '';
       var trBtn = esElegido ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:10px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:2px 8px;border-radius:5px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--muted)')+';">'+(trOk?'✓ Ingreso':'○ Ingreso')+'</button>' : '';
 
       // Botones acción pequeños
@@ -6482,7 +6535,7 @@ function renderTablaByPuesto(cands, filtros) {
         +'</div>'
         +'<div style="width:80px;flex-shrink:0;text-align:center;">'+starsHtml+'</div>'
         +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Líder</div>'+switchVis+'</div>'+'<div style="width:70px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Agendado</div>'+'<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;">'+'<input type="checkbox" '+(c.agendado?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleAgendado(this)" style="width:14px;height:14px;accent-color:#2563A8;">'+'</label>'+'</div>'
-        +'<div style="width:90px;flex-shrink:0;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
+        +'<div style="width:110px;flex-shrink:0;display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'+elegidoBadge+trBtn+revertirOfertaBtn+'</div>'
         +'<div style="width:80px;flex-shrink:0;display:flex;align-items:center;gap:1px;">'+acciones+'</div>'
         +'<div style="width:60px;flex-shrink:0;text-align:right;">'
           +'<button onclick="toggleExpandCand(\''+ rowId+'\')" id="btnexp_'+rowId+'" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">Ver &#9660;</button>'
@@ -6591,7 +6644,7 @@ async function syncReqsToServer(r){ await safeFetch('/api/jobs?type=reqs',{metho
 // FEEDBACK
 // ══════════════════════════════════
 // Renderiza feedback para un puesto específico (usado en portal líder detalle)
-function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
+function renderFeedbackParaPuesto(puesto, candsFeedback, fbs, reqId) {
   if (!candsFeedback || !candsFeedback.length) return '<div style="font-size:12px;color:var(--muted);">Sin candidatos para evaluar.</div>';
   var BTN_ST = 'font-size:11px;padding:4px 12px;min-width:90px;text-align:center;';
   return candsFeedback.map(function(c) {
@@ -6634,6 +6687,7 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
             + '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN_ST+'">'+(noAptoOk?'&#10007; No apto':'No apto')+'</button>'
             + (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN_ST+'">&#127942; Elegir</button>':'')
             + (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">&#127942; Candidato elegido</span>':'')
+            + (esElegido?'<button data-req-id="'+reqId+'" data-cand="'+cEnc+'" onclick="revertirOferta(this.dataset.reqId,this.dataset.cand)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(194,59,34,0.4);background:#fef2ee;color:#c23b22;cursor:pointer;" title="Revertir elección">↩ Revertir</button>':'')
           + '</div>'
         + '</div>'
       + '</div>'
@@ -6761,6 +6815,7 @@ function renderFeedbackPanel() {
               bodyHtml += '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="font-size:11px;padding:4px 12px;">'+(noAptoOk?'✗ No apto':'No apto')+'</button>';
               if (aptoOk && !esElegido) bodyHtml += '<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:4px 12px;">🏆 Elegir como candidato final</button>';
               if (esElegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>';
+              if (esElegido) bodyHtml += '<button data-req-id="'+reqId+'" data-cand="'+cEnc2+'" onclick="revertirOferta(this.dataset.reqId,this.dataset.cand)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(194,59,34,0.4);background:#fef2ee;color:#c23b22;cursor:pointer;" title="Revertir elección">↩ Revertir elección</button>';
               bodyHtml += '</div>';
             } else if (fb) {
               // Solo lectura
@@ -7294,6 +7349,48 @@ function elegirCandidato(cand, puesto) {
   toast('🏆 ' + cDec + ' seleccionado como candidato elegido');
 }
 
+// ── Revertir candidato elegido / carta oferta ──
+function revertirOferta(reqId, candEnc) {
+  var cDec = decodeURIComponent(candEnc);
+  var numId = parseInt(reqId) || reqId;
+  var req = requisiciones.find(function(r){ return r.id===numId || String(r.id)===String(reqId); });
+  if (!req) return;
+  mostrarPopupMotivo('¿Por qué se revierte la elección de ' + cDec + '?', function(motivo) {
+    // 1. Limpiar etapas.oferta y candidatoElegido de la req
+    var etapas = Object.assign({}, req.etapas||{});
+    delete etapas.oferta;
+    delete etapas.tramites; // si había trámites también se revierten
+    var bita = Array.isArray(req.bitacora) ? req.bitacora.slice() : [];
+    bita.push({
+      fecha: new Date().toLocaleDateString('es-PE'),
+      hora: new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+      msg: 'Elección revertida — ' + cDec + ': ' + motivo,
+      candidato: cDec
+    });
+    requisiciones = requisiciones.map(function(r){
+      if (r.id!==numId && String(r.id)!==String(reqId)) return r;
+      return Object.assign({}, r, {etapas:etapas, bitacora:bita, candidatoElegido:''});
+    });
+    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+    syncReqsToServer(requisiciones);
+    // 2. Desmarcar elegido en feedbacks
+    feedbacks = feedbacks.map(function(f){
+      if (f.candidato!==cDec) return f;
+      var matchReq = reqId ? (String(f.reqId)===String(reqId)) : (f.puesto===req.puesto);
+      if (!matchReq) return f;
+      return Object.assign({}, f, {elegido:false});
+    });
+    localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+    safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
+    // 3. Re-render
+    renderJobsList();
+    renderCandidatosPorPuesto();
+    if (window._liderProcesoSeleccionado) renderDetalleProcesoSeleccionado(window._liderProcesoSeleccionado);
+    verificarAlertas();
+    toast('Elección revertida — ' + cDec);
+  });
+}
+
 function toggleFbCard(keyOrEl) {
   var key = typeof keyOrEl === 'string' ? keyOrEl : keyOrEl.dataset && keyOrEl.dataset.key;
   if (!key) return;
@@ -7314,19 +7411,7 @@ function setFbStar(el){
 }
 
 // Wrappers seguros que usan data-attributes para evitar problemas con caracteres especiales
-function saveFeedbackBtn(el) {
-  var candidato = decodeURIComponent(el.dataset.cand);
-  var puesto = decodeURIComponent(el.dataset.puesto);
-  var key = el.dataset.key;
-  saveFeedback(candidato, puesto, key);
-}
 
-function deleteFeedbackBtn(el) {
-  var candidato = decodeURIComponent(el.dataset.cand);
-  var puesto = decodeURIComponent(el.dataset.puesto);
-  var reqId = el.dataset.reqId ? (parseInt(el.dataset.reqId)||el.dataset.reqId) : null;
-  deleteFeedback(candidato, puesto, reqId);
-}
 
 function saveFeedback(candidato,puesto,key){
   var comentario=document.getElementById('fb_'+key)?document.getElementById('fb_'+key).value:'';
@@ -7393,17 +7478,6 @@ function getAreasDefault() {
 }
 
 // Pobla el select de área para un prefijo ('f', 'll', 'lf')
-function poblarAreaSel(prefix) {
-  var selArea = document.getElementById(prefix + '_area_sel') || document.getElementById(prefix === 'f' ? 'f_area_sel' : null);
-  if (!selArea) return;
-  var areas = getAreasDefault();
-  selArea.innerHTML = '<option value="">Todas las áreas</option>';
-  areas.forEach(function(a) {
-    var opt = document.createElement('option');
-    opt.value = a; opt.textContent = a;
-    selArea.appendChild(opt);
-  });
-}
 
 // Filtra puestos según área seleccionada
 function filtrarPuestosDefault(prefix, areaFiltro) {
@@ -7538,9 +7612,6 @@ function seleccionarPuestoDefault(val) {
   var iEl = document.getElementById('f_instrucciones'); if (iEl) iEl.value = '';
 }
 
-function poblarSelectPuestosLider() {
-  poblarSelectPuestosDefault();
-}
 
 function seleccionarPuestoLider(prefix, val) {
   var inp  = document.getElementById(prefix + '_puesto');
@@ -7592,7 +7663,7 @@ function guardarSolicitudLogin() {
 
   if (!puesto||!area||!sede||!nivel||!motivo||!desc||!horario||!emailLid) { toast('Completa todos los campos obligatorios'); return; }
 
-  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
+  var diasPlazo = nivel==='35e'?35:parseInt(nivel);
   var fechaLimDate = new Date(); fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
   var nivelLabel = PLAZOS[nivel] ? PLAZOS[nivel].label : nivel;
 
@@ -7641,7 +7712,7 @@ function guardarSolicitudLogin() {
   verificarAlertas();
 
   // Mensaje confirmación
-  var linkLider = window.location.origin + (window.location.pathname||'/');
+  var linkLider = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
   var msgHtml =
     '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;" id="liderConfirmOverlay2">' +
     '<div style="background:var(--surface);border-radius:16px;padding:32px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:16px;text-align:center;">' +
@@ -7698,7 +7769,7 @@ function guardarSolicitudLider() {
     toast('Completa todos los campos obligatorios'); return;
   }
 
-  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
+  var diasPlazo = nivel==='35e'?35:parseInt(nivel);
   var fechaLimiteDate = new Date(fechaInicio);
   fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
 
@@ -7752,7 +7823,7 @@ function guardarSolicitudLider() {
 
   // Mostrar mensaje de agradecimiento con tiempos y link
   var nivelLabel = PLAZOS[nivel] ? PLAZOS[nivel].label : nivel;
-  var linkLider = window.location.origin + (window.location.pathname||'/index.html');
+  var linkLider = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
   var msgHtml =
     '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;" id="liderConfirmOverlay">' +
     '<div style="background:var(--surface);border-radius:16px;padding:32px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:16px;text-align:center;">' +
@@ -7896,8 +7967,8 @@ function renderDashboard() {
       }
     });
     // Pipeline por etapa — una columna por etapa, procesos dentro
-    var ETAPAS_N = ['HC y Presupuesto','Convocatoria GTH','Evaluación GTH','Validación CVs Líder','Entrevista Técnica','Oferta Laboral'];
-    var ETAPAS_K = ['hc','convoc','evaluacion','validacionCVs','entrevista','oferta'];
+    var ETAPAS_N = ['HC y Presupuesto','Convocatoria GTH','Validación CVs Líder','Entrevista Técnica','Candidato Elegido / Carta Oferta'];
+    var ETAPAS_K = ['hc','convoc','validacionCVs','entrevista','oferta'];
 
     // Agrupar procesos por etapa actual usando calcularEtapaActual
     var byEtapa = {};
@@ -7989,7 +8060,7 @@ function renderDashboard() {
         byGer[ger].activos++;
         // % avance del proceso activo (etapa 0-5 sobre 5)
         var etapaIdx = calcularEtapaActual(r, results, feedbacks);
-        byGer[ger].avances.push(Math.round(etapaIdx / 5 * 100));
+        byGer[ger].avances.push(Math.round(etapaIdx / 4 * 100));
       }
       if (slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); })) byGer[ger].sla++;
       var candsDePuesto = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); });
@@ -8033,12 +8104,6 @@ function renderDashboard() {
 }
 
 
-function mkKpiTexto(label, value, color) {
-  return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:16px 12px;text-align:center;">'+
-    '<div style="font-size:12px;font-weight:500;color:'+color+';line-height:1.4;">'+value+'</div>'+
-    '<div style="font-size:11px;color:var(--muted);margin-top:4px;">'+label+'</div>'+
-  '</div>';
-}
 
 function mkKpiPill(label, value, textColor, bgColor) {
   return '<div style="display:flex;align-items:center;gap:8px;background:'+bgColor+';border-radius:20px;padding:7px 14px;flex-shrink:0;">'+
