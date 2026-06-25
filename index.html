@@ -47,8 +47,8 @@ a[title]{cursor:pointer;}
 .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent2);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-.add-job-form{background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:20px;display:none;flex-direction:column;gap:14px;margin-bottom:20px;}
-.add-job-form.open{display:flex;}
+  .add-job-form{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;padding:16px;}
+  .add-job-form.open{display:flex;}
 
 /* MISC */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;line-height:1.6;}
@@ -225,7 +225,7 @@ a[title]{cursor:pointer;}
     <button class="nav-tab" id="btn-envio" onclick="showTab('envio',this)">Env&iacute;o masivo</button>
     <button class="nav-tab" id="btn-candidatos" onclick="showTab('candidatos',this);renderCandidatosPorPuesto()">Candidatos</button>
     <button class="nav-tab" id="btn-dashboard" onclick="showTab('dashboard',this);renderDashboard()">Dashboard</button>
-    <button class="nav-tab" id="btn-lider" onclick="mostrarLider()">L&iacute;der</button>
+    <button class="nav-tab" id="btn-lider" onclick="showTab('lider',this);renderLiderEnTab()">L&iacute;der</button>
     <button class="nav-tab" onclick="descargarBackup()" title="Descarga un backup completo de todos los datos del sistema" style="font-size:11px;opacity:.7;">&#128190; Backup</button>
     <button class="nav-tab" onclick="mostrarPanelCambioPassword()" title="Cambiar contraseña de acceso al sistema" style="font-size:11px;opacity:.7;">&#128273; Clave</button>
   </nav>
@@ -242,11 +242,11 @@ a[title]{cursor:pointer;}
       </div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-secondary btn-sm" onclick="toggleCargaPDF()">&#128196; Cargar PDF</button>
-        <button class="btn btn-accent btn-sm" onclick="toggleForm()">+ Nuevo puesto</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleForm()">+ Nuevo perfil de puesto</button>
       </div>
     </div>
 
-    <!-- Formulario nuevo puesto + carga PDF (ocultos, se muestran con toggle) -->
+
     <div id="cargaPDFPanel" style="display:none;background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:24px;margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div>
@@ -268,8 +268,13 @@ a[title]{cursor:pointer;}
       <div id="pdfResultados" style="margin-top:16px;display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
-    <div class="add-job-form" id="addJobForm">
-      <div id="formTitle" style="font-size:14px;font-weight:500;">Nuevo puesto</div>
+    <div class="add-job-form" id="addJobForm" onclick="if(event.target===this)toggleForm()">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;">
+        <div style="padding:16px 20px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;flex-shrink:0;">
+          <div id="formTitle" style="font-size:15px;font-weight:600;color:var(--text);">Nuevo perfil de puesto</div>
+          <button onclick="toggleForm()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">&#10005;</button>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
 
       <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:0.5px solid var(--border2);margin-bottom:2px;">Perfil del puesto</div>
       <div class="form-group">
@@ -314,79 +319,20 @@ a[title]{cursor:pointer;}
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Email del l&iacute;der *</label>
-          <input type="email" id="f_emailLider" placeholder="Ej: lider@perufarma.com">
-        </div>
-        <div class="form-group">
-          <label>DNI del l&iacute;der *</label>
-          <input type="text" id="f_dniLider" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;">El líder usa este DNI para acceder a su portal.</div>
+          <label>Nivel del puesto *</label>
+          <select id="f_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
+            <option value="">Selecciona el nivel...</option>
+            <option value="60">Gerente / Sub Gerente (60 d&iacute;as)</option>
+            <option value="45">Jefe / Supervisor (45 d&iacute;as)</option>
+            <option value="35e">Especialista / Coordinador (35 d&iacute;as)</option>
+            <option value="30">Analista / Asistente (30 d&iacute;as)</option>
+            <option value="25">Practicante / Auxiliar (25 d&iacute;as)</option>
+          </select>
         </div>
       </div>
+      <div id="plazoInfoPerfil" style="display:none;padding:8px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#1e5c38;"></div>
 
       <!-- Sección 2: Nueva solicitud -->
-      <div id="reqSection">
-        <div style="height:0.5px;background:var(--border2);margin:4px 0 10px;"></div>
-        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:0.5px solid var(--border2);margin-bottom:10px;">Solicitud de convocatoria</div>
-        <div style="display:flex;flex-direction:column;gap:14px;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Sede *</label>
-              <select id="f_sede" onchange="toggleOtraSede('f_otraSede',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Selecciona...</option>
-                <option>Almacén Arequipa</option>
-                <option>Almacén Chiclayo</option>
-                <option>Central</option>
-                <option>Comunal</option>
-                <option value="Otras">Otras</option>
-              </select>
-              <input type="text" id="f_otraSede" placeholder="Especifica la sede..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-            <div class="form-group"><label>Horario *</label><input type="text" id="f_horario" placeholder="Ej: Lunes a sábado 8am-6pm"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nivel del puesto *</label>
-              <select id="f_nivel" onchange="calcularPlazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Selecciona el nivel...</option>
-                <option value="60">Gerente / Sub Gerente (60 d&iacute;as)</option>
-                <option value="35">Jefe / Supervisor (35 d&iacute;as)</option>
-                <option value="30e">Especialista / Coordinador (30 d&iacute;as)</option>
-                <option value="30">Analista / Ejecutivo (30 d&iacute;as)</option>
-                <option value="30">T&eacute;cnico / Asistente (30 d&iacute;as)</option>
-                <option value="25">Practicante / Auxiliar (25 d&iacute;as)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Motivo *</label>
-              <select id="f_motivo" onchange="toggleReemplazo()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-                <option value="">Selecciona...</option>
-                <option value="reemplazo">Reemplazo</option>
-                <option value="nuevo">Nuevo puesto</option>
-              </select>
-            </div>
-          </div>
-          <div id="plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#085041;line-height:1.5;"></div>
-          <div id="reemplazoField" style="display:none;display:flex;flex-direction:column;gap:10px;">
-            <div class="form-group">
-              <label>Nombre del colaborador a reemplazar *</label>
-              <input type="text" id="f_reemplazo_nombre" placeholder="Ej: Juan Pérez García" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-            <div class="form-group">
-              <label>Fecha de cese *</label>
-              <input type="date" id="f_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Fecha de inicio del proceso *</label>
-            <input type="date" id="f_fechaInicio" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
-          </div>
-          <div>
-            <button class="btn btn-accent" onclick="saveJobAndCreateReq()" title="Guarda el perfil, registra la solicitud con fechas y plazos, y abre un correo al líder para notificarle">Crear solicitud y notificar l&iacute;der &rarr;</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Motivo del cambio (solo visible al editar) -->
       <div id="motivoCambioWrap" style="display:none;">
         <div class="form-group">
@@ -402,12 +348,89 @@ a[title]{cursor:pointer;}
       </div>
     </div>
 
+      </div>
+    </div>
+
+<!-- ═══════ MODAL SOLICITUD DE CONVOCATORIA ═══════ -->
+<div id="modalSolicitudOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)cerrarModalSolicitud()">
+  <div style="background:var(--surface);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;">
+    <div style="padding:18px 20px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);" id="ns_modal_titulo">Nueva solicitud de convocatoria</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="ns_modal_puesto"></div>
+      </div>
+      <button onclick="cerrarModalSolicitud()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">&#10005;</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Datos del l&iacute;der</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email del l&iacute;der *</label>
+          <input type="email" id="ns_emailLider" placeholder="Ej: lider@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+        <div class="form-group">
+          <label>DNI del l&iacute;der *</label>
+          <input type="text" id="ns_dniLider" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">El l&iacute;der usa este DNI para acceder a su portal.</div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Convocatoria</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Sede *</label>
+          <select id="ns_sede" onchange="toggleOtraSede('ns_otraSede',this.value)" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
+            <option value="">Selecciona...</option>
+            <option>Almac&eacute;n Arequipa</option><option>Almac&eacute;n Chiclayo</option>
+            <option>Central</option><option>Comunal</option><option value="Otras">Otras</option>
+          </select>
+          <input type="text" id="ns_otraSede" placeholder="Especifica la sede..." style="display:none;margin-top:6px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+        <div class="form-group">
+          <label>Horario *</label>
+          <input type="text" id="ns_horario" placeholder="Ej: Lunes a Viernes 8am-6pm" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Motivo *</label>
+        <select id="ns_motivo" onchange="toggleReemplazoNS()" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
+          <option value="">Selecciona...</option>
+          <option value="reemplazo">Reemplazo</option>
+          <option value="nuevo">Nuevo puesto</option>
+        </select>
+      </div>
+      <div id="ns_reemplazoField" style="display:none;flex-direction:column;gap:10px;">
+        <div class="form-group">
+          <label>Nombre del colaborador a reemplazar *</label>
+          <input type="text" id="ns_reemplazo_nombre" placeholder="Ej: Juan P&eacute;rez Garc&iacute;a" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+        <div class="form-group">
+          <label>Fecha de cese *</label>
+          <input type="date" id="ns_cese" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Requisitos deseables</label>
+        <textarea id="ns_deseables" style="height:80px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);resize:vertical;" placeholder="Ej: Ingl&eacute;s intermedio, Excel avanzado..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Fecha de inicio del proceso *</label>
+        <input type="date" id="ns_fechaInicio_modal" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+      </div>
+      <div id="ns_plazoInfo" style="display:none;padding:10px 14px;background:#edf7f1;border:0.5px solid #9FE1CB;border-radius:8px;font-size:12px;color:#1e5c38;"></div>
+    </div>
+    <div style="padding:14px 20px;border-top:0.5px solid var(--border2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);">
+      <button class="btn btn-secondary" onclick="cerrarModalSolicitud()">Cancelar</button>
+      <button class="btn btn-accent" onclick="guardarModalSolicitud()">Crear solicitud &rarr;</button>
+    </div>
+  </div>
+</div>
+
     <!-- Filtros -->
     <!-- Layout dos columnas: lista + detalle -->
-    <div id="puestosLayout" style="display:grid;grid-template-columns:260px 1fr;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;min-height:520px;">
+    <div id="puestosLayout" style="display:grid;grid-template-columns:220px 1fr;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;min-height:520px;">
 
       <!-- COLUMNA IZQUIERDA: lista de puestos -->
-      <div style="border-right:0.5px solid var(--border2);display:flex;flex-direction:column;background:var(--surface);">
+      <div style="border-right:0.5px solid var(--border2);display:flex;flex-direction:column;background:var(--surface2);">
         <!-- Buscador -->
         <div style="padding:10px 12px;border-bottom:0.5px solid var(--border2);">
           <input type="text" id="filtroTexto" oninput="renderJobsList()" placeholder="&#128269; Buscar puesto..." style="width:100%;font-size:12px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:7px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
@@ -458,105 +481,149 @@ a[title]{cursor:pointer;}
 
   <!-- ENVÍO MASIVO -->
   <div class="panel" id="tab-envio">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
-      <div><div class="section-title">Envío masivo</div><div class="section-sub">Gestiona links de entrevista, mensajes y configuración de onboarding</div></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+      <div><div class="section-title">Envío masivo</div><div class="section-sub">Links, mensajes y configuración de onboarding</div></div>
     </div>
 
-<!-- Sección 4: Reporte de ingresos -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Reporte de ingresos</div>
-        <button class="btn btn-secondary btn-sm" onclick="renderReporteIngresos()">&#8635; Actualizar</button>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Candidatos en Trámites de Ingreso pendientes de notificar a Administración de Personal y Seguridad.</div>
-      <div id="reporteIngresosPanel">
-        <div style="font-size:12px;color:var(--muted);font-style:italic;">Cargando...</div>
-      </div>
-    </div>
+    <!-- Layout lateral -->
+    <div style="display:flex;gap:0;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;min-height:400px;">
 
-    <!-- Sección 5: Biblioteca de documentos -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Documentos de trámites de ingreso</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Links de documentos que se incluirán automáticamente en el email de comunicación al candidato elegido.</div>
-      <div id="docsBiblioteca" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-      <button class="btn btn-secondary btn-sm" onclick="agregarDocIngreso()">+ Agregar documento</button>
-    </div>
+      <!-- Nav lateral -->
+      <div style="width:220px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);padding:8px 0;">
+        <div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;">Links</div>
+        <button onclick="switchEnvioSec('links',this)" id="envioNav-links" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:var(--surface);color:var(--text);cursor:pointer;font-weight:500;border-right:2px solid #e8623a;margin-right:-1px;display:flex;align-items:center;gap:7px;">&#128279; Links</button>
+        <div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;">Comunicación</div>
+        <button onclick="switchEnvioSec('whatsapp',this)" id="envioNav-whatsapp" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#128172; WhatsApp</button>
+        <button onclick="switchEnvioSec('templates',this)" id="envioNav-templates" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#9998; Templates</button>
+        <div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;">Configuración</div>
+        <button onclick="switchEnvioSec('reporte',this)" id="envioNav-reporte" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#128196; Reporte</button>
+        <button onclick="switchEnvioSec('docs',this)" id="envioNav-docs" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#128193; Documentos</button>
+        <button onclick="switchEnvioSec('onboarding',this)" id="envioNav-onboarding" style="width:100%;text-align:left;padding:8px 14px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;">&#9881; Onboarding</button>
+      </div>
 
-    <!-- Sección 6: Configuración de onboarding -->
-    <div class="card" id="onboardingConfigSection">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Configuración de onboarding</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Emails que recibirán notificación automática cuando se confirme el ingreso de un candidato</div>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#534AB7;flex-shrink:0;">AP</div>
-            <span style="font-size:12px;color:var(--text);">Adm. Personal</span>
-          </div>
-          <input type="email" id="emailAdmPersonal" placeholder="admpersonal@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
-        </div>
-        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3B6D11;flex-shrink:0;">SE</div>
-            <span style="font-size:12px;color:var(--text);">Seguridad</span>
-          </div>
-          <input type="email" id="emailSeguridad" placeholder="seguridad@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
-        </div>
-        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:#FAEEDA;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#854F0B;flex-shrink:0;">LI</div>
-            <span style="font-size:12px;color:var(--text);">Líder</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);padding:7px 10px;background:var(--surface2);border-radius:8px;border:0.5px solid var(--border2);">Se toma del perfil del puesto automáticamente</div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:4px;">
-          <button class="btn btn-accent" onclick="guardarConfigOnboarding()">Guardar configuración</button>
-        </div>
-      </div>
-    </div>
-<!-- Sección 1: Link de entrevista IA -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Link de entrevista IA</div>
-      <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:10px 14px;">
-        <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareUrl">cargando...</span>
-        <button class="btn btn-secondary btn-sm" onclick="copyLink()" style="flex-shrink:0;">Copiar link</button>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Comparte este link con candidatos para que completen la entrevista inicial con IA</div>
-    </div>
+      <!-- Contenido -->
+      <div style="flex:1;min-width:0;padding:20px;background:var(--surface);overflow-y:auto;">
 
-    <!-- Sección 2: Envío masivo WhatsApp -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Envío masivo por WhatsApp</div>
-        <button onclick="mostrarTemplateEditor('whatsapp')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">&#9998; Editar template</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lista de candidatos</label>
-            <textarea id="candidatosList" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;resize:none;height:110px;color:var(--text);box-sizing:border-box;" placeholder="Nombre, teléfono&#10;Juan Pérez, 987654321&#10;María López, 912345678"></textarea>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px;">Un candidato por línea: Nombre, teléfono</div>
+        <!-- Links -->
+        <div id="envioSec-links">
+          <div class="card" style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Link del portal líder</div>
+            <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;">
+              <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareLiderUrl">cargando...</span>
+              <button class="btn btn-secondary btn-sm" onclick="copiarLinkLider()" style="flex-shrink:0;">Copiar link</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;">Comparte con líderes para acceder con su DNI</div>
           </div>
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Puesto al que aplican</label>
-            <select id="envioJobSelect" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none;"></select>
+          <div class="card">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Link de entrevista IA</div>
+            <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;">
+              <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="shareUrl">cargando...</span>
+              <button class="btn btn-secondary btn-sm" onclick="copyLink()" style="flex-shrink:0;">Copiar link</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;">Comparte con candidatos para la entrevista inicial</div>
           </div>
-          <button class="btn btn-accent" onclick="generarMensajes()" style="align-self:flex-start;">Generar mensajes</button>
         </div>
-        <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:10px;"></div>
-      </div>
-    </div>
 
-    <!-- Sección 3: Templates de mensajes -->
-    <div class="card" style="margin-bottom:16px;" id="templateEditorSection" style="display:none;">
-      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Templates de mensajes</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:0.5px solid var(--border2);padding-bottom:12px;">
-        <button onclick="switchTemplateTab('whatsapp')" id="tplTabWA" style="font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;">WhatsApp candidato</button>
-        <button onclick="switchTemplateTab('email_cand')" id="tplTabEmail" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email candidato</button>
-        <button onclick="switchTemplateTab('email_lider')" id="tplTabLider" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email líder</button>
-        <button onclick="switchTemplateTab('email_adm')" id="tplTabAdm" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Adm.</button>
-        <button onclick="switchTemplateTab('email_seg')" id="tplTabSeg" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Seguridad</button>
+        <!-- WhatsApp -->
+        <div id="envioSec-whatsapp" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Envío masivo por WhatsApp</div>
+              <button onclick="mostrarTemplateEditor('whatsapp')" style="font-size:11px;padding:3px 10px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">&#9998; Editar template</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div>
+                  <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lista de candidatos</label>
+                  <textarea id="candidatosList" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;resize:none;height:110px;color:var(--text);box-sizing:border-box;" placeholder="Nombre, teléfono&#10;Juan Pérez, 987654321&#10;María López, 912345678"></textarea>
+                  <div style="font-size:10px;color:var(--muted);margin-top:3px;">Un candidato por línea: Nombre, teléfono</div>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Puesto al que aplican</label>
+                  <select id="envioJobSelect" style="width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none;"></select>
+                </div>
+                <button class="btn btn-accent" onclick="generarMensajes()" style="align-self:flex-start;">Generar mensajes</button>
+              </div>
+              <div id="mensajesPanel" style="display:flex;flex-direction:column;gap:10px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Templates -->
+        <div id="envioSec-templates" style="display:none;">
+          <div class="card" id="templateEditorSection">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Templates de mensajes</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;border-bottom:0.5px solid var(--border2);padding-bottom:12px;">
+              <button onclick="switchTemplateTab('whatsapp')" id="tplTabWA" style="font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;">WhatsApp candidato</button>
+              <button onclick="switchTemplateTab('email_cand')" id="tplTabEmail" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email candidato</button>
+              <button onclick="switchTemplateTab('email_lider')" id="tplTabLider" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Email líder</button>
+              <button onclick="switchTemplateTab('email_adm')" id="tplTabAdm" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Adm.</button>
+              <button onclick="switchTemplateTab('email_seg')" id="tplTabSeg" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Onboarding Seguridad</button>
+              <button onclick="switchTemplateTab('reporte_ingresos')" id="tplTabReporte" style="font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;">Reporte de Ingresos</button>
+            </div>
+            <div id="templateEditorContent"></div>
+          </div>
+        </div>
+
+        <!-- Reporte -->
+        <div id="envioSec-reporte" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Reporte de ingresos</div>
+              <button class="btn btn-secondary btn-sm" onclick="renderReporteIngresos()">&#8635; Actualizar</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Candidatos en Trámites de Ingreso pendientes de notificar a Administración de Personal y Seguridad.</div>
+            <div id="reporteIngresosPanel">
+              <div style="font-size:12px;color:var(--muted);font-style:italic;">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documentos -->
+        <div id="envioSec-docs" style="display:none;">
+          <div class="card">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Documentos de trámites de ingreso</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Links incluidos automáticamente en el email al candidato elegido.</div>
+            <div id="docsBiblioteca" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+            <button class="btn btn-secondary btn-sm" onclick="agregarDocIngreso()">+ Agregar documento</button>
+          </div>
+        </div>
+
+        <!-- Onboarding -->
+        <div id="envioSec-onboarding" style="display:none;">
+          <div class="card" id="onboardingConfigSection">
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Configuración de onboarding</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Emails que recibirán notificación cuando se confirme el ingreso de un candidato.</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#534AB7;flex-shrink:0;">AP</div>
+                  <span style="font-size:12px;color:var(--text);">Adm. Personal</span>
+                </div>
+                <input type="email" id="emailAdmPersonal" placeholder="admpersonal@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
+              </div>
+              <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3B6D11;flex-shrink:0;">SE</div>
+                  <span style="font-size:12px;color:var(--text);">Seguridad</span>
+                </div>
+                <input type="email" id="emailSeguridad" placeholder="seguridad@perufarma.com" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;width:100%;box-sizing:border-box;">
+              </div>
+              <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#FAEEDA;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#854F0B;flex-shrink:0;">LI</div>
+                  <span style="font-size:12px;color:var(--text);">Líder</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);padding:7px 10px;background:var(--surface2);border-radius:8px;border:0.5px solid var(--border2);">Se toma del perfil del puesto automáticamente</div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+                <button class="btn btn-accent" onclick="guardarConfigOnboarding()">Guardar configuración</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <div id="templateEditorContent"></div>
     </div>
 
       </div>
@@ -694,7 +761,7 @@ a[title]{cursor:pointer;}
     <div id="candLayoutWrap" style="display:flex;border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;height:calc(100vh - 260px);min-height:520px;">
 
       <!-- SIDEBAR solicitudes -->
-      <div id="candSidebar" style="width:230px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
+      <div id="candSidebar" style="width:220px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
         <div style="padding:10px;border-bottom:0.5px solid var(--border2);">
           <input id="buscarSolicitud_cand" oninput="renderCandSidebar()" placeholder="Buscar solicitud..." style="width:100%;font-size:12px;padding:6px 10px;border-radius:8px;border:0.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
         </div>
@@ -726,6 +793,11 @@ a[title]{cursor:pointer;}
       </div>
     </div>
     <div id="dashboardContent"><div class="empty-state">Cargando métricas...</div></div>
+  </div>
+
+  <!-- VISTA LÍDER (pestaña interna del reclutador) -->
+  <div class="panel" id="tab-lider">
+    <div id="tabLiderContent"></div>
   </div>
 
 </div><!-- /reclutadorApp -->
@@ -806,12 +878,21 @@ a[title]{cursor:pointer;}
                 <select id="ll_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
                   <option value="">Selecciona...</option>
                   <option value="60">Gerente / Sub Gerente</option>
-                  <option value="35">Jefe / Supervisor</option>
-                  <option value="30e">Especialista / Coordinador</option>
-                  <option value="30">Analista / Ejecutivo</option>
-                  <option value="30">T&eacute;cnico / Asistente</option>
+                  <option value="45">Jefe / Supervisor</option>
+                  <option value="35e">Especialista / Coordinador</option>
+                  <option value="30">Analista / Asistente</option>
                   <option value="25">Practicante / Auxiliar</option>
                 </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Horario *</label>
+                <input type="text" id="ll_horario" placeholder="Ej: Lunes a Viernes 8am-6pm" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
+              </div>
+              <div class="form-group">
+                <label>Email del l&iacute;der *</label>
+                <input type="email" id="ll_emailLider" placeholder="Ej: jperez@perufarma.com.pe" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);">
               </div>
             </div>
             <div class="form-group"><label>Motivo *</label>
@@ -832,7 +913,8 @@ a[title]{cursor:pointer;}
               </div>
             </div>
             <div class="form-group"><label>Descripci&oacute;n y requisitos *</label><textarea id="ll_desc" style="height:120px;" placeholder="Describe el perfil que necesitas..."></textarea></div>
-            <div class="form-group"><label>Tu DNI (para seguimiento)</label><input type="text" id="ll_dni" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+            <div class="form-group"><label>Requisitos deseables</label><textarea id="ll_deseables" style="height:80px;" placeholder="Ej: Inglés intermedio, manejo de Excel avanzado..." style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;color:var(--text);resize:vertical;"></textarea></div>
+<div class="form-group"><label>Tu DNI (para seguimiento)</label><input type="text" id="ll_dni" maxlength="8" placeholder="Ej: 12345678" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
             <button class="btn btn-accent" onclick="guardarSolicitudLogin()" style="width:100%;">Enviar solicitud &rarr;</button>
             <button class="btn btn-secondary" onclick="toggleFormLiderLogin()" style="width:100%;">Cancelar</button>
           </div>
@@ -947,10 +1029,9 @@ a[title]{cursor:pointer;}
             <select id="lf_nivel" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;width:100%;">
               <option value="">Selecciona...</option>
               <option value="60">Gerente / Sub Gerente (60 días)</option>
-              <option value="35">Jefe / Supervisor (35 días)</option>
-              <option value="30e">Especialista / Coordinador (30 días)</option>
-              <option value="30">Analista / Ejecutivo (30 días)</option>
-              <option value="30">Técnico / Asistente (30 días)</option>
+              <option value="45">Jefe / Supervisor (45 días)</option>
+              <option value="35e">Especialista / Coordinador (35 días)</option>
+              <option value="30">Analista / Asistente (30 días)</option>
               <option value="25">Practicante / Auxiliar (25 días)</option>
             </select>
           </div>
@@ -993,7 +1074,7 @@ a[title]{cursor:pointer;}
       <div style="display:flex;gap:0;border:0.5px solid var(--border2);border-radius:14px;overflow:hidden;min-height:600px;">
 
         <!-- Columna izquierda: lista de procesos -->
-        <div style="width:260px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
+        <div style="width:220px;flex-shrink:0;border-right:0.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;">
           <div style="padding:14px 16px;border-bottom:0.5px solid var(--border2);">
             <div style="font-size:13px;font-weight:500;color:var(--text);">Mis procesos</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;">Clic en un proceso para gestionar</div>
@@ -1181,9 +1262,9 @@ function cargarPuestosDefault() {
 
 const PLAZOS = {
   '60':{label:'Gerente / Sub Gerente',dias:60},
-  '35':{label:'Jefe / Supervisor',dias:35},
-  '30e':{label:'Especialista / Coordinador',dias:30},
-  '30':{label:'Analista / Ejecutivo / Técnico / Asistente',dias:30},
+  '45':{label:'Jefe / Supervisor',dias:45},
+  '35e':{label:'Especialista / Coordinador',dias:35},
+  '30':{label:'Analista / Asistente',dias:30},
   '25':{label:'Practicante / Auxiliar',dias:25}
 };
 
@@ -1356,7 +1437,9 @@ var DEFAULT_TEMPLATES = {
   email_seg_asunto: 'Nuevo ingreso — Activar accesos: {nombre}',
   email_seg: 'Estimado equipo de Seguridad,\n\nLes comunicamos el ingreso del siguiente colaborador:\n\n• Nombre: {nombre}\n• DNI: {dni}\n• Puesto: {puesto}\n• Sede: {sede}\n• Fecha de ingreso: {fechaIngreso}\n\nAcciones requeridas:\n• Activar acceso a las instalaciones\n• Uniforme — Talla: {tallaUniforme}\n• EPPs — Calzado: {tallaCalzado} / Casco: {tallaCasco}\n\nAnte cualquier consulta, contáctenos.\n\nEquipo GTH — Perufarma S.A.',
   email_lider_alta_asunto: 'Alta de nuevo colaborador: {nombre} — {puesto}',
-  email_lider_alta: 'Hola {nombreLider},\n\nTe informamos que {nombre} se incorporará como {puesto} a partir del {fechaIngreso} en {sede}.\n\nTe pedimos coordinar:\n• Inducción al puesto y equipo\n• Acceso a herramientas y sistemas del área\n\nAnte cualquier consulta, contáctenos.\n\nEquipo GTH — Perufarma S.A.'
+  email_lider_alta: 'Hola {nombreLider},\n\nTe informamos que {nombre} se incorporará como {puesto} a partir del {fechaIngreso} en {sede}.\n\nTe pedimos coordinar:\n• Inducción al puesto y equipo\n• Acceso a herramientas y sistemas del área\n\nAnte cualquier consulta, contáctenos.\n\nEquipo GTH — Perufarma S.A.',
+  reporte_ingresos_asunto: 'Reporte de Ingresos — Perufarma S.A. — {fecha}',
+  reporte_ingresos: 'Estimado equipo,\n\nLes comunicamos los candidatos que iniciarán sus trámites de ingreso:\n\n{tabla}\n{docs}\nSaludos,\nEquipo de Gestión del Talento Humano - Perufarma S.A.',
 };
 
 function getTemplates() {
@@ -1378,14 +1461,13 @@ function aplicarVariables(template, vars) {
 }
 
 function mostrarTemplateEditor(tab) {
-  var sec = document.getElementById('templateEditorSection');
-  if (sec) { sec.style.display = 'block'; sec.scrollIntoView({behavior:'smooth'}); }
+  switchEnvioSec('templates', null);
   switchTemplateTab(tab || 'whatsapp');
 }
 
 function switchTemplateTab(tab) {
-  var tabs = ['whatsapp','email_cand','email_lider','email_adm','email_seg'];
-  var btnIds = ['tplTabWA','tplTabEmail','tplTabLider','tplTabAdm','tplTabSeg'];
+  var tabs = ['whatsapp','email_cand','email_lider','email_adm','email_seg','reporte_ingresos'];
+  var btnIds = ['tplTabWA','tplTabEmail','tplTabLider','tplTabAdm','tplTabSeg','tplTabReporte'];
   var activeStyle = 'font-size:12px;padding:5px 12px;border-radius:7px;border:none;background:#E8623A;color:white;cursor:pointer;';
   var inactiveStyle = 'font-size:12px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;';
   tabs.forEach(function(t,i){
@@ -1405,7 +1487,7 @@ function switchTemplateTab(tab) {
     email_seg: '{nombre} · {dni} · {puesto} · {sede} · {fechaIngreso} · {tallaUniforme} · {tallaCalzado} · {tallaCasco}'
   };
 
-  var label = {whatsapp:'WhatsApp al candidato', email_cand:'Email al candidato', email_lider:'Email al líder (nueva solicitud)', email_adm:'Email Adm. Personal (onboarding)', email_seg:'Email Seguridad (onboarding)'}[tab];
+  var label = {whatsapp:'WhatsApp al candidato', email_cand:'Email al candidato', email_lider:'Email al líder (nueva solicitud)', email_adm:'Email Adm. Personal (onboarding)', email_seg:'Email Seguridad (onboarding)', reporte_ingresos:'Reporte de Ingresos'}[tab];
   var hasAsunto = tab !== 'whatsapp';
   var asuntoKey = tab + '_asunto';
 
@@ -1515,7 +1597,15 @@ var _appInitialised = false;
   }
 })();
 
-var candidateUrl = window.location.origin + '/candidato.html';
+function _getBaseUrl() {
+  var origin = window.location.origin;
+  if (!origin || origin === 'null') origin = 'https://recruitai.perufarma.com.pe';
+  var path = window.location.pathname || '/';
+  return { origin: origin, path: path };
+}
+
+var _base = _getBaseUrl();
+var candidateUrl = _base.origin + '/candidato.html';
 var _suEl = document.getElementById('shareUrl'); if (_suEl) _suEl.textContent = candidateUrl;
 poblarSelectPuestosDefault();
 
@@ -1603,12 +1693,20 @@ function showTab(id, btn) {
   document.querySelectorAll('#reclutadorApp .nav-tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('tab-'+id).classList.add('active');
   if (btn) btn.classList.add('active');
-  if (id === 'envio') { renderEnvioSelect(); renderReporteIngresos(); renderDocsBiblioteca(); }
+  if (id === 'envio') { renderEnvioSelect(); _poblarLinkLider(); switchEnvioSec('links', null); }
+  if (id === 'puestos') { renderJobsList(); }
   // Cerrar formularios flotantes al cambiar de pestaña
   var cmf = document.getElementById('candManualForm');
   if (cmf) cmf.classList.remove('open');
   var cpdf = document.getElementById('cargaPDFPanel');
   if (cpdf) cpdf.style.display = 'none';
+  // Limpiar panel de detalle de puesto al salir de puestos
+  if (id !== 'puestos') {
+    var jdp = document.getElementById('jobDetallePanelContent');
+    if (jdp) jdp.innerHTML = '';
+    var ajf = document.getElementById('addJobForm');
+    if (ajf) ajf.classList.remove('open');
+  }
   // Limpiar candidatos al salir de esa pestaña
   if (id !== 'candidatos') {
     var cpp = document.getElementById('candidatosPorPuesto');
@@ -1620,6 +1718,16 @@ function showTab(id, btn) {
       cpp2.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">Cargando...</div>';
     }
   }
+  // Si se sale del tab líder, devolver el liderApp a su contenedor original
+  if (id !== 'lider') {
+    var liderApp = document.getElementById('liderApp');
+    var tabLiderContent = document.getElementById('tabLiderContent');
+    if (liderApp && tabLiderContent && tabLiderContent.contains(liderApp)) {
+      tabLiderContent.removeChild(liderApp);
+      liderApp.style.display = 'none';
+      document.body.appendChild(liderApp);
+    }
+  }
 }
 
 // ══════════════════════════════════
@@ -1628,14 +1736,44 @@ function showTab(id, btn) {
 function mostrarLider() {
   // Guardar modo líder en storage Y actualizar URL para persistir en recargas
   sessionStorage.setItem('recruitai_modo', 'lider');
+  try {
     if (window.history && window.history.pushState) {
-    window.history.pushState({}, '', '?rol=lider');
-  }
+      window.history.pushState({}, '', '?rol=lider');
+    }
+  } catch(e) { /* pushState no disponible en este entorno */ }
   document.getElementById('reclutadorApp').style.display = 'none';
   document.getElementById('liderApp').style.display = 'block';
   document.getElementById('liderLoginView').style.display = 'flex';
   document.getElementById('liderDashboard').style.display = 'none';
   document.getElementById('liderNombreNav').textContent = '';
+  liderDni = null;
+  setTimeout(function(){
+    var inp = document.getElementById('liderDniInput');
+    if (inp) { inp.value = ''; inp.focus(); }
+    poblarSelectPuestosDefault();
+  }, 100);
+}
+
+// ══════════════════════════════════
+// LÍDER — vista de prueba dentro del panel reclutador (pestaña Líder)
+// Mueve el liderApp al contenedor de la pestaña sin cambiar la URL
+// ══════════════════════════════════
+function renderLiderEnTab() {
+  var contenedor = document.getElementById('tabLiderContent');
+  var liderApp = document.getElementById('liderApp');
+  if (!contenedor || !liderApp) return;
+  // Mover el contenido del liderApp dentro del tab (sin clonarlo, para preservar listeners)
+  contenedor.innerHTML = '';
+  contenedor.appendChild(liderApp);
+  liderApp.style.display = 'block';
+  liderApp.style.minHeight = '';
+  // Resetear al login del líder
+  var loginView = document.getElementById('liderLoginView');
+  var dashboard = document.getElementById('liderDashboard');
+  var nombreNav = document.getElementById('liderNombreNav');
+  if (loginView) loginView.style.display = 'flex';
+  if (dashboard) dashboard.style.display = 'none';
+  if (nombreNav) nombreNav.textContent = '';
   liderDni = null;
   setTimeout(function(){
     var inp = document.getElementById('liderDniInput');
@@ -1779,9 +1917,9 @@ function descargarBackup() {
   var hoy = new Date();
   var rowsPuestos = requisiciones.map(function(r) {
     var etapas = r.etapas || {};
-    var etapaActual = ['tramites','oferta','entrevista','evaluacion','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
-    var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria',evaluacion:'Evaluación',
-      entrevista:'Entrevista',oferta:'Oferta',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
+    var etapaActual = ['tramites','oferta','entrevista','validacionCVs','convoc','hc'].find(function(e){ return !etapas[e]; }) || 'Cubierto';
+    var etapaNombre = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',validacionCVs:'Validación CVs Líder',
+      entrevista:'Entrevista Técnica',oferta:'Candidato Elegido / Carta Oferta',tramites:'Trámites',Cubierto:'Cubierto'}[etapaActual]||etapaActual;
     var candPuesto = _allResults.filter(function(c){ return c.puesto&&r.puesto&&c.puesto.toLowerCase()===r.puesto.toLowerCase(); });
     var conLider = candPuesto.filter(function(c){ return c.visibleLider; }).length;
     var diasLimite = r.fechaLimiteRaw ? Math.ceil((new Date(r.fechaLimiteRaw)-hoy)/(1000*60*60*24)) : '';
@@ -1827,16 +1965,21 @@ function verificarRecordatorioBackup() {
 // LINK DEL LÍDER
 // ══════════════════════════════════
 function copiarLinkLider() {
-  var url = window.location.origin + '/lider';
+  var url = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(function() {
-      toast('Link del líder copiado ✓ — ' + url);
+      toast('Link del portal líder copiado ✓');
     }).catch(function() {
       prompt('Copia este link y compártelo con el líder:', url);
     });
   } else {
     prompt('Copia este link y compártelo con el líder:', url);
   }
+}
+
+function _poblarLinkLider() {
+  var el = document.getElementById('shareLiderUrl');
+  if (el) el.textContent = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
 }
 
 function cerrarSesionLider() {
@@ -1879,12 +2022,12 @@ function accederLider() {
 // ETAPAS DEL PROCESO
 // ══════════════════════════════════
 var ETAPAS = [
-  { id:'hc',        label:'Validar HC y Presupuesto',          auto: false },
-  { id:'convoc',    label:'Convocatoria Interna/Externa',       auto: true  },
-  { id:'evaluacion',label:'Evaluación y Longlist',              auto: true  },
-  { id:'entrevista',label:'Entrevista Técnica y Feedback',      auto: true  },
-  { id:'oferta',    label:'Envío de Oferta Laboral',            auto: false },
-  { id:'tramites',  label:'Trámites de Ingreso',                auto: false }
+  { id:'hc',            label:'Validar HC y Presupuesto',          auto: false, lider: false },
+  { id:'convoc',        label:'Convocatoria y Evaluación GTH',     auto: true,  lider: false },
+  { id:'validacionCVs', label:'Validación de CVs del Líder',       auto: true,  lider: true  },
+  { id:'entrevista',    label:'Entrevista Técnica y Feedback',     auto: true,  lider: false },
+  { id:'oferta',        label:'Candidato Elegido / Carta Oferta',  auto: true,  lider: false },
+  { id:'tramites',      label:'Trámites de Ingreso',               auto: false, lider: false }
 ];
 
 
@@ -1913,7 +2056,7 @@ function exportarReportes() {
     var etapaIdx = calcularEtapaNumero(r);
     var etapaLabel = ETAPAS[etapaIdx] ? ETAPAS[etapaIdx].label : '—';
     var dias = r.fechaInicio ? Math.floor((new Date()-new Date(r.fechaInicio.split('/').reverse().join('-')))/(1000*60*60*24)) : '—';
-    var sla = r.nivel ? (parseInt(r.nivel)||30) : 30;
+    var sla = r.diasPlazo || (PLAZOS[r.nivelVal||r.nivel] ? PLAZOS[r.nivelVal||r.nivel].dias : 30);
     var avance = Math.round((etapaIdx/ETAPAS.length)*100);
     var candsPuesto = _allResults.filter(function(c){ return String(c.reqId)===String(r.id)||(c.puesto===r.puesto&&!c.reqId); });
     var aptos = feedbacks.filter(function(f){ return (r.reqId?String(f.reqId)===String(r.id):f.puesto===r.puesto) && f.apto===true; }).length;
@@ -1941,7 +2084,7 @@ function exportarReportes() {
     var etapaIdx = calcularEtapaNumero(r);
     var etapaLabel = ETAPAS[etapaIdx] ? ETAPAS[etapaIdx].label : '—';
     var diasTrans = '—', diasRest = '—', estadoSLA = '—';
-    var sla = parseInt(r.nivel)||30;
+    var sla = r.diasPlazo || (PLAZOS[r.nivelVal||r.nivel] ? PLAZOS[r.nivelVal||r.nivel].dias : 30);
     if (r.fechaInicio) {
       var inicio = new Date(r.fechaInicio.split('/').reverse().join('-'));
       diasTrans = Math.floor((new Date()-inicio)/(1000*60*60*24));
@@ -1988,12 +2131,9 @@ function exportarReportes() {
 function calcularEtapaNumero(r) {
   if (!r || !r.etapas) return 0;
   var e = r.etapas;
-  if (e.tramites) return 6;
-  if (e.oferta)   return 5;
-  if (e.entrevista||e.feedback) return 4;
-  if (e.evaluacion||e.longlist) return 3;
-  if (e.convocatoria) return 2;
-  if (e.hc) return 1;
+  if (e.tramites) return 5;
+  if (e.oferta)   return 4;
+  if (e.hc)       return 1;
   return 0;
 }
 
@@ -2001,31 +2141,38 @@ function calcularEtapaActual(req, candidatos, feedbacks) {
   if (!req) return 0;
   var etapasCompletadas = req.etapas || {};
 
-  // Etapa 0: HC — manual
+  // Etapa 0: HC — manual (reclutador confirma)
   if (!etapasCompletadas.hc) return 0;
-  // Etapa 1: Convocatoria — automática cuando hay candidatos registrados EN ESTA SOLICITUD
+
+  // Etapa 1: Convocatoria y Evaluación GTH — auto cuando hay candidatos registrados en la req
   var hayCandidatos = candidatos.some(function(c){
     if (c.reqId) return c.reqId === req.id || c.reqId === parseInt(req.id);
     return c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
   });
   if (!hayCandidatos) return 1;
-  // Etapa 2: Evaluación y Longlist — candidatos visibles para el líder EN ESTA SOLICITUD
+
+  // Etapa 2: Validación de CVs del Líder — auto cuando hay candidatos visibles al líder
   var hayVisibles = candidatos.some(function(c){
     var matchReq = c.reqId ? (c.reqId === req.id || c.reqId === parseInt(req.id))
                            : (c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim());
     return matchReq && c.visibleLider;
   });
   if (!hayVisibles) return 2;
-  // Etapa 3: Entrevista/Feedback — hay feedback del líder EN ESTA SOLICITUD
-  var hayFeedback = feedbacks.some(function(f){
-    if (f.reqId) return f.reqId === req.id || f.reqId === parseInt(req.id);
-    return f.puesto && req.puesto && f.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim();
+
+  // Etapa 3: Entrevista Técnica y Feedback — auto cuando al menos 1 candidato de la req tiene agendado=true
+  var hayAgendado = candidatos.some(function(c){
+    var matchReq = c.reqId ? (c.reqId === req.id || c.reqId === parseInt(req.id))
+                           : (c.puesto && req.puesto && c.puesto.toLowerCase().trim()===req.puesto.toLowerCase().trim());
+    return matchReq && c.agendado;
   });
-  if (!hayFeedback) return 3;
-  // Etapa 4: Oferta — manual
+  if (!hayAgendado) return 3;
+
+  // Etapa 4: Candidato Elegido / Carta Oferta — auto cuando elegirCandidato() graba etapas.oferta
   if (!etapasCompletadas.oferta) return 4;
-  // Etapa 5: Trámites — manual
+
+  // Etapa 5: Trámites de Ingreso — manual (reclutador confirma) → marca req Cubierto
   if (!etapasCompletadas.tramites) return 5;
+
   return 5;
 }
 
@@ -2057,8 +2204,8 @@ function renderLineaTiempo(req, candidatos, feedbacks, isReclutador) {
     // Label
     html += '<div style="font-size:10px;color:'+(active?'#e8623a':done?'#2d7a4f':'var(--muted)')+';text-align:center;margin-top:5px;font-weight:'+(active?'600':'400')+';line-height:1.3;padding:0 2px;">'+e.label+'</div>';
 
-    // Botón manual si es reclutador y la etapa es manual y es la actual
-    if (isReclutador && !e.auto && active) {
+    // Botón de avance solo para etapas manuales (hc y tramites) — el resto son automáticas
+    if (active && isReclutador && !e.auto) {
       html += '<button data-reqid="'+req.id+'" data-etapa="'+e.id+'" onclick="avanzarEtapa(this.dataset.reqid, this.dataset.etapa)" style="margin-top:4px;font-size:10px;padding:2px 8px;background:#e8623a;color:white;border:none;border-radius:4px;cursor:pointer;">Confirmar</button>';
     }
     html += '</div>';
@@ -2133,7 +2280,7 @@ function renderLiderKpis() {
       return misPuestos.length===0||misPuestos.indexOf(c.puesto)!==-1;
     });
     var pendientes = misCands.filter(function(c){return !fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&(f.apto===true||f.apto===false);});});
-    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/5*100);});
+    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/4*100);});
     var avanceProm = avances.length ? Math.round(avances.reduce(function(s,v){return s+v;},0)/avances.length) : 0;
 
     var elActivos = document.getElementById('kpiActivos');
@@ -2176,7 +2323,7 @@ function renderLiderDashboard() {
     var noAptos = evaluados.filter(function(c){return fbs.find(function(f){return f.candidato===c.candidato&&f.puesto&&c.puesto&&f.puesto.toLowerCase().trim()===c.puesto.toLowerCase().trim()&&f.apto===false;});});
 
     // % avance promedio procesos activos
-    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/5*100);});
+    var avances = activos.map(function(r){return Math.round(calcularEtapaActual(r,results,fbs)/4*100);});
     var avanceProm = avances.length ? Math.round(avances.reduce(function(s,v){return s+v;},0)/avances.length) : 0;
     var avanceColor = avanceProm>=66?'#2d7a4f':avanceProm>=33?'#b8760a':'#c0392b';
 
@@ -2284,7 +2431,7 @@ function liderDashClick(tipo) {
       if (!lista.length) { html += '<div style="color:var(--muted);font-size:13px;">Sin procesos.</div>'; }
       lista.forEach(function(r){
         var etapa = calcularEtapaActual(r,results,fbs);
-        var av = Math.round(etapa/5*100);
+        var av = Math.round(etapa/4*100);
         html += '<div onclick="switchLiderTab(&apos;procesos&apos;);setTimeout(function(){seleccionarProceso('+r.id+')},100)" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border2);cursor:pointer;">'
           +'<span style="font-size:13px;color:var(--text);">'+r.puesto+'</span>'
           +'<span style="font-size:12px;color:var(--muted);">'+av+'% avance</span>'
@@ -2292,7 +2439,7 @@ function liderDashClick(tipo) {
       });
     } else if (tipo==='avance') {
       activos.forEach(function(r){
-        var etapa=calcularEtapaActual(r,results,fbs); var av=Math.round(etapa/5*100);
+        var etapa=calcularEtapaActual(r,results,fbs); var av=Math.round(etapa/4*100);
         var c=av>=66?'#2d7a4f':av>=33?'#b8760a':'#c0392b';
         html += '<div onclick="switchLiderTab(&apos;procesos&apos;);setTimeout(function(){seleccionarProceso('+r.id+')},100)" style="padding:8px 0;border-bottom:0.5px solid var(--border2);cursor:pointer;">'
           +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text);">'+r.puesto+'</span><span style="font-size:12px;font-weight:500;color:'+c+';">'+av+'%</span></div>'
@@ -2484,24 +2631,24 @@ function renderDetalleProcesoSeleccionado(reqId) {
         +'<div><div style="font-size:12px;font-weight:500;color:#854F0B;margin-bottom:1px;">Propuesta de cambio al perfil enviada</div>'
           +'<div style="font-size:11px;color:#854F0B;">Pendiente de aprobación por el equipo GTH.</div></div>'
       +'</div>';
-    } else if (r.estado === 'Pendiente' || etapaActual <= 1) {
+    } else if (r.estado === 'Pendiente' || etapaActual === 0) {
       bannerHtml = '<div style="background:#EEEDFE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
         +'<div style="width:28px;height:28px;border-radius:50%;background:#534AB7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:500;color:white;">i</div>'
         +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#3C3489;margin-bottom:1px;">Revisa el perfil del puesto antes de iniciar la búsqueda</div>'
           +'<div style="font-size:11px;color:#534AB7;">Opcional · Tus cambios pasarán por validación del equipo GTH.</div></div>'
         +'<button onclick="toggleEditPerfilLider('+r.id+')" style="font-size:11px;padding:4px 12px;border-radius:7px;border:0.5px solid #534AB7;background:transparent;color:#534AB7;cursor:pointer;flex-shrink:0;white-space:nowrap;">Revisar perfil</button>'
       +'</div>';
+    } else if (etapaActual === 1) {
+      bannerHtml = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--muted);">&#8987;</div>'
+        +'<div><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px;">El equipo GTH está evaluando candidatos</div>'
+          +'<div style="font-size:11px;color:var(--muted);">Pronto tendrás CVs disponibles para revisar.</div></div>'
+      +'</div>';
     } else if (etapaActual >= 2 && candsPendientes > 0) {
       bannerHtml = '<div style="background:#EAF3DE;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
         +'<div style="width:28px;height:28px;border-radius:50%;background:#3B6D11;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:white;">↓</div>'
         +'<div style="flex:1;"><div style="font-size:12px;font-weight:500;color:#27500A;margin-bottom:1px;">Tienes '+candsPendientes+' candidato'+(candsPendientes>1?'s':'')+' pendiente'+(candsPendientes>1?'s':'')+' de evaluación</div>'
           +'<div style="font-size:11px;color:#3B6D11;">Evalúalo'+(candsPendientes>1?'s':'')+' con estrellas para avanzar el proceso.</div></div>'
-      +'</div>';
-    } else if (etapaActual >= 1 && cands.length === 0) {
-      bannerHtml = '<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin:14px 0;">'
-        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--muted);">&#8987;</div>'
-        +'<div><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px;">El equipo GTH está buscando candidatos</div>'
-          +'<div style="font-size:11px;color:var(--muted);">Te notificaremos cuando haya perfiles listos para evaluar.</div></div>'
       +'</div>';
     }
     html += bannerHtml;
@@ -2559,20 +2706,17 @@ function renderDetalleProcesoSeleccionado(reqId) {
         // Comentario del reclutador
         var recComent = cand.comentarioReclutador||cand.observacion||'';
         var recHtml = recComent ? '<div style="font-size:11px;background:#f0f7ee;border-radius:6px;padding:6px 10px;color:#1e5c38;margin-bottom:8px;">&#128203; GTH: '+recComent+'</div>' : '';
-        return '<div style="padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:0.5px solid var(--border2);">'
-          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'
-            + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'
-            + '<div style="flex:1;"></div>'
-            + aptoTag + elegidoTag + (cvLink ? ' '+cvLink : '')
-          + '</div>'
-          + (infoHtml ? '<div style="margin-bottom:8px;">'+infoHtml+'</div>' : '')
-          + recHtml
-          + dimHtml
-          + comentHtml
-          + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
-            + btnApto + btnNoApto + btnElegir
-          + '</div>'
-        + '</div>';
+        // Botón programar entrevista — en el header de cada candidato
+        var btnProgramar = !cand.agendado
+          ? '<button style="font-size:11px;padding:4px 10px;background:#2563A8;color:white;border:none;border-radius:6px;">Programar entrevista</button>'
+          : '<span style="font-size:10px;background:#EAF3DE;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 Entrevista agendada</span>';
+        // Evaluación solo si agendada
+        var evalBlock = cand.agendado
+          ? (recHtml + dimHtml + comentHtml
+             + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+             + btnApto + btnNoApto + btnElegir + '</div>')
+          : '<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic;">La evaluacion estara disponible una vez que el reclutador agende la entrevista.</div>';
+        return '<div style="padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:0.5px solid var(--border2);">'          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'          + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'          + '<div style="flex:1;"></div>'          + aptoTag + elegidoTag + (cvLink ? ' '+cvLink : '') + ' ' + btnProgramar          + '</div>'          + (infoHtml ? '<div style="margin-bottom:8px;">'+infoHtml+'</div>' : '')          + evalBlock          + '</div>';
       }).join('');
       html += '</div>';
     } else {
@@ -2586,7 +2730,7 @@ function renderDetalleProcesoSeleccionado(reqId) {
       bita.slice().reverse().forEach(function(b){
         html += '<div style="font-size:12px;line-height:1.7;display:flex;gap:8px;align-items:flex-start;">'
           + '<span style="color:var(--muted);white-space:nowrap;">'+b.fecha+' '+b.hora+'</span>'
-          + '<span style="color:var(--text);">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+b.msg+'</span>'
+          + '<span style="color:var(--text);">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+(b.msg||b.texto||'')+'</span>'
           + '</div>';
       });
       html += '</div>';
@@ -2665,26 +2809,42 @@ function guardarDesiderablesLider(id) {
 // ══════════════════════════════════
 // ALERTAS VENCIMIENTO
 // ══════════════════════════════════
-var SLA_ETAPA = {hc:2,convoc:3,evaluacion:8,entrevista:5,oferta:3,tramites:5};
+// SLA por etapa según nivel del puesto (días calendario)
+// hc=3 y oferta=3 fijos para todos. Sumas cierran exactas con el plazo total por nivel.
+var SLA_POR_NIVEL = {
+  '25': {hc:3, convoc:9,  validacionCVs:3, entrevista:7,  oferta:3}, // Practicante/Auxiliar  — 25d
+  '30': {hc:3, convoc:14, validacionCVs:3, entrevista:7,  oferta:3}, // Analista/Técnico      — 30d
+  '35e':{hc:3, convoc:14, validacionCVs:8, entrevista:7,  oferta:3}, // Especialista/Coordinador — 35d
+  '45': {hc:3, convoc:14, validacionCVs:7, entrevista:14, oferta:7}, // Jefe/Supervisor       — 45d
+  '60': {hc:3, convoc:26, validacionCVs:7, entrevista:21, oferta:3}  // Gerente               — 60d
+};
+
+function getSLAParaNivel(nivelVal) {
+  return SLA_POR_NIVEL[nivelVal] || SLA_POR_NIVEL['30'];
+}
+
+// SLA_ETAPA mantiene el fallback de Analista/Técnico para compatibilidad
+var SLA_ETAPA = SLA_POR_NIVEL['30'];
 
 function calcularSLAAlerts() {
   var alerts = [];
   try {
     var hoy = Date.now();
-    var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria',eval:'Evaluaci\u00f3n GTH',longlist:'Longlist',entrevista:'Entrevista/Feedback',oferta:'Oferta Laboral',tramites:'Tr\u00e1mites'};
+var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',validacionCVs:'Validación CVs Líder',entrevista:'Entrevista Técnica',oferta:'Candidato Elegido / Carta Oferta',tramites:'Trámites'};
     if (!Array.isArray(requisiciones)) return alerts;
     requisiciones.forEach(function(r) {
       try {
         if (!r || r.estado==='Cubierto') return;
         var etapas = (r.etapas && typeof r.etapas==='object') ? r.etapas : {};
         var refMs = r.id && r.id > 1000000000000 ? r.id : hoy;
-        var etapasSLA = ['hc','convoc','evaluacion','entrevista','oferta']; // tramites sin SLA
+        var slaTabla = getSLAParaNivel(r.nivelVal || r.nivel);
+        var etapasSLA = ['hc','convoc','validacionCVs','entrevista','oferta']; // tramites sin SLA
         etapasSLA.forEach(function(e, i) {
           if (etapas[e]) return;
           var anteriorOk = i===0 || etapas[etapasSLA[i-1]];
           if (!anteriorOk) return;
           var diasEnEtapa = Math.floor((hoy - refMs) / (1000*60*60*24));
-          var slaMax = (SLA_ETAPA && SLA_ETAPA[e]) ? SLA_ETAPA[e] : 5;
+          var slaMax = slaTabla[e] || SLA_ETAPA[e] || 5;
           if (diasEnEtapa > slaMax) {
             alerts.push({puesto:r.puesto||'—', area:r.area||'', etapa:ETAPA_NOMBRES[e]||e, dias:diasEnEtapa, sla:slaMax, jobId:r.jobId||null});
           }
@@ -2697,7 +2857,7 @@ function calcularSLAAlerts() {
 
 function irAPuesto(jid) {
   showTab('puestos', document.getElementById('btn-puestos'));
-  setTimeout(function(){ abrirDetalleJob(jid); }, 200);
+  setTimeout(function(){ abrirDetalleJob(jid); }, 400);
 }
 
 function verificarAlertas() {
@@ -2782,75 +2942,38 @@ function verificarAlertas() {
 // ══════════════════════════════════
 var editingJobId = null;
 
-function scrollToForm() {
-  setTimeout(function(){
-    var f = document.getElementById('addJobForm');
-    if (f && f.classList.contains('open')) {
-      f.scrollIntoView({behavior:'smooth', block:'start'});
-    }
-  }, 100);
-}
+function scrollToForm() { /* form es modal — no scroll necesario */ }
 
 function toggleForm() {
   editingJobId = null;
   var f = document.getElementById('addJobForm');
-  f.classList.toggle('open');
-  // Restaurar título al abrir en modo creación
-  if (f.classList.contains('open')) {
+  var isOpen = f.classList.contains('open');
+  if (isOpen) {
+    // Cerrar modal
+    f.classList.remove('open');
+    document.body.style.overflow = '';
+  } else {
+    // Abrir modal en modo creación
+    f.classList.add('open');
+    document.body.style.overflow = 'hidden';
     var ft = document.getElementById('formTitle');
-    if (ft) ft.innerHTML = 'Nuevo puesto';
-  }
-  if (f.classList.contains('open')) {
-    ['f_area','f_desc','f_instrucciones','f_emailLider','f_dniLider','f_horario','f_cese','f_reemplazo_nombre'].forEach(function(id){
+    if (ft) ft.innerHTML = 'Nuevo perfil de puesto';
+    // Limpiar campos del perfil
+    ['f_area','f_desc','f_instrucciones'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.value='';
     });
-    ['f_sede','f_nivel','f_motivo'].forEach(function(id){
-      var el=document.getElementById(id); if(el) el.value='';
-    });
-    document.getElementById('plazoInfo').style.display='none';
-    document.getElementById('reemplazoField').style.display='none';
-    document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
-    document.getElementById('formTitle').textContent = 'Nuevo puesto';
-    document.getElementById('saveJobBtn').textContent = 'Guardar cambios';
+    var nivEl = document.getElementById('f_nivel'); if(nivEl) nivEl.value='';
+    var sb = document.getElementById('saveJobBtn'); if(sb) sb.textContent='Guardar perfil';
     var mcw = document.getElementById('motivoCambioWrap'); if(mcw) mcw.style.display='none';
     var mc = document.getElementById('f_motivoCambio'); if(mc) mc.value='';
-    // Resetear selector de puesto
     poblarSelectPuestosDefault();
-    var inp = document.getElementById('f_titulo');
-    if (inp) { inp.value = ''; inp.style.display = 'none'; }
-    document.getElementById('reqSection').style.display = 'block';
-    f.scrollIntoView({behavior:'smooth'});
+    var inp = document.getElementById('f_titulo'); if(inp){inp.value='';inp.style.display='none';}
+    var pp = document.getElementById('plazoInfoPerfil'); if(pp) pp.style.display='none';
   }
 }
 
 
 
-function guardarEditarPerfil() {
-  if (!_editPerfilJobId) return;
-  var g=function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
-  var titulo=g('ep_titulo'), desc=g('ep_desc');
-  if (!titulo) { toast('El nombre del puesto es obligatorio'); return; }
-  if (!desc)   { toast('Las funciones y requisitos son obligatorias'); return; }
-  var updates = {
-    gerencia:g('ep_gerencia'), area:g('ep_area'), titulo:titulo,
-    desc:desc, funciones:desc, minimos:desc,
-    deseables:g('ep_deseables'), liderDeseables:g('ep_deseables'),
-    emailLider:g('ep_emailLider'), dniLider:g('ep_dniLider')
-  };
-  jobs = jobs.map(function(j){ return j.id===_editPerfilJobId?Object.assign({},j,updates):j; });
-  requisiciones = requisiciones.map(function(r){
-    if (r.jobId===_editPerfilJobId||r.id===_editPerfilJobId)
-      return Object.assign({},r,{puesto:titulo,area:updates.area,gerencia:updates.gerencia,minimos:desc,emailLider:updates.emailLider,dniLider:updates.dniLider});
-    return r;
-  });
-  localStorage.setItem('rjobs',JSON.stringify(jobs));
-  localStorage.setItem('rreqs',JSON.stringify(requisiciones));
-  syncJobsToServer(jobs); syncReqsToServer(requisiciones);
-  cerrarModalEditarPerfil(); renderJobsList();
-  var jid = _editPerfilJobId;
-  setTimeout(function(){ abrirDetallePanelJob(jid); }, 150);
-  toast('Perfil actualizado ✓');
-}
 
 
 function calcularPlazoNS() {
@@ -2858,51 +2981,14 @@ function calcularPlazoNS() {
   var fi=document.getElementById('ns_fechaInicio').value;
   var pi=document.getElementById('ns_plazoInfo');
   if (!nivel||!pi) return;
-  var dias=nivel==='30e'?30:parseInt(nivel)||0;
+  var dias=nivel==='35e'?35:parseInt(nivel)||0;
   if (!dias){pi.style.display='none';return;}
   var desde=fi?new Date(fi):new Date();
   var hasta=new Date(desde); hasta.setDate(hasta.getDate()+dias);
   pi.style.display='block';
   pi.textContent='Plazo estimado: '+dias+' días → límite '+hasta.toLocaleDateString('es-PE');
 }
-function toggleReemplazoNS() {
-  var m=document.getElementById('ns_motivo').value;
-  var rf=document.getElementById('ns_reemplazoField');
-  if(rf) rf.style.display=m==='Reemplazo'?'flex':'none';
-}
-function guardarNuevaSolicitud() {
-  if (!_nuevoSolJobId) return;
-  var g=function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
-  var sedeV=g('ns_sede'), sedeO=g('ns_otraSede');
-  var sede=sedeV==='Otras'?(sedeO||'Otras'):sedeV;
-  var horario=g('ns_horario'), nivel=g('ns_nivel'), motivo=g('ns_motivo'), fechaInicio=g('ns_fechaInicio');
-  if (!sede||!horario||!nivel||!motivo||!fechaInicio){toast('Completa todos los campos obligatorios');return;}
-  var job=jobs.find(function(j){return j.id===_nuevoSolJobId;}); if(!job) return;
-  var dias=nivel==='30e'?30:parseInt(nivel)||0;
-  var labels={'15':'Practicante / Auxiliar','20':'Analista / Coordinador','25':'Jefe / Supervisor','30':'Gerente / Subgerente','30e':'Especialista / Consultor'};
-  var nivelLabel=labels[nivel]||nivel;
-  var fechaLimDate=new Date(fechaInicio); if(dias) fechaLimDate.setDate(fechaLimDate.getDate()+dias);
-  var nuevaReq={
-    id:Date.now(), jobId:_nuevoSolJobId,
-    fecha:new Date().toLocaleDateString('es-PE'), fechaCreacion:new Date().toISOString(),
-    puesto:job.titulo, area:job.area||'', gerencia:job.gerencia||'',
-    emailLider:job.emailLider||'', dniLider:job.dniLider||'',
-    sede:sede, horario:horario, nivelVal:nivel, nivel:nivelLabel, motivo:motivo,
-    reemplazoNombre:g('ns_reemplazo_nombre'), cese:g('ns_cese'),
-    fechaInicioRaw:fechaInicio, fechaInicio:new Date(fechaInicio).toLocaleDateString('es-PE'),
-    diasPlazo:dias, fechaLimiteRaw:fechaLimDate.toISOString(),
-    fechaLimite:fechaLimDate.toLocaleDateString('es-PE'),
-    estado:'Pendiente', minimos:job.desc||job.minimos||'',
-    deseables:job.deseables||'', desiderablesCompletados:false, etapas:{}
-  };
-  requisiciones.push(nuevaReq);
-  localStorage.setItem('rreqs',JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-  cerrarModalNuevaSolicitud(); renderJobsList();
-  var jid=_nuevoSolJobId;
-  setTimeout(function(){ abrirDetallePanelJob(jid); },200);
-  toast('Solicitud creada ✓');
-}
+
 
 function toggleEditJob(id) { editJob(id); scrollToForm(); }
 
@@ -2912,14 +2998,18 @@ function editJob(id) {
   editingJobId = id;
   var f = document.getElementById('addJobForm');
   f.classList.add('open');
+  document.body.style.overflow = 'hidden';
   // Actualizar título dinámico
   var ft = document.getElementById('formTitle');
   if (ft) ft.innerHTML = '&#9998; Editando: <span style="color:var(--accent2);">' + (job.titulo||'puesto') + '</span>';
   // Solo poblar campos del puesto (no solicitud)
-  var campos = {f_area:'area',f_desc:'desc',f_instrucciones:'instrucciones',f_emailLider:'emailLider',f_dniLider:'dniLider'};
+  var campos = {f_area:'area',f_desc:'desc',f_instrucciones:'instrucciones'};
   Object.keys(campos).forEach(function(elId){
     var el=document.getElementById(elId); if(el) el.value=job[campos[elId]]||'';
   });
+  // Precargar nivel del puesto
+  var nivEl = document.getElementById('f_nivel');
+  if (nivEl) nivEl.value = job.nivelVal || '';
   // Poblar selectores y mostrar valores actuales del puesto
   poblarSelectAreas();
   var areaSel  = document.getElementById('f_area_sel');
@@ -2977,7 +3067,7 @@ function editJob(id) {
     document.getElementById('plazoInfo').style.display='none';
     document.getElementById('reemplazoField').style.display='none';
   }
-  document.getElementById('reqSection').style.display = 'block';
+
   f.scrollIntoView({behavior:'smooth'});
 }
 
@@ -2985,17 +3075,15 @@ function editJob(id) {
 function saveJobOnly() {
   var titulo = getTituloForm();
   var desc = document.getElementById('f_desc').value.trim();
-  var emailLider = document.getElementById('f_emailLider').value.trim();
-  var dniLider = document.getElementById('f_dniLider').value.trim();
-  if (!titulo||!desc) { toast('Completa nombre y descripción'); return; }
-  if (!emailLider) { toast('Agrega el email del líder'); return; }
-  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
+  var nivelVal = document.getElementById('f_nivel') ? document.getElementById('f_nivel').value : '';
+  if (!titulo||!desc) { toast('Completa nombre y descripción del puesto'); return; }
+  if (!nivelVal) { toast('Selecciona el nivel del puesto'); return; }
 
   var jobData = {
     titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
     gerencia:document.getElementById('f_gerencia')?document.getElementById('f_gerencia').value:'',
     instrucciones:document.getElementById('f_instrucciones').value.trim(),
-    emailLider:emailLider, dniLider:dniLider
+    nivelVal:nivelVal
   };
 
   if (editingJobId) {
@@ -3006,59 +3094,12 @@ function saveJobOnly() {
     jobs.push(jobData);
     toast('Puesto guardado');
   }
+  // Cerrar modal
+  document.getElementById('addJobForm').classList.remove('open');
+  document.body.style.overflow = '';
   // Guardar jobId antes de resetear editingJobId
   var savedJobId = editingJobId || jobData.id;
 
-  // Si hay campos de solicitud completos, crear o actualizar requisición
-  var sedeSelect2 = document.getElementById('f_sede').value;
-  var sedeOtra2   = document.getElementById('f_otraSede') ? document.getElementById('f_otraSede').value.trim() : '';
-  var sede2       = sedeSelect2 === 'Otras' ? (sedeOtra2||'Otras') : sedeSelect2;
-  var horario2    = document.getElementById('f_horario').value.trim();
-  var nivel2      = document.getElementById('f_nivel').value;
-  var motivo2     = document.getElementById('f_motivo').value;
-  var fechaInicio2 = document.getElementById('f_fechaInicio').value;
-  var cese2       = document.getElementById('f_cese') ? document.getElementById('f_cese').value : '';
-  var rnombre2    = document.getElementById('f_reemplazo_nombre') ? document.getElementById('f_reemplazo_nombre').value.trim() : '';
-
-  if (sede2 || horario2 || nivel2 || motivo2) {
-    var diasPlazo2 = nivel2==='30e'?30:parseInt(nivel2)||0;
-    var fechaLimDate2 = fechaInicio2 ? new Date(fechaInicio2) : new Date();
-    if (diasPlazo2) fechaLimDate2.setDate(fechaLimDate2.getDate()+diasPlazo2);
-    var nivelLabel2 = PLAZOS[nivel2] ? PLAZOS[nivel2].label : nivel2;
-    var reqData2 = {
-      sede:sede2, horario:horario2, nivelVal:nivel2, nivel:nivelLabel2,
-      motivo:motivo2, fechaInicioRaw:fechaInicio2,
-      fechaInicio:fechaInicio2?new Date(fechaInicio2).toLocaleDateString('es-PE'):'',
-      diasPlazo:diasPlazo2,
-      fechaLimiteRaw:fechaLimDate2.toISOString(),
-      fechaLimite:fechaLimDate2.toLocaleDateString('es-PE'),
-      reemplazoNombre:rnombre2, cese:cese2
-    };
-
-    // Buscar requisiciones de este puesto
-    var jobReqs2 = requisiciones.filter(function(r){ return r.jobId===savedJobId; });
-    if (jobReqs2.length) {
-      // Actualizar la última
-      var lastReqId2 = jobReqs2[jobReqs2.length-1].id;
-      requisiciones = requisiciones.map(function(r){
-        return r.id===lastReqId2 ? Object.assign({},r,reqData2) : r;
-      });
-    } else {
-      // Crear una nueva requisición básica con estos datos
-      var job2 = jobs.find(function(j){ return j.id===savedJobId; }) || jobData;
-      requisiciones.push(Object.assign({
-        id: Date.now(), jobId: savedJobId,
-        fecha: new Date().toLocaleDateString('es-PE'),
-        puesto: job2.titulo||titulo, area: job2.area||'',
-        gerencia: job2.gerencia||'',
-        emailLider: job2.emailLider||'', dniLider: job2.dniLider||'',
-        estado: 'Pendiente', desiderablesCompletados: false,
-        minimos: job2.desc||desc, deseables: ''
-      }, reqData2));
-    }
-    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
-    syncReqsToServer(requisiciones);
-  }
 
   // Guardar historial de cambio
   var motivoCambio = document.getElementById('f_motivoCambio') ? document.getElementById('f_motivoCambio').value.trim() : '';
@@ -3083,155 +3124,97 @@ function saveJobOnly() {
 }
 
 // ── Crear solicitud con snapshot del perfil actual ──
-function saveJobAndCreateReq() {
-  var titulo = getTituloForm();
-  var desc = document.getElementById('f_desc').value.trim();
-  var emailLider = document.getElementById('f_emailLider').value.trim();
-  var dniLider = document.getElementById('f_dniLider').value.trim();
-  var sedeSelect = document.getElementById('f_sede').value;
-  var sedeOtra  = document.getElementById('f_otraSede') ? document.getElementById('f_otraSede').value.trim() : '';
-  var sede      = sedeSelect === 'Otras' ? (sedeOtra || 'Otras') : sedeSelect;
-  var nivel = document.getElementById('f_nivel').value;
-  var motivo = document.getElementById('f_motivo').value;
-  var horario = document.getElementById('f_horario').value.trim();
-  var fechaInicio = document.getElementById('f_fechaInicio').value;
 
-  if (!titulo||!desc) { toast('Completa nombre y descripción del puesto'); return; }
-  if (!emailLider) { toast('Agrega el email del líder'); return; }
-  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
-  if (!sede||!nivel||!motivo||!horario||!fechaInicio) { toast('Completa todos los campos de la solicitud'); return; }
-  var minimos = desc; // Los requisitos mínimos son la descripción del puesto
-
-  // Primero guardar/actualizar el puesto
-  var jobData = {
-    titulo:titulo, area:document.getElementById('f_area').value.trim(), desc:desc,
-    gerencia:document.getElementById('f_gerencia')?document.getElementById('f_gerencia').value:'',
-    instrucciones:document.getElementById('f_instrucciones').value.trim(),
-    emailLider:emailLider, dniLider:dniLider
-  };
-  var jobId;
-  if (editingJobId) {
-    jobId = editingJobId;
-    jobs = jobs.map(function(j){ return j.id===jobId?Object.assign({},j,jobData):j; });
-  } else {
-    jobId = Date.now();
-    jobData.id = jobId;
-    jobs.push(jobData);
-  }
-  localStorage.setItem('rjobs', JSON.stringify(jobs));
-  syncJobsToServer(jobs);
-
-  // Crear snapshot del perfil completo al momento de la solicitud
-  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
-  var fechaLimiteDate = new Date(fechaInicio);
-  fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
-
-  var snapshot = {
-    titulo:titulo, area:jobData.area, desc:desc,
-    exp:jobData.exp, skills:jobData.skills, instrucciones:jobData.instrucciones,
-    emailLider:emailLider, dniLider:dniLider,
-    fechaSnapshot:new Date().toLocaleDateString('es-PE')
-  };
-
-  var req = {
-    id: Date.now()+1,
-    jobId: jobId,
-    fecha: new Date().toLocaleDateString('es-PE'),
-    fechaInicio: new Date(fechaInicio).toLocaleDateString('es-PE'),
-    fechaInicioRaw: fechaInicio,
-    fechaLimite: fechaLimiteDate.toLocaleDateString('es-PE'),
-    fechaLimiteRaw: fechaLimiteDate.toISOString(),
-    puesto: titulo, area: jobData.area,
-    sede: sede, horario: horario,
-    nivelVal: nivel, nivel: PLAZOS[nivel]?PLAZOS[nivel].label:nivel,
-    diasPlazo: diasPlazo, motivo: motivo,
-    cese: motivo==='reemplazo'?document.getElementById('f_cese').value:'',
-    reemplazoNombre: motivo==='reemplazo'?(document.getElementById('f_reemplazo_nombre')?document.getElementById('f_reemplazo_nombre').value.trim():''):'',
-    minimos: minimos, deseables: '',
-    emailLider: emailLider, dniLider: dniLider,
-    estado: 'En proceso', desiderablesCompletados: false,
-    perfilSnapshot: snapshot  // <-- perfil congelado al momento de la solicitud
-  };
-
-  requisiciones.push(req);
-  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
-  syncReqsToServer(requisiciones);
-
-  // mailto al líder
-  var tplLider = getTemplates().email_lider;
-  var tplLiderAsunto = getTemplates().email_lider_asunto;
-  var asunto = encodeURIComponent(aplicarVariables(tplLiderAsunto, {puesto:titulo}));
-  var cuerpoBase = aplicarVariables(tplLider, {
-    puesto:titulo, area:jobData.area||'', sede:sede||'',
-    nivel:PLAZOS[nivel]?PLAZOS[nivel].label:nivel,
-    fechaLimite:fechaLimiteDate.toLocaleDateString('es-PE'),
-    funciones:minimos||'', link:(window.location.origin+'/lider')
-  });
-  var cuerpo = encodeURIComponent(cuerpoBase);
-
-
-
-  editingJobId = null;
-  renderJobsList();
-  verificarAlertas();
-  document.getElementById('addJobForm').classList.remove('open');
-  window.location.href = 'mailto:'+emailLider+'?subject='+asunto+'&body='+cuerpo;
-  toast('Solicitud creada — abriendo correo al líder...');
-}
-
-// Renderiza historial de solicitudes de un puesto con su snapshot
 function renderHistorialSolicitudes(jobId) {
   var jobObj = jobs.find(function(j){ return j.id===jobId; });
   var reqs = getReqsForJob(jobId, jobObj ? jobObj.titulo : '');
   if (!reqs.length) return '';
-  var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:e==='Stand by'?{bg:'#EEEDFE',t:'#3C3489'}:e==='Cancelado'?{bg:'var(--surface2)',t:'var(--muted)'}:{bg:'#EEEDFE',t:'#3C3489'}; };
+  var ec = function(e){ return e==='Pendiente'?{bg:'#fef8ee',t:'#7a5000'}:e==='En proceso'?{bg:'#edf7f1',t:'#1e5c38'}:e==='Stand by'?{bg:'#FEF3C7',t:'#854F0B'}:{bg:'var(--surface2)',t:'var(--muted)'}; };
   var html = '<div style="margin-top:14px;border-top:0.5px solid var(--border2);padding-top:12px;">';
   html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Historial de solicitudes</div>';
   html += reqs.slice().reverse().map(function(r) {
     var c = ec(r.estado);
     var snap = r.perfilSnapshot || {};
     var snapId = 'snap_' + r.id;
-    var h = '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;">';
-    var etapasReq = r.etapas || {}; var hcOkReq = !!etapasReq.hc;
-    h += '<div style="margin-bottom:6px;">';
-    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">';
-    h += '<div style="font-size:12px;font-weight:500;">Solicitud del '+r.fecha+'</div>';
+    var etapasReq = r.etapas || {};
+    var hcOkReq = !!etapasReq.hc;
+
+    var h = '<div style="background:var(--bg);border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:8px;">';
+
+    // ── Header ──
+    h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    h += '<div style="font-size:13px;font-weight:500;">Solicitud del '+r.fecha+'</div>';
     h += '<span style="font-size:11px;background:'+c.bg+';color:'+c.t+';padding:2px 8px;border-radius:6px;">'+r.estado+'</span>';
     if (!hcOkReq && (r.estado==='Pendiente'||r.estado==='En proceso')) {
-      h += '<button class="btn btn-primary btn-sm" data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="toggleHC(this)" style="font-size:11px;padding:3px 10px;">✓ Confirmar HC</button>';
+      h += '<button class="btn btn-primary btn-sm" data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="toggleHC(this)" style="font-size:10px;padding:2px 8px;">✓ Confirmar HC</button>';
     } else if (hcOkReq) {
       h += '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:2px 8px;border-radius:6px;">✓ HC confirmado</span>';
     }
     h += '</div>';
-    h += '<div style="font-size:11px;color:var(--muted);">Inicio: '+(r.fechaInicio||'—')+' · Límite: '+(r.fechaLimite||'—')+(r.sede?' · '+r.sede:'')+(r.nivel?' · '+r.nivel:'')+'</div>';
+
+    // ── Grid de campos clave ──
+    h += '<div style="padding:10px 14px;">';
+    h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:0.5px solid var(--border2);border-radius:8px;overflow:hidden;margin-bottom:8px;">';
+    var celdas = [
+      {l:'Sede',         v: r.sede||'—'},
+      {l:'Horario',      v: r.horario||'—'},
+      {l:'Nivel',        v: r.nivel||'—'},
+      {l:'Motivo',       v: r.motivo ? (r.motivo.charAt(0).toUpperCase()+r.motivo.slice(1)) : '—'},
+      {l:'Inicio',       v: r.fechaInicio||'—'},
+      {l:'Límite',       v: r.fechaLimite||'—'},
+    ];
+    celdas.forEach(function(cel,ci) {
+      var borderR = (ci%3 < 2) ? 'border-right:0.5px solid var(--border2);' : '';
+      var borderB = (ci < 3)   ? 'border-bottom:0.5px solid var(--border2);' : '';
+      h += '<div style="padding:7px 10px;'+borderR+borderB+'">';
+      h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">'+cel.l+'</div>';
+      h += '<div style="font-size:12px;font-weight:500;color:var(--text);">'+cel.v+'</div>';
+      h += '</div>';
+    });
     h += '</div>';
-    h += '<div style="display:flex;align-items:center;gap:6px;">';
-    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:5px;padding:2px 8px;color:var(--muted);cursor:pointer;">Ver perfil usado</button>';
+
+    // ── Fila reemplazo (condicional) ──
+    if (r.motivo==='reemplazo' && (r.reemplazoNombre||r.cese)) {
+      h += '<div style="background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:6px;padding:6px 10px;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;">';
+      if (r.reemplazoNombre) h += '<div><span style="color:#633806;font-weight:500;">Reemplaza a:</span> '+r.reemplazoNombre+'</div>';
+      if (r.cese) h += '<div><span style="color:#633806;font-weight:500;">Fecha de cese:</span> '+r.cese+'</div>';
+      h += '</div>';
+    }
+
+    // ── Fila líder ──
+    if (r.emailLider||r.dniLider) {
+      h += '<div style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;padding:6px 10px;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;">';
+      if (r.emailLider) h += '<div style="color:var(--muted);">Líder: <span style="color:var(--text);font-weight:500;">'+r.emailLider+'</span></div>';
+      if (r.dniLider)   h += '<div style="color:var(--muted);">DNI: <span style="color:var(--text);font-weight:500;">'+r.dniLider+'</span></div>';
+      h += '</div>';
+    }
+
+    // ── Perfil colapsable (un solo botón) ──
+    h += '<div id="'+snapId+'" style="display:none;margin-bottom:8px;padding:10px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border2);font-size:12px;line-height:1.6;color:var(--text);">';
+    h += '<div style="font-size:11px;font-weight:500;color:var(--accent2);margin-bottom:6px;">Perfil usado en esta solicitud</div>';
+    if (snap.desc)         h += '<div><strong>Descripción:</strong> '+snap.desc+'</div>';
+    if (snap.exp)          h += '<div><strong>Experiencia:</strong> '+snap.exp+'</div>';
+    if (snap.skills)       h += '<div><strong>Habilidades:</strong> '+snap.skills+'</div>';
+    if (r.minimos)         h += '<div><strong>Requisitos mínimos:</strong> '+r.minimos+'</div>';
+    if (r.deseables)       h += '<div><strong>Deseables:</strong> '+r.deseables+'</div>';
+    if (snap.instrucciones)h += '<div><strong>Instrucciones IA:</strong> '+snap.instrucciones+'</div>';
     h += '</div>';
-    // Snapshot colapsable
-    h += '<div id="'+snapId+'" style="display:none;margin-top:8px;padding:10px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border2);font-size:12px;color:var(--muted);line-height:1.6;">';
-    h += '<div style="font-size:11px;font-weight:500;color:var(--accent2);margin-bottom:6px;">&#128247; Perfil exacto usado en esta solicitud ('+( snap.fechaSnapshot||r.fecha)+')</div>';
-    if (snap.desc) h += '<div><strong style="color:var(--text);">Descripción:</strong> '+snap.desc+'</div>';
-    if (snap.exp) h += '<div><strong style="color:var(--text);">Experiencia:</strong> '+snap.exp+'</div>';
-    if (snap.skills) h += '<div><strong style="color:var(--text);">Habilidades:</strong> '+snap.skills+'</div>';
-    if (r.minimos) h += '<div><strong style="color:var(--text);">Requisitos mínimos:</strong> '+r.minimos+'</div>';
-    if (r.deseables) h += '<div><strong style="color:var(--text);">Deseables:</strong> '+r.deseables+'</div>';
-    if (snap.instrucciones) h += '<div><strong style="color:var(--text);">Instrucciones IA:</strong> '+snap.instrucciones+'</div>';
-    if (r.sede) h += '<div><strong style="color:var(--text);">Sede:</strong> '+r.sede+' &nbsp;|&nbsp; <strong style="color:var(--text);">Horario:</strong> '+(r.horario||'—')+'</div>';
-    h += '</div>';
-    // Acciones por solicitud
-    h += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:0.5px solid var(--border2);margin-top:8px;">';
-    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:10px;padding:2px 8px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Ver perfil usado</button>';
+
+    // ── Acciones ──
+    h += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:0.5px solid var(--border2);">';
+    h += '<button data-snap-id="'+snapId+'" onclick="toggleSnap(this.dataset.snapId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;color:var(--muted);">Ver perfil usado</button>';
     h += '<div style="flex:1;"></div>';
-    if (r.estado === 'En proceso' || r.estado === 'Pendiente') {
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="ponerSolicitudStandBy(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #EF9F27;background:#FAEEDA;color:#854F0B;cursor:pointer;">&#9646; Stand by</button>';
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #F09595;background:#FCEBEB;color:#A32D2D;cursor:pointer;">✕ Eliminar</button>';
-    } else if (r.estado === 'Stand by') {
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="reactivarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #0F6E56;background:#E1F5EE;color:#0F6E56;cursor:pointer;">&#9654; Reactivar</button>';
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid #F09595;background:#FCEBEB;color:#A32D2D;cursor:pointer;">✕ Eliminar</button>';
+    if (r.estado==='En proceso'||r.estado==='Pendiente') {
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="ponerSolicitudStandBy(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Stand by</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="abrirEditarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:#2563A8;color:white;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;">✎ Editar solicitud</button>';
+    } else if (r.estado==='Stand by') {
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="reactivarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Reactivar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="abrirEditarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:#2563A8;color:white;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;">✎ Editar solicitud</button>';
     }
     h += '</div>';
-    h += '</div>';
+    h += '</div></div>';
     return h;
   }).join('');
   html += '</div>';
@@ -3299,17 +3282,214 @@ function cambiarEstadoReq(id, estado) {
 }
 
 // Abre el formulario de edición con la sección de solicitud lista para ese puesto
+
+// ══════════════════════════════════════════════════
+// MODAL SOLICITUD DE CONVOCATORIA
+// ══════════════════════════════════════════════════
+var _modalSolJobId = null;
+
+function abrirModalSolicitud(jobId) {
+  _modalSolJobId = jobId;
+  var ov = document.getElementById('modalSolicitudOverlay');
+  if (!ov) return;
+  // Limpiar campos
+  ['ns_emailLider','ns_dniLider','ns_sede','ns_otraSede','ns_horario',
+   'ns_motivo','ns_reemplazo_nombre','ns_cese','ns_deseables','ns_fechaInicio_modal'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  var rf = document.getElementById('ns_reemplazoField');
+  if (rf) rf.style.display = 'none';
+  var pi = document.getElementById('ns_plazoInfo');
+  if (pi) pi.style.display = 'none';
+  // Precargar email/DNI del job si existen
+  if (jobId) {
+    var job = jobs.find(function(j){ return j.id===jobId; });
+    if (job) {
+      document.getElementById('ns_modal_puesto').textContent = job.titulo || '';
+      if (job.emailLider) document.getElementById('ns_emailLider').value = job.emailLider;
+      if (job.dniLider)   document.getElementById('ns_dniLider').value   = job.dniLider;
+      // Precargar nivel del job para calcular plazo
+      _modalSolNivel = job.nivelVal || '';
+    }
+  } else {
+    document.getElementById('ns_modal_puesto').textContent = '';
+    _modalSolNivel = '';
+  }
+  // Fecha inicio = hoy
+  document.getElementById('ns_fechaInicio_modal').value = new Date().toISOString().slice(0,10);
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+var _modalSolNivel = '';
+
+function cerrarModalSolicitud() {
+  var ov = document.getElementById('modalSolicitudOverlay');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+  _editarReqId = null;
+  // Restaurar título y botón
+  var titulo = document.getElementById('ns_modal_titulo');
+  if (titulo) titulo.textContent = 'Nueva solicitud de convocatoria';
+  var btn = document.querySelector('#modalSolicitudOverlay button.btn-accent');
+  if (btn) btn.textContent = 'Crear solicitud →';
+}
+
+function toggleReemplazoNS() {
+  var motivo = document.getElementById('ns_motivo').value;
+  var rf = document.getElementById('ns_reemplazoField');
+  if (rf) rf.style.display = motivo === 'reemplazo' ? 'flex' : 'none';
+}
+
+function guardarModalSolicitud() {
+  var jobId = _modalSolJobId;
+  // Si venimos de editar, _editarReqId tiene el id de la req a actualizar
+  var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+  var emailLider = g('ns_emailLider');
+  var dniLider   = g('ns_dniLider');
+  var sedeV      = g('ns_sede');
+  var sedeO      = g('ns_otraSede');
+  var sede       = sedeV === 'Otras' ? (sedeO||'Otras') : sedeV;
+  var horario    = g('ns_horario');
+  var motivo     = g('ns_motivo');
+  var deseables  = g('ns_deseables');
+  var fechaInicio= g('ns_fechaInicio_modal');
+  var reemplNombre = motivo==='reemplazo' ? g('ns_reemplazo_nombre') : '';
+  var cese         = motivo==='reemplazo' ? g('ns_cese') : '';
+
+  if (!emailLider) { toast('Agrega el email del líder'); return; }
+  if (dniLider.length!==8) { toast('El DNI del líder debe tener 8 dígitos'); return; }
+  if (!sede||!horario||!motivo||!fechaInicio) { toast('Completa todos los campos obligatorios'); return; }
+  if (motivo==='reemplazo'&&!reemplNombre) { toast('Ingresa el nombre del colaborador a reemplazar'); return; }
+
+  // Si jobId null → es solicitud desde "Nueva solicitud" sin puesto: seleccionar puesto
+  var job = jobId ? jobs.find(function(j){ return j.id===jobId; }) : null;
+  if (!job) { toast('Selecciona un puesto del catálogo primero'); return; }
+
+  // Obtener nivel del perfil
+  var nivel    = job.nivelVal || '';
+  var diasPlazo= nivel==='35e'?35:parseInt(nivel)||30;
+  var nivelLabel= PLAZOS[nivel]?PLAZOS[nivel].label:nivel;
+  var fechaLimDate = new Date(fechaInicio);
+  fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
+
+  // Actualizar email/DNI del job con los de esta solicitud
+  jobs = jobs.map(function(j){
+    return j.id===jobId ? Object.assign({},j,{emailLider:emailLider,dniLider:dniLider}) : j;
+  });
+  localStorage.setItem('rjobs', JSON.stringify(jobs));
+  syncJobsToServer(jobs);
+
+  var snapshot = {
+    titulo:job.titulo, area:job.area||'', desc:job.desc||'',
+    instrucciones:job.instrucciones||'', emailLider:emailLider, dniLider:dniLider,
+    fechaSnapshot:new Date().toLocaleDateString('es-PE')
+  };
+
+  var req = {
+    id:Date.now(), jobId:jobId,
+    fecha:new Date().toLocaleDateString('es-PE'),
+    fechaInicio:new Date(fechaInicio).toLocaleDateString('es-PE'), fechaInicioRaw:fechaInicio,
+    fechaLimite:fechaLimDate.toLocaleDateString('es-PE'), fechaLimiteRaw:fechaLimDate.toISOString(),
+    puesto:job.titulo, area:job.area||'', gerencia:job.gerencia||'',
+    sede:sede, horario:horario,
+    nivelVal:nivel, nivel:nivelLabel, diasPlazo:diasPlazo,
+    motivo:motivo, reemplazoNombre:reemplNombre, cese:cese,
+    minimos:job.desc||'', deseables:deseables,
+    emailLider:emailLider, dniLider:dniLider,
+    estado:'En proceso', desiderablesCompletados:false,
+    perfilSnapshot:snapshot
+  };
+
+  if (_editarReqId) {
+    // Actualizar req existente
+    requisiciones = requisiciones.map(function(r) {
+      return (r.id===_editarReqId || String(r.id)===String(_editarReqId))
+        ? Object.assign({}, r, {
+            sede:req.sede, horario:req.horario, motivo:req.motivo,
+            reemplazoNombre:req.reemplazoNombre, cese:req.cese,
+            deseables:req.deseables, emailLider:req.emailLider,
+            dniLider:req.dniLider, fechaInicio:req.fechaInicio,
+            fechaInicioRaw:req.fechaInicioRaw, fechaLimite:req.fechaLimite,
+            fechaLimiteRaw:req.fechaLimiteRaw, diasPlazo:req.diasPlazo,
+            nivel:req.nivel, nivelVal:req.nivelVal
+          })
+        : r;
+    });
+    _editarReqId = null;
+    toast('Solicitud actualizada ✓');
+  } else {
+    requisiciones.push(req);
+    toast('Solicitud creada ✓');
+  }
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+
+  // Notificar al líder por email
+  var tplLider = getTemplates().email_lider;
+  var tplAsunto = getTemplates().email_lider_asunto;
+  var linkLider = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
+  var asunto = encodeURIComponent(aplicarVariables(tplAsunto,{puesto:job.titulo}));
+  var cuerpo = aplicarVariables(tplLider,{
+    puesto:job.titulo, area:job.area||'', sede:sede||'', horario:horario||'',
+    nivel:nivel||'', fechaLimite:fechaLimite||'', link:linkLider
+  });
+  var cuerpoEnc = encodeURIComponent(cuerpo);
+  if (emailLider) {
+    window.open('mailto:'+emailLider+'?subject='+asunto+'&body='+cuerpoEnc,'_blank');
+  }
+
+  cerrarModalSolicitud();
+  renderJobsList();
+  setTimeout(function(){ abrirDetallePanelJob(jobId); }, 150);
+}
+
+
+// ── Editar solicitud existente ──
+var _editarReqId = null;
+
+function abrirEditarSolicitud(reqId, jobId) {
+  var numId = parseInt(reqId) || reqId;
+  var req = requisiciones.find(function(r){ return r.id===numId || String(r.id)===String(reqId); });
+  if (!req) { toast('Solicitud no encontrada'); return; }
+
+  _editarReqId = numId;
+  abrirModalSolicitud(parseInt(jobId) || jobId);
+
+  // Sobreescribir campos con datos de la req existente
+  setTimeout(function() {
+    var g = function(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.value = val || '';
+    };
+    g('ns_emailLider',        req.emailLider || '');
+    g('ns_dniLider',          req.dniLider || '');
+    g('ns_sede',              req.sede || '');
+    g('ns_horario',           req.horario || '');
+    g('ns_motivo',            req.motivo || '');
+    g('ns_reemplazo_nombre',  req.reemplazoNombre || '');
+    g('ns_cese',              req.cese || '');
+    g('ns_deseables',         req.deseables || '');
+    g('ns_fechaInicio_modal', req.fechaInicioRaw || '');
+
+    // Mostrar campo reemplazo si aplica
+    var rf = document.getElementById('ns_reemplazoField');
+    if (rf) rf.style.display = req.motivo === 'reemplazo' ? 'flex' : 'none';
+
+    // Actualizar título del modal
+    var titulo = document.getElementById('ns_modal_titulo');
+    if (titulo) titulo.textContent = 'Editar solicitud';
+
+    // Cambiar botón guardar
+    var btn = document.querySelector('#modalSolicitudOverlay button.btn-accent');
+    if (btn) btn.textContent = 'Guardar cambios →';
+  }, 50);
+}
+
 function abrirNuevaSolicitud(id) {
-  editJob(id);
-  // Limpiar campos solicitud
-  ['f_horario','f_cese','f_reemplazo_nombre'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
-  ['f_sede','f_nivel','f_motivo'].forEach(function(fid){ var el=document.getElementById(fid); if(el) el.value=''; });
-  document.getElementById('f_fechaInicio').value = new Date().toISOString().slice(0,10);
-  document.getElementById('plazoInfo').style.display='none';
-  document.getElementById('reemplazoField').style.display='none';
-  document.getElementById('reqSection').style.display='block';
-  // Scroll a sección solicitud
-  setTimeout(function(){ var rs=document.getElementById('reqSection'); if(rs) rs.scrollIntoView({behavior:'smooth'}); }, 300);
+  // Redirige al nuevo modal de solicitud
+  abrirModalSolicitud(id);
 }
 
 function deleteJob(id) {
@@ -3325,21 +3505,17 @@ function deleteJob(id) {
 
 function calcularPlazo() {
   var nivel = document.getElementById('f_nivel').value;
-  var info = document.getElementById('plazoInfo');
+  var info = document.getElementById('plazoInfoPerfil') || document.getElementById('plazoInfo');
+  if (!nivel || !info) return;
   if (!nivel) { info.style.display='none'; return; }
   var p = PLAZOS[nivel];
-  var fi = document.getElementById('f_fechaInicio').value;
+  var fi = '';
   var base = fi ? new Date(fi) : new Date();
   base.setDate(base.getDate()+p.dias);
   info.style.display='block';
   info.innerHTML='Plazo: <strong>'+p.dias+' días</strong>. Fecha límite estimada: <strong>'+base.toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})+'</strong>';
 }
 
-function toggleReemplazo() {
-  var show = document.getElementById('f_motivo').value === 'reemplazo';
-  var el = document.getElementById('reemplazoField');
-  if (el) { el.style.display = show ? 'flex' : 'none'; el.style.flexDirection = 'column'; }
-}
 
 function toggleReemplazoLider(prefix) {
   var show = (document.getElementById(prefix+'_motivo')||{}).value === 'reemplazo';
@@ -3549,45 +3725,105 @@ function renderAlertaPropuestaLider(jobId) {
   var html = '';
   reqs.forEach(function(r){
     var p = r.propuestasLider;
-    var req = r;
     var reqOrig = {funciones:r.funciones||r.minimos||'', liderDeseables:r.liderDeseables||'', sede:r.sede||'', horario:r.horario||''};
-    html += '<div style="background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:10px;padding:14px 16px;margin-bottom:12px;">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-        +'<div style="font-size:12px;font-weight:500;color:#854F0B;">⚠ El líder propuso cambios al perfil — '+new Date(r.propuestasLiderFecha||Date.now()).toLocaleDateString('es-PE')+'</div>'
-      +'</div>';
-    // Mostrar diferencias
+    var rid = r.id;
+    html += '<div style="background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:10px;padding:14px 16px;margin-bottom:12px;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+    html += '<div style="font-size:12px;font-weight:500;color:#854F0B;">El lider propuso cambios — '+new Date(r.propuestasLiderFecha).toLocaleDateString('es-PE')+'</div>';
+    html += '</div>';
+
+    // Cada campo cambiado → textarea editable con valor propuesto
     if (p.funciones && p.funciones !== reqOrig.funciones) {
-      html += '<div style="margin-bottom:8px;">'
-        +'<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Funciones y Requisitos</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
-          +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+reqOrig.funciones+'</div>'
-          +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;line-height:1.5;">'+p.funciones+'</div>'
-        +'</div></div>';
+      html += '<div style="margin-bottom:10px;">';
+      html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Descripcion y requisitos</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;white-space:pre-wrap;">'+reqOrig.funciones+'</div>';
+      html += '<textarea id="edit_funciones_'+rid+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;border:0.5px solid #C0DD97;line-height:1.5;resize:vertical;min-height:80px;width:100%;">'+p.funciones+'</textarea>';
+      html += '</div></div>';
     }
     if (p.liderDeseables && p.liderDeseables !== reqOrig.liderDeseables) {
-      html += '<div style="margin-bottom:8px;">'
-        +'<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Requisitos deseables</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
-          +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+(reqOrig.liderDeseables||'—')+'</div>'
-          +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;line-height:1.5;">'+p.liderDeseables+'</div>'
-        +'</div></div>';
+      html += '<div style="margin-bottom:10px;">';
+      html += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Requisitos deseables</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:8px 10px;border-radius:6px;text-decoration:line-through;line-height:1.5;">'+reqOrig.liderDeseables+'</div>';
+      html += '<textarea id="edit_deseables_'+rid+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:8px 10px;border-radius:6px;border:0.5px solid #C0DD97;line-height:1.5;resize:vertical;min-height:60px;width:100%;">'+p.liderDeseables+'</textarea>';
+      html += '</div></div>';
     }
     if (p.sede && p.sede !== reqOrig.sede) {
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
-        +'<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:6px 10px;border-radius:6px;text-decoration:line-through;">Sede: '+reqOrig.sede+'</div>'
-        +'<div style="font-size:11px;background:#EAF3DE;color:#27500A;padding:6px 10px;border-radius:6px;">Sede: '+p.sede+'</div>'
-      +'</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:6px 10px;border-radius:6px;text-decoration:line-through;">Sede: '+reqOrig.sede+'</div>';
+      html += '<input id="edit_sede_'+rid+'" type="text" value="'+p.sede+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:6px 10px;border-radius:6px;border:0.5px solid #C0DD97;width:100%;">';
+      html += '</div>';
     }
-    // Botones de decisión
-    html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">'
-      +'<button class="btn btn-secondary btn-sm" data-req-id="'+r.id+'" onclick="rechazarCambiosLider(this.dataset.reqId)" style="font-size:11px;">&#10005; Rechazar</button>'
-      +'<button class="btn btn-secondary btn-sm" data-req-id="'+r.id+'" onclick="aprobarCambiosLider(this.dataset.reqId,\'solicitud\')" style="font-size:11px;border-color:#3B6D11;color:#3B6D11;">&#10003; Aplicar solo a esta solicitud</button>'
-      +'<button class="btn btn-accent btn-sm" data-req-id="'+r.id+'" onclick="aprobarCambiosLider(this.dataset.reqId,\'ambos\')" style="font-size:11px;">&#10003; Aplicar a solicitud y perfil base</button>'
-    +'</div>';
+    if (p.horario && p.horario !== reqOrig.horario) {
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">';
+      html += '<div style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:6px 10px;border-radius:6px;text-decoration:line-through;">Horario: '+reqOrig.horario+'</div>';
+      html += '<input id="edit_horario_'+rid+'" type="text" value="'+p.horario+'" style="font-size:11px;background:#EAF3DE;color:#27500A;padding:6px 10px;border-radius:6px;border:0.5px solid #C0DD97;width:100%;">';
+      html += '</div>';
+    }
+
+    // Nota al reclutador
+    html += '<div style="font-size:11px;color:#854F0B;margin-bottom:10px;">Puedes editar los campos en verde antes de aprobar. Los cambios se aplicaran con tu revision.</div>';
+
+    // Botones
+    html += '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">';
+    html += '<button class="btn btn-secondary btn-sm" data-req-id="'+rid+'" onclick="rechazarCambiosLider(this.dataset.reqId)" style="font-size:11px;">Rechazar</button>';
+    html += '<button class="btn btn-secondary btn-sm" data-req-id="'+rid+'" onclick="aprobarCambiosLiderEditado(this.dataset.reqId,\'solicitud\')" style="font-size:11px;">Aprobar para esta solicitud</button>';
+    html += '<button class="btn btn-accent btn-sm" data-req-id="'+rid+'" onclick="aprobarCambiosLiderEditado(this.dataset.reqId,\'ambos\')" style="font-size:11px;">Aprobar y actualizar perfil base</button>';
+    html += '</div>';
     html += '</div>';
   });
   return html;
 }
+
+// Versión editada de aprobarCambiosLider — lee los campos editados por el reclutador
+function aprobarCambiosLiderEditado(reqId, scope) {
+  var numId = parseInt(reqId)||reqId;
+  var req = requisiciones.find(function(r){ return r.id===numId||String(r.id)===String(reqId); });
+  if (!req || !req.propuestasLider) return;
+  var p = req.propuestasLider;
+
+  // Leer valores editados (si existen los campos) con fallback al propuesto
+  function getEdited(field, fallback) {
+    var el = document.getElementById('edit_'+field+'_'+reqId);
+    return el ? el.value.trim() : fallback;
+  }
+
+  var updates = {};
+  if (p.funciones)      { var v=getEdited('funciones',p.funciones); updates.funciones=v; updates.minimos=v; }
+  if (p.liderDeseables) { updates.liderDeseables=getEdited('deseables',p.liderDeseables); }
+  if (p.sede)           { updates.sede=getEdited('sede',p.sede); }
+  if (p.horario)        { updates.horario=getEdited('horario',p.horario); }
+
+  var bita = Array.isArray(req.bitacora)?req.bitacora.slice():[];
+  bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+    texto:'Reclutador aprobó cambios propuestos por el líder'+(scope==='ambos'?' (aplicado también al perfil base)':'')});
+
+  requisiciones = requisiciones.map(function(r){
+    if (r.id===numId||String(r.id)===String(reqId))
+      return Object.assign({},r,updates,{propuestasLider:null,propuestasLiderEstado:'aprobado',bitacora:bita});
+    return r;
+  });
+
+  if (scope === 'ambos') {
+    var jobUpdates = {};
+    if (p.funciones)      { jobUpdates.desc=updates.funciones; jobUpdates.funciones=updates.funciones; jobUpdates.minimos=updates.funciones; }
+    if (p.liderDeseables) { jobUpdates.deseables=updates.liderDeseables; }
+    jobs = jobs.map(function(j){
+      if (j.id===req.jobId||j.titulo===req.puesto) return Object.assign({},j,jobUpdates);
+      return j;
+    });
+    localStorage.setItem('rjobs', JSON.stringify(jobs));
+    syncJobsToServer(jobs);
+  }
+
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  toast('Cambios aprobados ✓');
+  renderJobsList();
+  setTimeout(function(){ abrirDetallePanelJob(req.jobId); }, 150);
+}
+
 
 function aprobarCambiosLider(reqId, scope) {
   var numId = parseInt(reqId)||reqId;
@@ -3604,7 +3840,7 @@ function aprobarCambiosLider(reqId, scope) {
   requisiciones = requisiciones.map(function(r){
     if (r.id===numId||String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),texto:'Cambios del líder aprobados por GTH'+(scope==='ambos'?' (aplicados a solicitud y perfil base)':' (solo esta solicitud)')});
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Cambios del líder aprobados por GTH'+(scope==='ambos'?' (aplicados a solicitud y perfil base)':' (solo esta solicitud)')});
       return Object.assign({},r,updates,{propuestasLider:null,propuestasLiderEstado:'aprobado',bitacora:bita});
     }
     return r;
@@ -3638,7 +3874,7 @@ function rechazarCambiosLider(reqId) {
   requisiciones = requisiciones.map(function(r){
     if (r.id===numId||String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),texto:'Cambios del líder rechazados por GTH'});
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Cambios del líder rechazados por GTH'});
       return Object.assign({},r,{propuestasLider:null,propuestasLiderEstado:'rechazado',bitacora:bita});
     }
     return r;
@@ -3837,18 +4073,31 @@ function actualizarEtapasReq(reqId, etapas, bitacoraMsg, candidato) {
 }
 
 
-function togglePuesto(id) {
-  var body = document.getElementById('body-'+id);
-  var chev = document.getElementById('chevron-'+id);
-  if (!body) return;
-  body.classList.toggle('open');
-  if (chev) chev.innerHTML = body.classList.contains('open') ? '&#9650;' : '&#9660;';
-}
 
 
 // ══════════════════════════════════
 // ENVÍO MASIVO
 // ══════════════════════════════════
+function switchEnvioSec(sec, btn) {
+  var secs = ['links','whatsapp','templates','reporte','docs','onboarding'];
+  secs.forEach(function(s) {
+    var el = document.getElementById('envioSec-'+s);
+    if (el) el.style.display = s === sec ? 'block' : 'none';
+    var nav = document.getElementById('envioNav-'+s);
+    if (nav) {
+      nav.style.background = s === sec ? 'var(--surface)' : 'transparent';
+      nav.style.color = s === sec ? 'var(--text)' : 'var(--muted)';
+      nav.style.fontWeight = s === sec ? '500' : '400';
+      nav.style.borderRight = s === sec ? '2px solid #e8623a' : 'none';
+      nav.style.marginRight = s === sec ? '-1px' : '0';
+    }
+  });
+  // Side effects por sección
+  if (sec === 'reporte') renderReporteIngresos();
+  if (sec === 'docs') renderDocsBiblioteca();
+  if (sec === 'onboarding') cargarConfigOnboarding();
+}
+
 function renderEnvioSelect() {
   var sel = document.getElementById('envioJobSelect');
   if (!sel) return;
@@ -3983,8 +4232,7 @@ function setCmStar(n) {
   }
 }
 
-async 
-function procesarCVCandidato(input) {
+async function procesarCVCandidato(input) {
   var file = input.files[0];
   if (!file) return;
   var status = document.getElementById('cvAutoFillStatus');
@@ -4632,10 +4880,19 @@ function toggleTramites(btn) {
         if (r.id!==reqId) return r;
         var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
         bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Trámites revertidos (Oferta también): '+motivo,candidato:cand});
-        return Object.assign({},r,{etapas:etapas,estado:'En proceso',bitacora:bita});
+        return Object.assign({},r,{etapas:etapas,estado:'En proceso',bitacora:bita,candidatoElegido:''});
       });
       localStorage.setItem('rreqs',JSON.stringify(requisiciones));
       syncReqsToServer(requisiciones);
+      // Desmarcar elegido en feedbacks
+      feedbacks = feedbacks.map(function(f){
+        if (f.candidato!==cand) return f;
+        var matchReq = reqId ? (String(f.reqId)===String(reqId)) : true;
+        if (!matchReq) return f;
+        return Object.assign({},f,{elegido:false});
+      });
+      localStorage.setItem('rfeedbacks',JSON.stringify(feedbacks));
+      safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
       renderCandidatosPorPuesto(); renderJobsList(); verificarAlertas();
       toast('Trámites revertidos — proceso continúa');
     });
@@ -4901,6 +5158,22 @@ function toggleVisibilidad(el) {
 }
 
 
+
+
+function toggleAgendado(el) {
+  var candidato = decodeURIComponent(el.dataset.id);
+  var puesto    = decodeURIComponent(el.dataset.puesto);
+  var agendado  = el.checked;
+  _allResults = _allResults.map(function(r) {
+    return (r.candidato===candidato && r.puesto===puesto)
+      ? Object.assign({},r,{agendado:agendado})
+      : r;
+  });
+  localStorage.setItem('rresults', JSON.stringify(_allResults));
+  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  toast(agendado ? 'Entrevista agendada ✓' : 'Entrevista desagendada');
+  reordenarGrupoCandidatos(puesto);
+}
 
 function abrirCopiarCandidatos() {
   var cbs = Array.from(document.querySelectorAll('.cand-sel-cb:checked'));
@@ -5226,14 +5499,7 @@ function abrirDetallePanelJob(id) {
     + '</div>'
 
     // ── Footer acciones ──
-    + '<div style="padding:12px 18px;border-top:0.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
-      + '<button class="btn btn-secondary btn-sm" onclick="editJob('+id+');scrollToForm()" style="font-size:11px;">&#9998; Editar perfil</button>'
-      + '<button class="btn btn-accent btn-sm" onclick="abrirNuevaSolicitud('+id+');scrollToForm()" style="font-size:11px;">+ Solicitud</button>'
-      + '<div style="margin-left:auto;">'
-        + '<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar</button>'
-      + '</div>'
-    + '</div>'
-  + '</div>';
++ '<div style="padding:12px 18px;border-top:0.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+ '<button class="btn btn-secondary btn-sm" onclick="editJob('+id+');scrollToForm()" style="font-size:11px;">&#9998; Editar perfil</button>'+ '<button class="btn btn-accent btn-sm" onclick="abrirModalSolicitud('+id+')" style="font-size:11px;">+ Solicitar</button>'+ '<div style="margin-left:auto;">'+ '<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar</button>'+ '</div>'+ '</div>'
 
   panel.innerHTML = html;
 }
@@ -5340,11 +5606,6 @@ function renderCatalogoPuestos() {
   list.innerHTML = html || '<div class="empty-state" style="padding:20px;text-align:center;font-size:13px;color:var(--muted);">No hay puestos que mostrar.</div>';
 }
 
-function verDetalleJobCatalogo(jobId) {
-  // Ir a pestaña Puestos y abrir el detalle
-  switchPuestosTab('procesos');
-  setTimeout(function(){ irAPuesto(jobId); }, 100);
-}
 
 function editarJobCatalogo(jobId) {
   switchPuestosTab('procesos');
@@ -5357,18 +5618,7 @@ function editarJobCatalogo(jobId) {
   }, 100);
 }
 
-function crearSolicitudDesdeCatalogo(jobId) {
-  // Ir a Puestos y hacer click en + Solicitud del job
-  switchPuestosTab('procesos');
-  setTimeout(function(){
-    irAPuesto(jobId);
-  }, 100);
-}
 
-function irAProcesoDesdeRRHH(jobId) {
-  switchPuestosTab('procesos');
-  setTimeout(function(){ irAPuesto(jobId); }, 100);
-}
 
 
 // ══════════════════════════════════════════════════════════════════
@@ -5929,10 +6179,6 @@ async function confirmarImportacion() {
 }
 
 
-function toggleCandGroup(puestoId) {
-  var el = document.getElementById('cands_'+puestoId);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
 
 function filtrarGerenciaCand() {
   var gerencia = (document.getElementById('filtroGerencia_cand')||{}).value||'';
@@ -6270,6 +6516,7 @@ function renderTablaByPuesto(cands, filtros) {
       });
       var esElegido = !!fbCand;
       var elegidoBadge = esElegido ? '<span style="font-size:10px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:2px 7px;border-radius:5px;">&#127942; Elegido</span>' : '';
+      var revertirOfertaBtn = esElegido && !trOk ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" onclick="revertirOferta(this.dataset.reqId,this.dataset.cand)" style="font-size:10px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:2px 8px;border-radius:5px;cursor:pointer;border:0.5px solid rgba(194,59,34,0.4);background:#fef2ee;color:#c23b22;" title="Revertir elección">↩ Revertir</button>' : '';
       var trBtn = esElegido ? '<button data-req-id="'+rId+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="toggleTramites(this)" style="font-size:10px;font-family:\'DM Sans\',sans-serif;font-weight:500;padding:2px 8px;border-radius:5px;cursor:pointer;border:0.5px solid '+(trOk?'rgba(45,122,79,0.4)':'var(--border2)')+';background:'+(trOk?'#edf7f1':'var(--surface)')+';color:'+(trOk?'#2d7a4f':'var(--muted)')+';">'+(trOk?'✓ Ingreso':'○ Ingreso')+'</button>' : '';
 
       // Botones acción pequeños
@@ -6287,8 +6534,8 @@ function renderTablaByPuesto(cands, filtros) {
           +'<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+( c.celular||'')+( c.celular&&c.pretension?' · ':'')+( c.pretension?'S/ '+c.pretension:'')+( !c.celular&&!c.pretension?'&mdash;':'')+'</div>'
         +'</div>'
         +'<div style="width:80px;flex-shrink:0;text-align:center;">'+starsHtml+'</div>'
-        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;">'+switchVis+'</div>'
-        +'<div style="width:90px;flex-shrink:0;display:flex;align-items:center;gap:4px;">'+elegidoBadge+trBtn+'</div>'
+        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Líder</div>'+switchVis+'</div>'+'<div style="width:70px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Agendado</div>'+'<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;">'+'<input type="checkbox" '+(c.agendado?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleAgendado(this)" style="width:14px;height:14px;accent-color:#2563A8;">'+'</label>'+'</div>'
+        +'<div style="width:110px;flex-shrink:0;display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'+elegidoBadge+trBtn+revertirOfertaBtn+'</div>'
         +'<div style="width:80px;flex-shrink:0;display:flex;align-items:center;gap:1px;">'+acciones+'</div>'
         +'<div style="width:60px;flex-shrink:0;text-align:right;">'
           +'<button onclick="toggleExpandCand(\''+ rowId+'\')" id="btnexp_'+rowId+'" style="font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">Ver &#9660;</button>'
@@ -6397,7 +6644,7 @@ async function syncReqsToServer(r){ await safeFetch('/api/jobs?type=reqs',{metho
 // FEEDBACK
 // ══════════════════════════════════
 // Renderiza feedback para un puesto específico (usado en portal líder detalle)
-function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
+function renderFeedbackParaPuesto(puesto, candsFeedback, fbs, reqId) {
   if (!candsFeedback || !candsFeedback.length) return '<div style="font-size:12px;color:var(--muted);">Sin candidatos para evaluar.</div>';
   var BTN_ST = 'font-size:11px;padding:4px 12px;min-width:90px;text-align:center;';
   return candsFeedback.map(function(c) {
@@ -6440,6 +6687,7 @@ function renderFeedbackParaPuesto(puesto, candsFeedback, fbs) {
             + '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN_ST+'">'+(noAptoOk?'&#10007; No apto':'No apto')+'</button>'
             + (aptoOk&&!esElegido?'<button class="btn btn-sm btn-accent" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN_ST+'">&#127942; Elegir</button>':'')
             + (esElegido?'<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">&#127942; Candidato elegido</span>':'')
+            + (esElegido?'<button data-req-id="'+reqId+'" data-cand="'+cEnc+'" onclick="revertirOferta(this.dataset.reqId,this.dataset.cand)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(194,59,34,0.4);background:#fef2ee;color:#c23b22;cursor:pointer;" title="Revertir elección">↩ Revertir</button>':'')
           + '</div>'
         + '</div>'
       + '</div>'
@@ -6567,6 +6815,7 @@ function renderFeedbackPanel() {
               bodyHtml += '<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="font-size:11px;padding:4px 12px;">'+(noAptoOk?'✗ No apto':'No apto')+'</button>';
               if (aptoOk && !esElegido) bodyHtml += '<button class="btn btn-sm btn-accent" data-cand="'+cEnc2+'" data-puesto="'+pEnc2+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="font-size:11px;padding:4px 12px;">🏆 Elegir como candidato final</button>';
               if (esElegido) bodyHtml += '<span style="font-size:12px;font-weight:600;color:#2d7a4f;background:#edf7f1;padding:4px 12px;border-radius:8px;">🏆 Candidato elegido</span>';
+              if (esElegido) bodyHtml += '<button data-req-id="'+reqId+'" data-cand="'+cEnc2+'" onclick="revertirOferta(this.dataset.reqId,this.dataset.cand)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(194,59,34,0.4);background:#fef2ee;color:#c23b22;cursor:pointer;" title="Revertir elección">↩ Revertir elección</button>';
               bodyHtml += '</div>';
             } else if (fb) {
               // Solo lectura
@@ -7100,6 +7349,48 @@ function elegirCandidato(cand, puesto) {
   toast('🏆 ' + cDec + ' seleccionado como candidato elegido');
 }
 
+// ── Revertir candidato elegido / carta oferta ──
+function revertirOferta(reqId, candEnc) {
+  var cDec = decodeURIComponent(candEnc);
+  var numId = parseInt(reqId) || reqId;
+  var req = requisiciones.find(function(r){ return r.id===numId || String(r.id)===String(reqId); });
+  if (!req) return;
+  mostrarPopupMotivo('¿Por qué se revierte la elección de ' + cDec + '?', function(motivo) {
+    // 1. Limpiar etapas.oferta y candidatoElegido de la req
+    var etapas = Object.assign({}, req.etapas||{});
+    delete etapas.oferta;
+    delete etapas.tramites; // si había trámites también se revierten
+    var bita = Array.isArray(req.bitacora) ? req.bitacora.slice() : [];
+    bita.push({
+      fecha: new Date().toLocaleDateString('es-PE'),
+      hora: new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+      msg: 'Elección revertida — ' + cDec + ': ' + motivo,
+      candidato: cDec
+    });
+    requisiciones = requisiciones.map(function(r){
+      if (r.id!==numId && String(r.id)!==String(reqId)) return r;
+      return Object.assign({}, r, {etapas:etapas, bitacora:bita, candidatoElegido:''});
+    });
+    localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+    syncReqsToServer(requisiciones);
+    // 2. Desmarcar elegido en feedbacks
+    feedbacks = feedbacks.map(function(f){
+      if (f.candidato!==cDec) return f;
+      var matchReq = reqId ? (String(f.reqId)===String(reqId)) : (f.puesto===req.puesto);
+      if (!matchReq) return f;
+      return Object.assign({}, f, {elegido:false});
+    });
+    localStorage.setItem('rfeedbacks', JSON.stringify(feedbacks));
+    safeFetch('/api/jobs?type=feedbacks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedbacks:feedbacks})});
+    // 3. Re-render
+    renderJobsList();
+    renderCandidatosPorPuesto();
+    if (window._liderProcesoSeleccionado) renderDetalleProcesoSeleccionado(window._liderProcesoSeleccionado);
+    verificarAlertas();
+    toast('Elección revertida — ' + cDec);
+  });
+}
+
 function toggleFbCard(keyOrEl) {
   var key = typeof keyOrEl === 'string' ? keyOrEl : keyOrEl.dataset && keyOrEl.dataset.key;
   if (!key) return;
@@ -7120,19 +7411,7 @@ function setFbStar(el){
 }
 
 // Wrappers seguros que usan data-attributes para evitar problemas con caracteres especiales
-function saveFeedbackBtn(el) {
-  var candidato = decodeURIComponent(el.dataset.cand);
-  var puesto = decodeURIComponent(el.dataset.puesto);
-  var key = el.dataset.key;
-  saveFeedback(candidato, puesto, key);
-}
 
-function deleteFeedbackBtn(el) {
-  var candidato = decodeURIComponent(el.dataset.cand);
-  var puesto = decodeURIComponent(el.dataset.puesto);
-  var reqId = el.dataset.reqId ? (parseInt(el.dataset.reqId)||el.dataset.reqId) : null;
-  deleteFeedback(candidato, puesto, reqId);
-}
 
 function saveFeedback(candidato,puesto,key){
   var comentario=document.getElementById('fb_'+key)?document.getElementById('fb_'+key).value:'';
@@ -7199,17 +7478,6 @@ function getAreasDefault() {
 }
 
 // Pobla el select de área para un prefijo ('f', 'll', 'lf')
-function poblarAreaSel(prefix) {
-  var selArea = document.getElementById(prefix + '_area_sel') || document.getElementById(prefix === 'f' ? 'f_area_sel' : null);
-  if (!selArea) return;
-  var areas = getAreasDefault();
-  selArea.innerHTML = '<option value="">Todas las áreas</option>';
-  areas.forEach(function(a) {
-    var opt = document.createElement('option');
-    opt.value = a; opt.textContent = a;
-    selArea.appendChild(opt);
-  });
-}
 
 // Filtra puestos según área seleccionada
 function filtrarPuestosDefault(prefix, areaFiltro) {
@@ -7344,9 +7612,6 @@ function seleccionarPuestoDefault(val) {
   var iEl = document.getElementById('f_instrucciones'); if (iEl) iEl.value = '';
 }
 
-function poblarSelectPuestosLider() {
-  poblarSelectPuestosDefault();
-}
 
 function seleccionarPuestoLider(prefix, val) {
   var inp  = document.getElementById(prefix + '_puesto');
@@ -7392,10 +7657,13 @@ function guardarSolicitudLogin() {
   var motivo  = document.getElementById('ll_motivo').value;
   var desc    = document.getElementById('ll_desc').value.trim();
   var dni     = document.getElementById('ll_dni').value.trim();
+  var horario  = (document.getElementById('ll_horario')||{}).value||'';
+  var emailLid = (document.getElementById('ll_emailLider')||{}).value||'';
+  var deseables= (document.getElementById('ll_deseables')||{}).value||'';
 
-  if (!puesto||!area||!sede||!nivel||!motivo||!desc) { toast('Completa todos los campos obligatorios'); return; }
+  if (!puesto||!area||!sede||!nivel||!motivo||!desc||!horario||!emailLid) { toast('Completa todos los campos obligatorios'); return; }
 
-  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
+  var diasPlazo = nivel==='35e'?35:parseInt(nivel);
   var fechaLimDate = new Date(); fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
   var nivelLabel = PLAZOS[nivel] ? PLAZOS[nivel].label : nivel;
 
@@ -7412,7 +7680,7 @@ function guardarSolicitudLogin() {
       id: Date.now(),
       titulo: puesto, area: area, gerencia: gerencia,
       desc: desc, instrucciones: '',
-      emailLider: '', dniLider: dni || ''
+      emailLider: emailLid, dniLider: dni || ''
     };
     jobs.push(nuevoJob);
     jobId = nuevoJob.id;
@@ -7427,12 +7695,12 @@ function guardarSolicitudLogin() {
     fechaInicioRaw: new Date().toISOString().slice(0,10),
     fechaLimite: fechaLimDate.toLocaleDateString('es-PE'),
     fechaLimiteRaw: fechaLimDate.toISOString(),
-    puesto: puesto, area: area, gerencia: gerencia, sede: sede, horario: '—',
+    puesto: puesto, area: area, gerencia: gerencia, sede: sede, horario: horario,
     nivelVal: nivel, nivel: nivelLabel,
     diasPlazo: diasPlazo, motivo: motivo,
     reemplazoNombre: reemplazoNombreLL, cese: ceseLL,
-    minimos: desc, deseables: '',
-    emailLider: '', dniLider: dni,
+    minimos: desc, deseables: deseables,
+    emailLider: emailLid, dniLider: dni,
     estado: 'Pendiente', desiderablesCompletados: false,
     origenLider: true
   };
@@ -7444,7 +7712,7 @@ function guardarSolicitudLogin() {
   verificarAlertas();
 
   // Mensaje confirmación
-  var linkLider = window.location.origin + (window.location.pathname||'/');
+  var linkLider = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
   var msgHtml =
     '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;" id="liderConfirmOverlay2">' +
     '<div style="background:var(--surface);border-radius:16px;padding:32px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:16px;text-align:center;">' +
@@ -7501,7 +7769,7 @@ function guardarSolicitudLider() {
     toast('Completa todos los campos obligatorios'); return;
   }
 
-  var diasPlazo = nivel==='30e'?30:parseInt(nivel);
+  var diasPlazo = nivel==='35e'?35:parseInt(nivel);
   var fechaLimiteDate = new Date(fechaInicio);
   fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
 
@@ -7555,7 +7823,7 @@ function guardarSolicitudLider() {
 
   // Mostrar mensaje de agradecimiento con tiempos y link
   var nivelLabel = PLAZOS[nivel] ? PLAZOS[nivel].label : nivel;
-  var linkLider = window.location.origin + (window.location.pathname||'/index.html');
+  var linkLider = _getBaseUrl().origin + _getBaseUrl().path + '?rol=lider';
   var msgHtml =
     '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;" id="liderConfirmOverlay">' +
     '<div style="background:var(--surface);border-radius:16px;padding:32px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:16px;text-align:center;">' +
@@ -7699,8 +7967,8 @@ function renderDashboard() {
       }
     });
     // Pipeline por etapa — una columna por etapa, procesos dentro
-    var ETAPAS_N = ['HC','Convocatoria','Evaluación y Longlist','Entrevista','Oferta'];
-    var ETAPAS_K = ['hc','convoc','evaluacion','entrevista','oferta'];
+    var ETAPAS_N = ['HC y Presupuesto','Convocatoria GTH','Validación CVs Líder','Entrevista Técnica','Candidato Elegido / Carta Oferta'];
+    var ETAPAS_K = ['hc','convoc','validacionCVs','entrevista','oferta'];
 
     // Agrupar procesos por etapa actual usando calcularEtapaActual
     var byEtapa = {};
@@ -7792,7 +8060,7 @@ function renderDashboard() {
         byGer[ger].activos++;
         // % avance del proceso activo (etapa 0-5 sobre 5)
         var etapaIdx = calcularEtapaActual(r, results, feedbacks);
-        byGer[ger].avances.push(Math.round(etapaIdx / 5 * 100));
+        byGer[ger].avances.push(Math.round(etapaIdx / 4 * 100));
       }
       if (slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); })) byGer[ger].sla++;
       var candsDePuesto = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); });
@@ -7836,12 +8104,6 @@ function renderDashboard() {
 }
 
 
-function mkKpiTexto(label, value, color) {
-  return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:16px 12px;text-align:center;">'+
-    '<div style="font-size:12px;font-weight:500;color:'+color+';line-height:1.4;">'+value+'</div>'+
-    '<div style="font-size:11px;color:var(--muted);margin-top:4px;">'+label+'</div>'+
-  '</div>';
-}
 
 function mkKpiPill(label, value, textColor, bgColor) {
   return '<div style="display:flex;align-items:center;gap:8px;background:'+bgColor+';border-radius:20px;padding:7px 14px;flex-shrink:0;">'+
@@ -8184,28 +8446,32 @@ function enviarReporteIngresos() {
   if (!destinatarios) { toast('Configura los emails de destino primero'); return; }
 
   var fecha = new Date().toLocaleDateString('es-PE', {day:'2-digit', month:'long', year:'numeric'});
-  var asunto = encodeURIComponent('Reporte de Ingresos — Perufarma S.A. — ' + fecha);
+  var tpls = getTemplates();
 
-  // Cuerpo del email con tabla de candidatos
+  // Tabla formateada
   var filas = pendientes.map(function(p) {
-    return '- ' + p.nombre + ' | DNI: ' + p.dni + ' | Puesto: ' + p.puesto + ' | Gerencia: ' + p.gerencia + ' | Pretensión: ' + p.pretension + ' | Disponibilidad: ' + p.disponibilidad;
+    return '  \u2022 ' + p.nombre + ' | DNI: ' + p.dni + ' | Puesto: ' + p.puesto
+      + ' | Gerencia: ' + p.gerencia + ' | Pretensi\u00f3n: S/ ' + (p.pretension||'\u2014')
+      + (p.disponibilidad ? ' | Disponibilidad: ' + p.disponibilidad : '');
   }).join('\n');
 
   var docs = cfg.docsIngreso || [];
   var docsTexto = docs.length
-    ? '\n\nDocumentos requeridos para tramites:\n' + docs.map(function(d){ return '- ' + d.nombre + ': ' + d.url; }).join('\n')
+    ? 'Documentos requeridos:\n' + docs.map(function(d){ return '  \u2022 ' + d.nombre + ': ' + d.url; }).join('\n')
     : '';
 
-  var cuerpo = encodeURIComponent(
-    'Estimado equipo,\n\n'
-    + 'Se adjunta el reporte de candidatos que iniciaran sus tramites de ingreso:\n\n'
-    + filas
-    + docsTexto
-    + '\n\nSaludos,\nEquipo de Gestion del Talento Humano - Perufarma S.A.'
-  );
+  // Usar template editable
+  var cuerpoTpl = aplicarVariables(tpls.reporte_ingresos || DEFAULT_TEMPLATES.reporte_ingresos, {
+    fecha: fecha, tabla: filas, docs: docsTexto
+  });
+  var asuntoTpl = aplicarVariables(tpls.reporte_ingresos_asunto || DEFAULT_TEMPLATES.reporte_ingresos_asunto, {
+    fecha: fecha
+  });
 
-  // Abrir cliente de email
-  window.location.href = 'mailto:' + destinatarios + '?subject=' + asunto + '&body=' + cuerpo;
+  var asunto = encodeURIComponent(asuntoTpl);
+  var cuerpo = encodeURIComponent(cuerpoTpl);
+
+    window.location.href = 'mailto:' + destinatarios + '?subject=' + asunto + '&body=' + cuerpo;
 
   // Marcar candidatos como notificados
   setTimeout(function() {
