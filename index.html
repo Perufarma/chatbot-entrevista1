@@ -1266,6 +1266,7 @@ function cargarPuestosDefault() {
   if (!jobs.length) {
     jobs = PUESTOS_DEFAULT.map(function(p) { return Object.assign({}, p); });
     localStorage.setItem('rjobs', JSON.stringify(jobs));
+    syncJobsToServer(jobs);
   }
 }
 
