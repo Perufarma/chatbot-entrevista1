@@ -5068,13 +5068,14 @@ function mostrarModalCandidato(c) {
           + '<input type="text" id="cmCvUrl" placeholder="Link de Drive o externo" value="'+(c.cvUrl||'')+'" style="font-size:12px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);flex:1;min-width:160px;">'
         + '</div></div>'
 
-      // Detectar si es copia con campos vacíos y existe original con datos
-      var esCopia = c.fuente === 'copiado' || c.fuente === 'manual_copia';
-      var originalConDatos = esCopia ? _allResults.find(function(r){
-        return r.candidato === c.candidato && String(r.reqId) !== String(c.reqId||'')
+      // Detectar si hay un original con datos para este candidato en otro proceso
+      var originalConDatos = _allResults.find(function(r){
+        return r.candidato === c.candidato
+          && !(String(r.reqId||'') === String(c.reqId||'') && r.puesto === c.puesto)
           && (r.resumen || r.comentarioReclutador || r.notaInterna || r.cvUrl || r.cvBase64);
-      }) : null;
-      var btnSincronizar = originalConDatos
+      });
+      var mostrarBtnRecuperar = originalConDatos && !(c.resumen || c.comentarioReclutador || c.notaInterna);
+      var btnSincronizar = (mostrarBtnRecuperar && originalConDatos)
         ? '<button class="btn btn-secondary btn-sm" data-cand="'+cEnc+'" data-req-id-orig="'+encodeURIComponent(String(originalConDatos.reqId||''))+'" onclick="sincronizarDatosOriginal(this)" style="margin-right:auto;" title="Copiar resumen, comentarios y CV del proceso original">&#8635; Recuperar datos del original</button>'
         : '';
       // Botones
@@ -5151,33 +5152,45 @@ function sincronizarDatosOriginal(btn) {
 // Repara en batch todos los duplicados sin datos que tienen un original con datos
 // Útil para recuperar candidatos copiados antes del fix
 function sincronizarTodosDuplicados() {
+  // Construir índice: para cada candidato, el registro con más datos
+  var mejorOrig = {};
+  _allResults.forEach(function(r) {
+    var nombre = r.candidato;
+    var tieneDatos = !!(r.resumen || r.comentarioReclutador || r.notaInterna || r.cvUrl || r.cvBase64);
+    if (!tieneDatos) return;
+    var actual = mejorOrig[nombre];
+    // Preferir el que tenga más campos llenos
+    var score = (r.resumen?2:0) + (r.comentarioReclutador?2:0) + (r.notaInterna?1:0) + (r.cvUrl||r.cvBase64?1:0);
+    if (!actual || score > actual._score) {
+      mejorOrig[nombre] = Object.assign({}, r, {_score: score});
+    }
+  });
+
   var reparados = 0;
   _allResults = _allResults.map(function(c) {
-    if (c.fuente !== 'copiado' && c.fuente !== 'manual_copia') return c;
-    if (c.resumen || c.comentarioReclutador || c.notaInterna) return c; // ya tiene datos
-    var orig = _allResults.find(function(r){
-      return r.candidato === c.candidato
-        && String(r.reqId||'') !== String(c.reqId||'')
-        && (r.resumen || r.comentarioReclutador || r.notaInterna || r.cvUrl || r.cvBase64);
-    });
-    if (!orig) return c;
+    // Ya tiene datos — no tocar
+    if (c.resumen || c.comentarioReclutador || c.notaInterna) return c;
+    var orig = mejorOrig[c.candidato];
+    // No existe original con datos, o el "original" es el mismo registro
+    if (!orig || (String(orig.reqId||'') === String(c.reqId||'') && orig.puesto === c.puesto)) return c;
     reparados++;
     return Object.assign({}, c, {
-      resumen:               orig.resumen || c.resumen || '',
-      comentarioReclutador:  orig.comentarioReclutador || c.comentarioReclutador || '',
-      notaInterna:           orig.notaInterna || c.notaInterna || '',
-      cvUrl:                 orig.cvUrl || c.cvUrl || '',
-      cvBase64:              orig.cvBase64 || c.cvBase64 || '',
-      cvFileName:            orig.cvFileName || c.cvFileName || ''
+      resumen:              orig.resumen              || c.resumen              || '',
+      comentarioReclutador: orig.comentarioReclutador || c.comentarioReclutador || '',
+      notaInterna:          orig.notaInterna          || c.notaInterna          || '',
+      cvUrl:                orig.cvUrl                || c.cvUrl                || '',
+      cvBase64:             orig.cvBase64             || c.cvBase64             || '',
+      cvFileName:           orig.cvFileName           || c.cvFileName           || ''
     });
   });
+
   if (reparados > 0) {
     localStorage.setItem('rresults', JSON.stringify(_allResults));
     safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
     toast('✓ ' + reparados + ' candidato' + (reparados>1?'s':'') + ' sincronizado' + (reparados>1?'s':'') + ' con datos del original');
     filtrarCandidatos();
   } else {
-    toast('No se encontraron duplicados con datos pendientes de sincronizar');
+    toast('No se encontraron registros sin datos que sincronizar');
   }
 }
 
