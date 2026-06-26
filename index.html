@@ -676,7 +676,13 @@ a[title]{cursor:pointer;}
 
     <!-- Form candidato manual -->
     <div class="add-job-form" id="candManualForm">
-      <div style="font-size:14px;font-weight:500;">Agregar candidato manualmente</div>
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;">
+        <div style="padding:16px 20px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;">
+          <div style="font-size:15px;font-weight:600;color:var(--text);">Agregar candidato manualmente</div>
+          <button onclick="toggleCandManualForm()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">&#10005;</button>
+        </div>
+        <div style="padding:20px;">
+      <div style="font-size:14px;font-weight:500;"></div>
       <!-- Carga de CV para auto-completar -->
       <div style="background:var(--surface2);border:1.5px dashed var(--border2);border-radius:10px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
         <div style="font-size:22px;">&#128196;</div>
@@ -751,6 +757,8 @@ a[title]{cursor:pointer;}
         <button class="btn btn-primary" onclick="saveCandidatoManual()" title="Guarda el candidato y lo incluye en la tabla junto a los del chatbot">Guardar candidato</button>
         <button class="btn btn-secondary" onclick="toggleCandManualForm()" title="Cierra el formulario sin guardar">Cancelar</button>
       </div>
+        </div><!-- /padding -->
+      </div><!-- /contenedor blanco -->
     </div>
 
     <div id="btnEliminarSelWrap" style="display:none;position:fixed;bottom:24px;right:24px;z-index:500;flex-direction:column;gap:8px;align-items:flex-end;">
@@ -1615,8 +1623,13 @@ async function inicializarApp() {
   if (d && Array.isArray(d.jobs) && d.jobs.length) {
     jobs = d.jobs; localStorage.setItem('rjobs', JSON.stringify(jobs));
     // Agregar perfiles que falten del DEFAULT (nuevos perfiles agregados al código)
+    // Verificar por ID Y por título para evitar duplicados cuando el reclutador renombró un puesto
     var existingIds = jobs.map(function(j){return j.id;});
-    var faltantes = PUESTOS_DEFAULT.filter(function(p){ return existingIds.indexOf(p.id)===-1; });
+    var existingTitles = jobs.map(function(j){return j.titulo ? j.titulo.toLowerCase().trim() : '';});
+    var faltantes = PUESTOS_DEFAULT.filter(function(p){
+      return existingIds.indexOf(p.id)===-1 &&
+             existingTitles.indexOf(p.titulo ? p.titulo.toLowerCase().trim() : '')===-1;
+    });
     if (faltantes.length) {
       faltantes.forEach(function(p){ jobs.push(Object.assign({},p,{emailLider:'',dniLider:''})); });
       localStorage.setItem('rjobs', JSON.stringify(jobs));
@@ -4817,12 +4830,20 @@ function guardarEditCand(cand, puesto) {
   var nuevaNota      = notaEl ? notaEl.value.trim() : '';
   var nuevaComentRec = comentRecEl ? comentRecEl.value.trim() : '';
   var nuevoCvUrl     = cvUrlEl ? cvUrlEl.value.trim() : '';
-  // Actualizar en _allResults
+  // Actualizar en _allResults — match por candidato + puesto + reqId para no tocar duplicados en otros procesos
+  var reqIdBuscado = null;
+  // Buscar el reqId del candidato específico que se está editando
+  var candRef = _allResults.find(function(r){
+    return r.candidato === candidato && r.puesto && puestoD && r.puesto.toLowerCase().trim() === puestoD.toLowerCase().trim();
+  });
+  if (candRef) reqIdBuscado = candRef.reqId || null;
+
   _allResults = _allResults.map(function(r) {
-    if (r.candidato === candidato && r.puesto && puestoD && r.puesto.toLowerCase().trim() === puestoD.toLowerCase().trim()) {
-      return Object.assign({}, r, { visibleLider: nuevoVis, resumen: nuevoRes, notaInterna: nuevaNota, comentarioReclutador: nuevaComentRec, cvUrl: nuevoCvUrl });
-    }
-    return r;
+    var matchCand = r.candidato === candidato;
+    var matchPuesto = r.puesto && puestoD && r.puesto.toLowerCase().trim() === puestoD.toLowerCase().trim();
+    var matchReq = reqIdBuscado ? (String(r.reqId) === String(reqIdBuscado)) : !r.reqId;
+    if (!matchCand || !matchPuesto || !matchReq) return r;
+    return Object.assign({}, r, { visibleLider: nuevoVis, resumen: nuevoRes, notaInterna: nuevaNota, comentarioReclutador: nuevaComentRec, cvUrl: nuevoCvUrl });
   });
   localStorage.setItem('rresults', JSON.stringify(_allResults));
   safeFetch('/api/jobs?type=results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ results: _allResults }) });
@@ -4834,9 +4855,13 @@ function guardarEditCand(cand, puesto) {
 function eliminarCandidato(el) {
   var candidato = decodeURIComponent(el.dataset.cand);
   var puesto    = decodeURIComponent(el.dataset.puesto);
+  var reqId     = el.dataset.reqId || null;
   if (!confirm('¿Eliminar a ' + candidato + ' de la lista de candidatos?')) return;
   _allResults = _allResults.filter(function(r){
-    return !(r.candidato === candidato && r.puesto === puesto);
+    if (r.candidato !== candidato || r.puesto !== puesto) return true;
+    // Si tenemos reqId, solo eliminar el registro exacto
+    if (reqId) return String(r.reqId) !== String(reqId);
+    return false;
   });
   localStorage.setItem('rresults', JSON.stringify(_allResults));
   safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
@@ -4965,6 +4990,7 @@ function mostrarModalCandidato(c) {
 
   var overlay = document.createElement('div');
   overlay.id = 'candidatoModalOverlay';
+  overlay.dataset.reqId = c.reqId || '';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
   overlay.onclick = function(e){ if(e.target===overlay) cerrarModalCandidato(); };
 
@@ -5112,26 +5138,32 @@ function procesarCvModal(input) {
 function guardarModalCandidato(cand, puesto) {
   var candidato = decodeURIComponent(cand);
   var puestoD   = decodeURIComponent(puesto);
-  var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
-  var gc = function(id){ var el=document.getElementById(id); return el?el.checked:false; };
+  // Extraer reqId del overlay si está disponible
   var overlay = document.getElementById('candidatoModalOverlay');
+  var reqIdModal = overlay ? overlay.dataset.reqId : null;
   var cvBase64 = overlay ? overlay.dataset.cvBase64 : null;
   var cvFileName = overlay ? overlay.dataset.cvFileName : null;
+  var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+  var gc = function(id){ var el=document.getElementById(id); return el?el.checked:false; };
 
   _allResults = _allResults.map(function(r) {
-    if (r.candidato===candidato && r.puesto && puestoD && r.puesto.toLowerCase().trim()===puestoD.toLowerCase().trim()) {
-      var updates = {
-        dni:g('cmDni'), celular:g('cmCelular'), correo:g('cmCorreo'),
-        distrito:g('cmDistrito'), gradoAcademico:g('cmGrado'), disponibilidad:g('cmDisponibilidad'),
-        remActual:g('cmRemActual'), pretension:g('cmPretension'), expLaboral:g('cmExpLaboral'),
-        visibleLider:gc('cmVisibleLider'),
-        resumen:g('cmResumen'), comentarioReclutador:g('cmComentRec'),
-        notaInterna:g('cmNotaInterna'), cvUrl:g('cmCvUrl')
-      };
-      if (cvBase64) { updates.cvBase64 = cvBase64; updates.cvFileName = cvFileName; }
-      return Object.assign({}, r, updates);
-    }
-    return r;
+    // Match preciso: candidato + puesto + reqId (si está disponible)
+    var matchCand = r.candidato === candidato;
+    var matchPuesto = r.puesto && puestoD && r.puesto.toLowerCase().trim() === puestoD.toLowerCase().trim();
+    var matchReq = reqIdModal
+      ? (String(r.reqId) === String(reqIdModal))
+      : !r.reqId; // si no hay reqId en el modal, solo actualizar registros sin reqId
+    if (!matchCand || !matchPuesto || !matchReq) return r;
+    var updates = {
+      dni:g('cmDni'), celular:g('cmCelular'), correo:g('cmCorreo'),
+      distrito:g('cmDistrito'), gradoAcademico:g('cmGrado'), disponibilidad:g('cmDisponibilidad'),
+      remActual:g('cmRemActual'), pretension:g('cmPretension'), expLaboral:g('cmExpLaboral'),
+      visibleLider:gc('cmVisibleLider'),
+      resumen:g('cmResumen'), comentarioReclutador:g('cmComentRec'),
+      notaInterna:g('cmNotaInterna'), cvUrl:g('cmCvUrl')
+    };
+    if (cvBase64) { updates.cvBase64 = cvBase64; updates.cvFileName = cvFileName; }
+    return Object.assign({}, r, updates);
   });
 
   localStorage.setItem('rresults', JSON.stringify(_allResults));
@@ -5144,10 +5176,13 @@ function guardarModalCandidato(cand, puesto) {
 function toggleVisibilidad(el) {
   var candidato = decodeURIComponent(el.dataset.id);
   var puesto = decodeURIComponent(el.dataset.puesto);
+  var reqId = el.dataset.reqId || null;
   var visible = el.checked;
-  // Actualizar en _allResults
+  // Actualizar en _allResults — match por reqId cuando está disponible para no afectar duplicados
   _allResults = _allResults.map(function(r) {
-    return (r.candidato===candidato && r.puesto===puesto) ? Object.assign({},r,{visibleLider:visible}) : r;
+    var matchCand = r.candidato === candidato && r.puesto === puesto;
+    var matchReq = reqId ? String(r.reqId) === String(reqId) : !r.reqId;
+    return (matchCand && matchReq) ? Object.assign({},r,{visibleLider:visible}) : r;
   });
   // Guardar
   localStorage.setItem('rresults', JSON.stringify(_allResults));
@@ -5163,11 +5198,12 @@ function toggleVisibilidad(el) {
 function toggleAgendado(el) {
   var candidato = decodeURIComponent(el.dataset.id);
   var puesto    = decodeURIComponent(el.dataset.puesto);
+  var reqId     = el.dataset.reqId || null;
   var agendado  = el.checked;
   _allResults = _allResults.map(function(r) {
-    return (r.candidato===candidato && r.puesto===puesto)
-      ? Object.assign({},r,{agendado:agendado})
-      : r;
+    var matchCand = r.candidato === candidato && r.puesto === puesto;
+    var matchReq = reqId ? String(r.reqId) === String(reqId) : !r.reqId;
+    return (matchCand && matchReq) ? Object.assign({},r,{agendado:agendado}) : r;
   });
   localStorage.setItem('rresults', JSON.stringify(_allResults));
   safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
@@ -5284,8 +5320,11 @@ function eliminarSeleccionados() {
   cbs.forEach(function(cb) {
     var cand   = decodeURIComponent(cb.dataset.cand);
     var puesto = decodeURIComponent(cb.dataset.puesto);
+    var reqId  = cb.dataset.reqId || null;
     _allResults = _allResults.filter(function(r){
-      return !(r.candidato===cand && r.puesto===puesto);
+      if (r.candidato !== cand || r.puesto !== puesto) return true;
+      if (reqId) return String(r.reqId) !== String(reqId);
+      return false;
     });
   });
   localStorage.setItem('rresults', JSON.stringify(_allResults));
@@ -6498,7 +6537,7 @@ function renderTablaByPuesto(cands, filtros) {
 
       // Switch avanza con líder
       var switchVis = '<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;">'
-        +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:14px;height:14px;">'
+        +'<input type="checkbox" '+(c.visibleLider?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" data-req-id="'+(c.reqId||'')+'" onchange="toggleVisibilidad(this)" style="accent-color:var(--accent2);width:14px;height:14px;">'
         +'</label>';
 
       // Elegido / Ingreso — usar la req específica del candidato si tiene reqId
@@ -6523,18 +6562,18 @@ function renderTablaByPuesto(cands, filtros) {
       var acciones = '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">'
         +(c.correo?'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="enviarCorreoCandidato(decodeURIComponent(this.dataset.cand),decodeURIComponent(this.dataset.puesto))" style="background:none;border:none;cursor:pointer;font-size:12px;color:#3C3489;padding:1px 4px;" title="Correo">&#9993;</button>':'')
         +(c.celular?'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="enviarWhatsAppCandidato(decodeURIComponent(this.dataset.cand),decodeURIComponent(this.dataset.puesto))" style="background:none;border:none;cursor:pointer;font-size:12px;color:#2d7a4f;padding:1px 4px;" title="WhatsApp">&#128172;</button>':'')
-        +'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:#c0392b;padding:1px 4px;" title="Eliminar">&#128465;</button>'
+        +'<button data-cand="'+cEnc+'" data-puesto="'+pEnc+'" data-req-id="'+(c.reqId||'')+'" onclick="eliminarCandidato(this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:#c0392b;padding:1px 4px;" title="Eliminar">&#128465;</button>'
         +'</div>';
 
       // Fila principal — nuevo diseño panel lateral
       var rowMain = '<div style="display:flex;align-items:center;padding:9px 16px;gap:12px;border-bottom:0.5px solid var(--border2);background:var(--surface);" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">' 
-        +'<input type="checkbox" class="cand-sel-cb" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onchange="actualizarBtnEliminarSel()" style="accent-color:var(--accent2);width:13px;height:13px;flex-shrink:0;cursor:pointer;">'
+        +'<input type="checkbox" class="cand-sel-cb" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" data-req-id="'+(c.reqId||'')+'" onchange="actualizarBtnEliminarSel()" style="accent-color:var(--accent2);width:13px;height:13px;flex-shrink:0;cursor:pointer;">'
         +'<div style="flex:1;min-width:0;">'
           +'<div style="font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="abrirModalCandidato(this)" title="Ver y editar perfil completo">'+c.candidato+badge+fuente+alertaBadge+'</div>'
           +'<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+( c.celular||'')+( c.celular&&c.pretension?' · ':'')+( c.pretension?'S/ '+c.pretension:'')+( !c.celular&&!c.pretension?'&mdash;':'')+'</div>'
         +'</div>'
         +'<div style="width:80px;flex-shrink:0;text-align:center;">'+starsHtml+'</div>'
-        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Líder</div>'+switchVis+'</div>'+'<div style="width:70px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Agendado</div>'+'<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;">'+'<input type="checkbox" '+(c.agendado?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" onchange="toggleAgendado(this)" style="width:14px;height:14px;accent-color:#2563A8;">'+'</label>'+'</div>'
+        +'<div style="width:65px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Líder</div>'+switchVis+'</div>'+'<div style="width:70px;flex-shrink:0;display:flex;justify-content:center;flex-direction:column;align-items:center;gap:2px;">'+'<div style="font-size:9px;color:var(--muted);">Agendado</div>'+'<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;">'+'<input type="checkbox" '+(c.agendado?'checked':'')+' data-id="'+cEnc+'" data-puesto="'+pEnc+'" data-req-id="'+(c.reqId||'')+'" onchange="toggleAgendado(this)" style="width:14px;height:14px;accent-color:#2563A8;">'+'</label>'+'</div>'
         +'<div style="width:110px;flex-shrink:0;display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'+elegidoBadge+trBtn+revertirOfertaBtn+'</div>'
         +'<div style="width:80px;flex-shrink:0;display:flex;align-items:center;gap:1px;">'+acciones+'</div>'
         +'<div style="width:60px;flex-shrink:0;text-align:right;">'
