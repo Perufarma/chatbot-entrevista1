@@ -635,6 +635,7 @@ a[title]{cursor:pointer;}
       <div><div class="section-title">Candidatos por puesto</div><div class="section-sub">Resultados del prefiltro en tiempo real &nbsp;<span id="candidatosContador" style="font-size:11px;color:var(--muted);"></span></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="renderCandidatosPorPuesto()" title="Recarga la lista de candidatos desde el servidor">Actualizar</button>
+        <button class="btn btn-secondary btn-sm" onclick="sincronizarTodosDuplicados()" title="Recupera resumen, comentarios y CV del proceso original en candidatos copiados que no tienen esa información" style="font-size:11px;">&#8635; Sincronizar duplicados</button>
         <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Descargar Excel</button>
         <button class="btn btn-secondary btn-sm" onclick="abrirImportador('pandape')" title="Importar candidatos desde Excel de Pandapé / Computrabajo">&#8679; Pandapé</button>
         <button class="btn btn-secondary btn-sm" onclick="abrirImportador('bumeran')" title="Importar candidatos desde Excel de Bumeran">&#8679; Bumeran</button>
@@ -5067,8 +5068,18 @@ function mostrarModalCandidato(c) {
           + '<input type="text" id="cmCvUrl" placeholder="Link de Drive o externo" value="'+(c.cvUrl||'')+'" style="font-size:12px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);flex:1;min-width:160px;">'
         + '</div></div>'
 
+      // Detectar si es copia con campos vacíos y existe original con datos
+      var esCopia = c.fuente === 'copiado' || c.fuente === 'manual_copia';
+      var originalConDatos = esCopia ? _allResults.find(function(r){
+        return r.candidato === c.candidato && String(r.reqId) !== String(c.reqId||'')
+          && (r.resumen || r.comentarioReclutador || r.notaInterna || r.cvUrl || r.cvBase64);
+      }) : null;
+      var btnSincronizar = originalConDatos
+        ? '<button class="btn btn-secondary btn-sm" data-cand="'+cEnc+'" data-req-id-orig="'+encodeURIComponent(String(originalConDatos.reqId||''))+'" onclick="sincronizarDatosOriginal(this)" style="margin-right:auto;" title="Copiar resumen, comentarios y CV del proceso original">&#8635; Recuperar datos del original</button>'
+        : '';
       // Botones
       + '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:0.5px solid var(--border2);">'
+        + btnSincronizar
         + '<button class="btn btn-secondary btn-sm" onclick="cerrarModalCandidato()">Cancelar</button>'
         + '<button class="btn btn-primary" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="guardarModalCandidato(this.dataset.cand,this.dataset.puesto)">Guardar cambios</button>'
       + '</div>'
@@ -5097,6 +5108,77 @@ function _mSel(label, id, val, opts) {
     + '<select id="'+id+'" style="width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);">'
     + opts.map(function(o){ return '<option'+(val===o?' selected':'')+'>'+o+'</option>'; }).join('')
     + '</select></div>';
+}
+
+// Recupera resumen, comentarios, nota interna y CV del proceso original al duplicado
+function sincronizarDatosOriginal(btn) {
+  var candidato = decodeURIComponent(btn.dataset.cand);
+  var reqIdOrig = decodeURIComponent(btn.dataset.reqIdOrig || '');
+  var orig = _allResults.find(function(r){
+    return r.candidato === candidato && String(r.reqId||'') === String(reqIdOrig);
+  });
+  if (!orig) { toast('No se encontró el registro original'); return; }
+  // Rellenar los campos del modal con los datos del original
+  var campos = {
+    cmResumen:    orig.resumen || '',
+    cmComentRec:  orig.comentarioReclutador || '',
+    cmNotaInterna:orig.notaInterna || '',
+    cmCvUrl:      orig.cvUrl || ''
+  };
+  Object.keys(campos).forEach(function(id){
+    var el = document.getElementById(id);
+    if (el && !el.value.trim()) el.value = campos[id];
+  });
+  // Si el original tiene CV en base64 y el duplicado no, transferirlo al overlay
+  var overlay = document.getElementById('candidatoModalOverlay');
+  if (overlay && orig.cvBase64 && !overlay.dataset.cvBase64) {
+    overlay.dataset.cvBase64 = orig.cvBase64;
+    overlay.dataset.cvFileName = orig.cvFileName || '';
+    var cvArea = document.getElementById('cvPreviewArea');
+    if (cvArea) {
+      var link = document.createElement('a');
+      link.href = orig.cvBase64;
+      link.download = 'CV_' + candidato.replace(/\s+/g,'_') + '.pdf';
+      link.style.cssText = 'font-size:12px;color:#3C3489;text-decoration:none;background:#EEEDFE;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;';
+      link.innerHTML = '&#128196; Descargar CV';
+      cvArea.insertBefore(link, cvArea.firstChild);
+    }
+  }
+  btn.textContent = '✓ Datos recuperados — guarda para confirmar';
+  btn.disabled = true;
+}
+
+// Repara en batch todos los duplicados sin datos que tienen un original con datos
+// Útil para recuperar candidatos copiados antes del fix
+function sincronizarTodosDuplicados() {
+  var reparados = 0;
+  _allResults = _allResults.map(function(c) {
+    if (c.fuente !== 'copiado' && c.fuente !== 'manual_copia') return c;
+    if (c.resumen || c.comentarioReclutador || c.notaInterna) return c; // ya tiene datos
+    var orig = _allResults.find(function(r){
+      return r.candidato === c.candidato
+        && String(r.reqId||'') !== String(c.reqId||'')
+        && (r.resumen || r.comentarioReclutador || r.notaInterna || r.cvUrl || r.cvBase64);
+    });
+    if (!orig) return c;
+    reparados++;
+    return Object.assign({}, c, {
+      resumen:               orig.resumen || c.resumen || '',
+      comentarioReclutador:  orig.comentarioReclutador || c.comentarioReclutador || '',
+      notaInterna:           orig.notaInterna || c.notaInterna || '',
+      cvUrl:                 orig.cvUrl || c.cvUrl || '',
+      cvBase64:              orig.cvBase64 || c.cvBase64 || '',
+      cvFileName:            orig.cvFileName || c.cvFileName || ''
+    });
+  });
+  if (reparados > 0) {
+    localStorage.setItem('rresults', JSON.stringify(_allResults));
+    safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+    toast('✓ ' + reparados + ' candidato' + (reparados>1?'s':'') + ' sincronizado' + (reparados>1?'s':'') + ' con datos del original');
+    filtrarCandidatos();
+  } else {
+    toast('No se encontraron duplicados con datos pendientes de sincronizar');
+  }
 }
 
 function cerrarModalCandidato() {
@@ -5266,7 +5348,13 @@ function confirmarCopiarCandidatos() {
   cbs.forEach(function(cb) {
     var cand   = decodeURIComponent(cb.dataset.cand);
     var pOrig  = decodeURIComponent(cb.dataset.puesto);
-    var orig   = _allResults.find(function(r){ return r.candidato===cand && r.puesto===pOrig; });
+    var reqIdOrig = cb.dataset.reqId || null;
+    // Buscar el orig con reqId para obtener el registro correcto (con datos del reclutador)
+    var orig = reqIdOrig
+      ? _allResults.find(function(r){ return r.candidato===cand && String(r.reqId)===String(reqIdOrig); })
+      : null;
+    // Fallback: buscar por candidato+puesto si no hay reqId o no se encontró
+    if (!orig) orig = _allResults.find(function(r){ return r.candidato===cand && r.puesto===pOrig; });
     if (!orig) return;
     // Verificar que no exista ya en el destino
     var yaExiste = _allResults.find(function(r){
