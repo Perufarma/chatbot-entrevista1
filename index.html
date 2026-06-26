@@ -4966,17 +4966,29 @@ function mostrarPopupMotivo(titulo, onConfirm) {
 // MODAL PERFIL CANDIDATO
 // ══════════════════════════════════
 function abrirModalCandidato(el) {
-  // Caso 1: botón del panel expandido (tiene data-nombre y data-puesto-modal)
+  // Caso 1: div del nombre con data-cand (nueva forma, más precisa)
+  if (el.dataset && el.dataset.cand) {
+    var nombre = decodeURIComponent(el.dataset.cand);
+    var puestoM = el.dataset.puestoModal ? decodeURIComponent(el.dataset.puestoModal) : '';
+    var reqIdM  = el.dataset.reqId || null;
+    var c = reqIdM
+      ? _allResults.find(function(r){ return r.candidato===nombre && String(r.reqId||'')===String(reqIdM); })
+      : null;
+    if (!c && puestoM) c = _allResults.find(function(r){ return r.candidato===nombre && r.puesto===puestoM; });
+    if (!c) c = _allResults.find(function(r){ return r.candidato===nombre; });
+    if (c) { mostrarModalCandidato(c); return; }
+  }
+  // Caso 2: botón del panel expandido (tiene data-nombre y data-puesto-modal pero no data-cand)
   if (el.dataset && el.dataset.nombre) {
     var c = _allResults.find(function(r){ return r.candidato===el.dataset.nombre && r.puesto===el.dataset.puestoModal; });
     if (!c) c = _allResults.find(function(r){ return r.candidato===el.dataset.nombre; });
     if (c) { mostrarModalCandidato(c); return; }
   }
-  // Caso 2: td o div del nombre en la fila compacta
+  // Caso 3: fallback — extraer nombre del innerText (menos preciso)
   var container = el.closest ? el.closest('[id^="cands_"]') : null;
   var puesto = container ? decodeURIComponent(container.id.replace('cands_','')) : '';
   var nombreRaw = el.innerText || el.textContent || '';
-  var nombre = nombreRaw.replace(/#\d+/g,'').replace(/Manual/g,'').replace(/⚠\s*Prev\.?\s*/g,'').trim();
+  var nombre = nombreRaw.replace(/#\d+/g,'').replace(/Manual/g,'').replace(/⚠\s*Prev\.?\s*/g,'').replace(/\s+/g,' ').trim();
   var c = puesto
     ? _allResults.find(function(r){ return r.puesto===puesto && r.candidato===nombre; })
     : null;
@@ -6670,7 +6682,7 @@ function renderTablaByPuesto(cands, filtros) {
       var rowMain = '<div style="display:flex;align-items:center;padding:9px 16px;gap:12px;border-bottom:0.5px solid var(--border2);background:var(--surface);" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--surface)\'">' 
         +'<input type="checkbox" class="cand-sel-cb" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" data-req-id="'+(c.reqId||'')+'" onchange="actualizarBtnEliminarSel()" style="accent-color:var(--accent2);width:13px;height:13px;flex-shrink:0;cursor:pointer;">'
         +'<div style="flex:1;min-width:0;">'
-          +'<div style="font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="abrirModalCandidato(this)" title="Ver y editar perfil completo">'+c.candidato+badge+fuente+alertaBadge+'</div>'
+          +'<div style="font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="abrirModalCandidato(this)" data-cand="'+cEnc+'" data-puesto-modal="'+pEnc+'" data-req-id="'+(c.reqId||'')+'" title="Ver y editar perfil completo">'+c.candidato+badge+fuente+alertaBadge+'</div>'
           +'<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+( c.celular||'')+( c.celular&&c.pretension?' · ':'')+( c.pretension?'S/ '+c.pretension:'')+( !c.celular&&!c.pretension?'&mdash;':'')+'</div>'
         +'</div>'
         +'<div style="width:80px;flex-shrink:0;text-align:center;">'+starsHtml+'</div>'
