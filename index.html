@@ -177,6 +177,14 @@ a[title]{cursor:pointer;}
     </div>
     <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:18px;">Acceso del equipo de selección</div>
     <div class="form-group">
+      <label>¿Quién eres?</label>
+      <select id="loginUsuario" style="font-size:13px;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;width:100%;color:var(--text);">
+        <option value="">Selecciona tu nombre...</option>
+        <option value="Estephanie Coral">Estephanie Coral</option>
+        <option value="Victor Ojeda">Victor Ojeda</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label>Contraseña</label>
       <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña" onkeydown="if(event.key==='Enter')verificarPasswordReclutador()" style="font-size:14px;">
     </div>
@@ -226,6 +234,10 @@ a[title]{cursor:pointer;}
     <button class="nav-tab" id="btn-candidatos" onclick="showTab('candidatos',this);renderCandidatosPorPuesto()">Candidatos</button>
     <button class="nav-tab" id="btn-dashboard" onclick="showTab('dashboard',this);renderDashboard()">Dashboard</button>
     <button class="nav-tab" id="btn-lider" onclick="showTab('lider',this);renderLiderEnTab()">L&iacute;der</button>
+    <div id="navUsuarioBadge" style="display:none;align-items:center;gap:6px;margin-left:auto;padding:0 10px;">
+      <div id="navUsuarioAvatar" style="width:26px;height:26px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#3C3489;flex-shrink:0;"></div>
+      <span id="navUsuarioNombre" style="font-size:11px;color:var(--muted);white-space:nowrap;"></span>
+    </div>
     <button class="nav-tab" onclick="descargarBackup()" title="Descarga un backup completo de todos los datos del sistema" style="font-size:11px;opacity:.7;">&#128190; Backup</button>
     <button class="nav-tab" onclick="mostrarPanelCambioPassword()" title="Cambiar contraseña de acceso al sistema" style="font-size:11px;opacity:.7;">&#128273; Clave</button>
   </nav>
@@ -374,6 +386,15 @@ a[title]{cursor:pointer;}
           <div style="font-size:11px;color:var(--muted);margin-top:3px;">El l&iacute;der usa este DNI para acceder a su portal.</div>
         </div>
       </div>
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Responsable</div>
+      <div class="form-group">
+        <label>Reclutador a cargo</label>
+        <select id="ns_reclutador" style="background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;">
+          <option value="">Sin asignar</option>
+          <option value="Estephanie Coral">Estephanie Coral</option>
+          <option value="Victor Ojeda">Victor Ojeda</option>
+        </select>
+      </div>
       <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Convocatoria</div>
       <div class="form-row">
         <div class="form-group">
@@ -445,7 +466,7 @@ a[title]{cursor:pointer;}
               <input type="checkbox" id="mostrarCubiertos" onchange="renderJobsList()" style="accent-color:var(--accent2);">Cubiertos
             </label>
             <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;">
-              <input type="checkbox" id="mostrarSinSolicitud" onchange="renderJobsList()" style="accent-color:var(--accent2);">Sin solicitud
+              <input type="checkbox" id="mostrarPendientes" onchange="renderJobsList()" style="accent-color:#E8623A;">Pendientes
             </label>
           </div>
         </div>
@@ -654,6 +675,10 @@ a[title]{cursor:pointer;}
         Solo visibles para el l&iacute;der
       </label>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="misProcesos_cand" onchange="filtrarCandidatos()" style="accent-color:#E8623A;">
+        Mis procesos
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
         <input type="checkbox" id="mostrarCubiertos_cand" onchange="filtrarCandidatos()" style="accent-color:#3C3489;">
         Mostrar cubiertos
       </label>
@@ -798,6 +823,10 @@ a[title]{cursor:pointer;}
           <button id="dPer_anio" onclick="setDashPeriodo('anio')" style="padding:5px 12px;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;border-left:0.5px solid var(--border2);">Este año</button>
           <button id="dPer_todo" onclick="setDashPeriodo('todo')" style="padding:5px 12px;border:none;background:var(--accent2);color:white;cursor:pointer;border-left:0.5px solid var(--border2);">Todo</button>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="dashMisProcesos" onchange="renderDashboard()" style="accent-color:#E8623A;">
+          Mis procesos
+        </label>
         <button class="btn btn-secondary btn-sm" onclick="renderDashboard()">Actualizar</button>
       </div>
     </div>
@@ -1321,25 +1350,52 @@ async function guardarPasswordEnServidor(nuevaPass) {
 }
 
 async function verificarPasswordReclutador() {
+  var usuarioEl = document.getElementById('loginUsuario');
   var inp = document.getElementById('loginPassword');
   var err = document.getElementById('loginError');
   if (!inp) return;
+  var usuario = usuarioEl ? usuarioEl.value.trim() : '';
+  if (!usuario) { err.textContent = 'Selecciona tu nombre para continuar.'; err.style.display='block'; return; }
   var pass = inp.value;
-  if (!pass) { err.style.display='block'; return; }
+  if (!pass) { err.textContent = 'Ingresa tu contraseña.'; err.style.display='block'; return; }
   var actual = await obtenerPasswordActual();
   if (pass === actual) {
     _sesionReclutador = true;
+    sessionStorage.setItem('recruitai_usuario', usuario);
+    _mostrarNavUsuario(usuario);
     document.getElementById('loginApp').style.display = 'none';
     document.getElementById('reclutadorApp').style.display = 'block';
     err.style.display = 'none';
     inp.value = '';
+    if (usuarioEl) usuarioEl.value = '';
     // Inicializar app si no se ha hecho aún
     if (!_appInitialised) inicializarApp();
   } else {
+    err.textContent = 'Contraseña incorrecta. Inténtalo nuevamente.';
     err.style.display = 'block';
     inp.value = '';
     inp.focus();
   }
+}
+
+function _mostrarNavUsuario(usuario) {
+  var badge = document.getElementById('navUsuarioBadge');
+  var avatar = document.getElementById('navUsuarioAvatar');
+  var nombre = document.getElementById('navUsuarioNombre');
+  if (!badge || !usuario) return;
+  var iniciales = usuario.split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase();
+  var colores = usuario === 'Estephanie Coral'
+    ? {bg:'#EEEDFE', tx:'#3C3489'}
+    : {bg:'#EAF3DE', tx:'#27500A'};
+  avatar.textContent = iniciales;
+  avatar.style.background = colores.bg;
+  avatar.style.color = colores.tx;
+  nombre.textContent = usuario;
+  badge.style.display = 'flex';
+}
+
+function _getUsuarioActivo() {
+  return sessionStorage.getItem('recruitai_usuario') || 'GTH';
 }
 
 function mostrarCambioPassword() {
@@ -1821,7 +1877,7 @@ function guardarPerfilLider(reqId) {
   requisiciones = requisiciones.map(function(r) {
     if (r.id===numId || String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora) ? r.bitacora.slice() : [];
-      bita.push({ fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}), msg:'Perfil del puesto editado por el líder', candidato:'' });
+      bita.push({ fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}), autor:'Líder', msg:'Perfil del puesto editado por el líder', candidato:'' });
       return Object.assign({}, r, {
         propuestasLider: propuesta,
         propuestasLiderFecha: new Date().toISOString(),
@@ -2743,9 +2799,13 @@ function renderDetalleProcesoSeleccionado(reqId) {
       html += '<div style="margin-top:16px;border-top:0.5px solid var(--border2);padding-top:12px;">';
       html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Bitácora del proceso</div>';
       bita.slice().reverse().forEach(function(b){
-        html += '<div style="font-size:12px;line-height:1.7;display:flex;gap:8px;align-items:flex-start;">'
-          + '<span style="color:var(--muted);white-space:nowrap;">'+b.fecha+' '+b.hora+'</span>'
-          + '<span style="color:var(--text);">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+(b.msg||b.texto||'')+'</span>'
+        var autor = b.autor || '';
+        var autorColor = autor==='Estephanie Coral'?{bg:'#EEEDFE',tx:'#3C3489'}:autor==='Victor Ojeda'?{bg:'#EAF3DE',tx:'#27500A'}:autor==='Líder'?{bg:'#FAEEDA',tx:'#633806'}:null;
+        var autorBadge = autorColor ? '<span style="font-size:10px;font-weight:500;padding:1px 7px;border-radius:10px;background:'+autorColor.bg+';color:'+autorColor.tx+';white-space:nowrap;flex-shrink:0;">'+autor+'</span>' : '';
+        html += '<div style="font-size:12px;line-height:1.7;display:flex;gap:8px;align-items:flex-start;margin-bottom:2px;">'
+          + '<span style="color:var(--muted);white-space:nowrap;font-size:11px;">'+b.fecha+' '+b.hora+'</span>'
+          + autorBadge
+          + '<span style="color:var(--text);flex:1;">'+(b.candidato?'<strong>'+b.candidato+'</strong> — ':'')+(b.msg||b.texto||'')+'</span>'
           + '</div>';
       });
       html += '</div>';
@@ -2996,7 +3056,7 @@ function calcularPlazoNS() {
   var fi=document.getElementById('ns_fechaInicio').value;
   var pi=document.getElementById('ns_plazoInfo');
   if (!nivel||!pi) return;
-  var dias=nivel==='35e'?35:parseInt(nivel)||0;
+  var dias=PLAZOS[nivel] ? PLAZOS[nivel].dias : 0;
   if (!dias){pi.style.display='none';return;}
   var desde=fi?new Date(fi):new Date();
   var hasta=new Date(desde); hasta.setDate(hasta.getDate()+dias);
@@ -3103,6 +3163,42 @@ function saveJobOnly() {
 
   if (editingJobId) {
     jobs = jobs.map(function(j){ return j.id===editingJobId?Object.assign({},j,jobData):j; });
+
+    // Propagar campos del job a las reqs activas de este job
+    var tituloAnterior = null;
+    var nuevoTitulo = jobData.titulo;
+    var nuevaDiasPlazo = PLAZOS[jobData.nivelVal] ? PLAZOS[jobData.nivelVal].dias : 30;
+    var nuevaNivelLabel = PLAZOS[jobData.nivelVal] ? PLAZOS[jobData.nivelVal].label : jobData.nivelVal;
+    // Reqs afectadas: las que pertenecen a este job y no están cubiertas ni en stand by
+    var reqsAfectadas = [];
+    requisiciones = requisiciones.map(function(r) {
+      if (r.jobId !== editingJobId) return r;
+      if (r.estado === 'Cubierto' || r.estado === 'Stand by') return r;
+      if (!tituloAnterior && r.puesto) tituloAnterior = r.puesto;
+      reqsAfectadas.push(r.id);
+      var updates = {
+        gerencia: jobData.gerencia,
+        area:     jobData.area,
+        puesto:   nuevoTitulo,
+        nivelVal: jobData.nivelVal,
+        nivel:    nuevaNivelLabel,
+        diasPlazo: nuevaDiasPlazo
+      };
+      return Object.assign({}, r, updates);
+    });
+    if (reqsAfectadas.length) {
+      localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+      syncReqsToServer(requisiciones);
+      // Propagar título nuevo a candidatos de esas reqs (si cambió el título)
+      if (tituloAnterior && tituloAnterior !== nuevoTitulo) {
+        _allResults = _allResults.map(function(c) {
+          if (reqsAfectadas.indexOf(c.reqId) === -1) return c;
+          return Object.assign({}, c, {puesto: nuevoTitulo});
+        });
+        localStorage.setItem('rresults', JSON.stringify(_allResults));
+        safeFetch('/api/jobs?type=results', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({results:_allResults})});
+      }
+    }
     toast('Puesto actualizado');
   } else {
     jobData.id = Date.now();
@@ -3160,6 +3256,15 @@ function renderHistorialSolicitudes(jobId) {
     h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
     h += '<div style="font-size:13px;font-weight:500;">Solicitud del '+r.fecha+'</div>';
     h += '<span style="font-size:11px;background:'+c.bg+';color:'+c.t+';padding:2px 8px;border-radius:6px;">'+r.estado+'</span>';
+    // Badge reclutador a cargo
+    if (r.reclutador) {
+      var recColor = r.reclutador==='Estephanie Coral'?{bg:'#EEEDFE',tx:'#3C3489'}:{bg:'#EAF3DE',tx:'#27500A'};
+      h += '<span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:6px;background:'+recColor.bg+';color:'+recColor.tx+';">'+r.reclutador+'</span>';
+      h += '<button onclick="asignarReclutador(\''+r.id+'\',\''+jobId+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;">Reasignar</button>';
+    } else {
+      h += '<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:#FCEBEB;color:#791F1F;">Sin asignar</span>';
+      h += '<button onclick="tomarProceso(\''+r.id+'\',\''+jobId+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;border:0.5px solid #e8623a;background:#fef2ee;color:#c23b22;cursor:pointer;font-weight:500;">▶ Tomar proceso</button>';
+    }
     if (!hcOkReq && (r.estado==='Pendiente'||r.estado==='En proceso')) {
       h += '<button class="btn btn-primary btn-sm" data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="toggleHC(this)" style="font-size:10px;padding:2px 8px;">✓ Confirmar HC</button>';
     } else if (hcOkReq) {
@@ -3221,11 +3326,11 @@ function renderHistorialSolicitudes(jobId) {
     h += '<div style="flex:1;"></div>';
     if (r.estado==='En proceso'||r.estado==='Pendiente') {
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="ponerSolicitudStandBy(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Stand by</button>';
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar solicitud</button>';
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="abrirEditarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:#2563A8;color:white;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;">✎ Editar solicitud</button>';
     } else if (r.estado==='Stand by') {
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="reactivarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;padding:3px 10px;cursor:pointer;">Reactivar</button>';
-      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar</button>';
+      h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="eliminarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:transparent;border:0.5px solid #F09595;border-radius:6px;padding:3px 10px;cursor:pointer;color:#A32D2D;">✕ Eliminar solicitud</button>';
       h += '<button data-req-id="'+r.id+'" data-job-id="'+jobId+'" onclick="abrirEditarSolicitud(this.dataset.reqId,this.dataset.jobId)" style="font-size:11px;background:#2563A8;color:white;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;">✎ Editar solicitud</button>';
     }
     h += '</div>';
@@ -3333,6 +3438,9 @@ function abrirModalSolicitud(jobId) {
   }
   // Fecha inicio = hoy
   document.getElementById('ns_fechaInicio_modal').value = new Date().toISOString().slice(0,10);
+  // Pre-llenar reclutador con usuario activo
+  var selRec = document.getElementById('ns_reclutador');
+  if (selRec) selRec.value = _getUsuarioActivo() === 'GTH' ? '' : _getUsuarioActivo();
   ov.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -3370,6 +3478,7 @@ function guardarModalSolicitud() {
   var motivo     = g('ns_motivo');
   var deseables  = g('ns_deseables');
   var fechaInicio= g('ns_fechaInicio_modal');
+  var reclutador = g('ns_reclutador') || '';
   var reemplNombre = motivo==='reemplazo' ? g('ns_reemplazo_nombre') : '';
   var cese         = motivo==='reemplazo' ? g('ns_cese') : '';
 
@@ -3384,7 +3493,7 @@ function guardarModalSolicitud() {
 
   // Obtener nivel del perfil
   var nivel    = job.nivelVal || '';
-  var diasPlazo= nivel==='35e'?35:parseInt(nivel)||30;
+  var diasPlazo= PLAZOS[nivel] ? PLAZOS[nivel].dias : 30;
   var nivelLabel= PLAZOS[nivel]?PLAZOS[nivel].label:nivel;
   var fechaLimDate = new Date(fechaInicio);
   fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
@@ -3413,7 +3522,7 @@ function guardarModalSolicitud() {
     motivo:motivo, reemplazoNombre:reemplNombre, cese:cese,
     minimos:job.desc||'', deseables:deseables,
     emailLider:emailLider, dniLider:dniLider,
-    estado:'En proceso', desiderablesCompletados:false,
+    estado:'En proceso', desiderablesCompletados:false, reclutador:reclutador,
     perfilSnapshot:snapshot
   };
 
@@ -3428,7 +3537,7 @@ function guardarModalSolicitud() {
             dniLider:req.dniLider, fechaInicio:req.fechaInicio,
             fechaInicioRaw:req.fechaInicioRaw, fechaLimite:req.fechaLimite,
             fechaLimiteRaw:req.fechaLimiteRaw, diasPlazo:req.diasPlazo,
-            nivel:req.nivel, nivelVal:req.nivelVal
+            nivel:req.nivel, nivelVal:req.nivelVal, reclutador:reclutador
           })
         : r;
     });
@@ -3487,6 +3596,7 @@ function abrirEditarSolicitud(reqId, jobId) {
     g('ns_cese',              req.cese || '');
     g('ns_deseables',         req.deseables || '');
     g('ns_fechaInicio_modal', req.fechaInicioRaw || '');
+    g('ns_reclutador',        req.reclutador || '');
 
     // Mostrar campo reemplazo si aplica
     var rf = document.getElementById('ns_reemplazoField');
@@ -3561,7 +3671,7 @@ function renderJobsList() {
   var texto = (document.getElementById('filtroTexto').value||'').toLowerCase();
   var filtroGer = selGer ? selGer.value : '';
   var mostrarCub = document.getElementById('mostrarCubiertos') && document.getElementById('mostrarCubiertos').checked;
-  var mostrarSin = document.getElementById('mostrarSinSolicitud') && document.getElementById('mostrarSinSolicitud').checked;
+  var mostrarPend = document.getElementById('mostrarPendientes') && document.getElementById('mostrarPendientes').checked;
 
   var filtered = jobs.filter(function(j){
     if (texto && !(j.titulo+' '+(j.area||'')+' '+(j.gerencia||'')).toLowerCase().includes(texto)) return false;
@@ -3569,7 +3679,17 @@ function renderJobsList() {
     var jReqs = getReqsForJob(j.id, j.titulo);
     var lastR = jReqs.length ? jReqs[jReqs.length-1] : null;
     if (!mostrarCub && lastR && lastR.estado==='Cubierto') return false;
-    if (!mostrarSin && !lastR) return false;
+    // Filtro Pendientes: HC sin confirmar O cambio de perfil del líder por revisar
+    if (mostrarPend) {
+      var jReqsPend = getReqsForJob(j.id, j.titulo);
+      var tieneHCPendiente = jReqsPend.some(function(r){
+        return r.estado==='En proceso' && r.etapas && !r.etapas.hc;
+      });
+      var tieneCambioPendiente = jReqsPend.some(function(r){
+        return r.propuestasLider && r.propuestasLiderEstado==='pendiente';
+      });
+      if (!tieneHCPendiente && !tieneCambioPendiente) return false;
+    }
     return true;
   });
 
@@ -3599,10 +3719,11 @@ function renderJobsList() {
       var sTx = isCubierto?'#3C3489':isActivo?'#0F6E56':'var(--muted)';
       var isStandBy = estadoReq === 'Stand by';
       var tienePropPend = jobReqs.some(function(r){ return r.propuestasLider && r.propuestasLiderEstado==='pendiente'; });
-      var sLabel = tienePropPend?'Cambio pendiente':isActivo?'Activo':isCubierto?'Cubierto':isStandBy?'Stand by':estadoReq==='Pendiente'?'Pendiente':'Sin proceso';
-      if (tienePropPend) { sBg = '#FAEEDA'; sTx = '#854F0B'; }
-      var sBg = isCubierto?'#EEEDFE':isActivo?'#E1F5EE':isStandBy?'#FAEEDA':'var(--surface2)';
-      var sTx = isCubierto?'#3C3489':isActivo?'#0F6E56':isStandBy?'#854F0B':'var(--muted)';
+      var tieneHCPend = jobReqs.some(function(r){ return r.estado==='En proceso' && r.etapas && !r.etapas.hc; });
+      var tienePendiente = tienePropPend || tieneHCPend;
+      var sLabel = tienePropPend?'Cambio pendiente':tieneHCPend?'HC pendiente':isActivo?'Activo':isCubierto?'Cubierto':isStandBy?'Stand by':estadoReq==='Pendiente'?'Pendiente':'Sin proceso';
+      var sBg = tienePendiente?'#FAEEDA':isCubierto?'#EEEDFE':isActivo?'#E1F5EE':isStandBy?'#FAEEDA':'var(--surface2)';
+      var sTx = tienePendiente?'#854F0B':isCubierto?'#3C3489':isActivo?'#0F6E56':isStandBy?'#854F0B':'var(--muted)';
       html += '<div data-job-id="'+j.id+'" id="puesto-row-'+j.id+'"'
         + ' onclick="abrirDetallePanelJob('+j.id+')"'
         + ' style="display:flex;align-items:center;padding:10px 14px;gap:10px;border-bottom:0.5px solid var(--border2);cursor:pointer;background:var(--surface);transition:background .1s;'+(isCubierto?'opacity:0.6;':'')+'"'
@@ -3811,7 +3932,7 @@ function aprobarCambiosLiderEditado(reqId, scope) {
   if (p.horario)        { updates.horario=getEdited('horario',p.horario); }
 
   var bita = Array.isArray(req.bitacora)?req.bitacora.slice():[];
-  bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+  bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),autor:_getUsuarioActivo(),
     texto:'Reclutador aprobó cambios propuestos por el líder'+(scope==='ambos'?' (aplicado también al perfil base)':'')});
 
   requisiciones = requisiciones.map(function(r){
@@ -3855,7 +3976,7 @@ function aprobarCambiosLider(reqId, scope) {
   requisiciones = requisiciones.map(function(r){
     if (r.id===numId||String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Cambios del líder aprobados por GTH'+(scope==='ambos'?' (aplicados a solicitud y perfil base)':' (solo esta solicitud)')});
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),autor:_getUsuarioActivo(),msg:'Cambios del líder aprobados por GTH'+(scope==='ambos'?' (aplicados a solicitud y perfil base)':' (solo esta solicitud)')});
       return Object.assign({},r,updates,{propuestasLider:null,propuestasLiderEstado:'aprobado',bitacora:bita});
     }
     return r;
@@ -3889,7 +4010,7 @@ function rechazarCambiosLider(reqId) {
   requisiciones = requisiciones.map(function(r){
     if (r.id===numId||String(r.id)===String(reqId)) {
       var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Cambios del líder rechazados por GTH'});
+      bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),autor:_getUsuarioActivo(),msg:'Cambios del líder rechazados por GTH'});
       return Object.assign({},r,{propuestasLider:null,propuestasLiderEstado:'rechazado',bitacora:bita});
     }
     return r;
@@ -3935,7 +4056,7 @@ function confirmarTramitesConOnboarding(reqId, jobId) {
   var etapas = Object.assign({}, req.etapas||{});
   etapas.tramites = new Date().toLocaleDateString('es-PE');
   var bita = Array.isArray(req.bitacora)?req.bitacora.slice():[];
-  bita.push({fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}), msg:'Trámites de ingreso confirmados. Fecha de ingreso: '+fechaIngreso});
+  bita.push({fecha:new Date().toLocaleDateString('es-PE'), hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}), autor:_getUsuarioActivo(), msg:'Trámites de ingreso confirmados. Fecha de ingreso: '+fechaIngreso});
   requisiciones = requisiciones.map(function(r){
     if (r.id===numId) return Object.assign({},r,{etapas:etapas, bitacora:bita, estado:'Cubierto', fechaIngreso:fechaIngreso, tallaUniforme:tallaUniforme, tallaCalzado:tallaCalzado, tallaCasco:tallaCasco});
     return r;
@@ -4037,6 +4158,34 @@ function renderHCBoton(lastReq) {
 }
 
 // ── Toggle HC desde modal del puesto ──
+// ── Asignar reclutador a proceso ──
+function tomarProceso(reqId, jobId) {
+  var usuario = _getUsuarioActivo();
+  if (usuario === 'GTH') { toast('Inicia sesión primero para tomar este proceso'); return; }
+  _actualizarReclutadorReq(reqId, usuario, jobId);
+}
+
+function asignarReclutador(reqId, jobId) {
+  var opciones = ['Estephanie Coral', 'Victor Ojeda', ''];
+  var actual = (requisiciones.find(function(r){ return String(r.id)===String(reqId); }) || {}).reclutador || '';
+  var nuevo = prompt('Reclutador a cargo:\n1 = Estephanie Coral\n2 = Victor Ojeda\n0 = Sin asignar\n\nActual: '+(actual||'Sin asignar'));
+  if (nuevo === null) return;
+  var reclutador = nuevo==='1' ? 'Estephanie Coral' : nuevo==='2' ? 'Victor Ojeda' : '';
+  _actualizarReclutadorReq(reqId, reclutador, jobId);
+}
+
+function _actualizarReclutadorReq(reqId, reclutador, jobId) {
+  var numId = parseInt(reqId) || reqId;
+  requisiciones = requisiciones.map(function(r){
+    if (r.id !== numId && String(r.id) !== String(reqId)) return r;
+    return Object.assign({}, r, {reclutador: reclutador});
+  });
+  localStorage.setItem('rreqs', JSON.stringify(requisiciones));
+  syncReqsToServer(requisiciones);
+  toast(reclutador ? reclutador + ' asignado/a al proceso ✓' : 'Proceso sin asignar');
+  setTimeout(function(){ if (jobId) abrirDetallePanelJob(parseInt(jobId)||jobId); }, 100);
+}
+
 function toggleHC(btn) {
   var reqId = parseInt(btn.dataset.reqId) || btn.dataset.reqId;
   var jobId = parseInt(btn.dataset.jobId) || 0;
@@ -4074,6 +4223,7 @@ function actualizarEtapasReq(reqId, etapas, bitacoraMsg, candidato) {
       bita.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+        autor: _getUsuarioActivo(),
         msg: bitacoraMsg,
         candidato: candidato||''
       });
@@ -4257,22 +4407,22 @@ async function procesarCVCandidato(input) {
 
   function enviarAIA(base64Data, mediaType) {
     if (status) status.textContent = 'Analizando con IA...';
-    fetch('/api/chat', {
+    var bodyMsg = mediaType === 'application/pdf'
+      ? [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
+          { type: 'text', text: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown: {"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}. Solo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto.' }
+        ]
+      : [
+          { type: 'text', text: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown: {"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}. Solo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto.\n\nCV:\n' + base64Data }
+        ];
+
+    fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: mediaType === 'application/pdf' ? 'document' : 'text',
-              source: mediaType === 'application/pdf' ? {type:'base64', media_type:mediaType, data:base64Data} : undefined,
-              text: mediaType !== 'application/pdf' ? base64Data : undefined
-            },
-            { type: 'text', text: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown: {"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}. Solo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto.' }
-          ]
-        }]
+        messages: [{ role: 'user', content: bodyMsg }]
       })
     })
     .then(function(r){ return r.json(); })
@@ -4281,7 +4431,6 @@ async function procesarCVCandidato(input) {
       try {
         var clean = txt.replace(/```json|```/g,'').trim();
         var parsed = JSON.parse(clean);
-        // Auto-completar campos del formulario
         var campos = {
           'cm_nombre': parsed.nombre, 'cm_dni': parsed.dni, 'cm_celular': parsed.celular,
           'cm_correo': parsed.correo, 'cm_distrito': parsed.distrito,
@@ -4295,7 +4444,6 @@ async function procesarCVCandidato(input) {
             if (el && !el.value) { el.value = campos[id]; completados++; }
           }
         });
-        // Grado académico
         if (parsed.gradoAcademico) {
           var gradoEl = document.getElementById('cm_grado');
           if (gradoEl) {
@@ -4312,8 +4460,9 @@ async function procesarCVCandidato(input) {
         toast('Error al procesar el CV');
       }
     })
-    .catch(function() {
+    .catch(function(err) {
       if (status) status.textContent = 'Error al conectar con la IA';
+      console.error('CV parse error:', err);
     });
   }
 
@@ -4325,7 +4474,6 @@ async function procesarCVCandidato(input) {
     };
     reader.readAsDataURL(file);
   } else if (ext === 'docx' || ext === 'doc') {
-    // Usar mammoth para convertir Word a texto
     if (typeof mammoth !== 'undefined') {
       var reader2 = new FileReader();
       reader2.onload = function(e) {
@@ -4335,7 +4483,6 @@ async function procesarCVCandidato(input) {
       };
       reader2.readAsArrayBuffer(file);
     } else {
-      // Cargar mammoth dinámicamente
       var sc = document.createElement('script');
       sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
       sc.onload = function() { procesarCVCandidato(input); };
@@ -4445,11 +4592,11 @@ function procesarPDF(file) {
     if (statusEl) statusEl.textContent = 'Analizando con IA...';
 
     // Llamar a la API de Claude con el PDF
-    fetch('/api/chat', {
+    fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1500,
         messages: [{
           role: 'user',
@@ -4906,7 +5053,7 @@ function toggleTramites(btn) {
       requisiciones = requisiciones.map(function(r){
         if (r.id!==reqId) return r;
         var bita = Array.isArray(r.bitacora)?r.bitacora.slice():[];
-        bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),msg:'Trámites revertidos (Oferta también): '+motivo,candidato:cand});
+        bita.push({fecha:new Date().toLocaleDateString('es-PE'),hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),autor:_getUsuarioActivo(),msg:'Trámites revertidos (Oferta también): '+motivo,candidato:cand});
         return Object.assign({},r,{etapas:etapas,estado:'En proceso',bitacora:bita,candidatoElegido:''});
       });
       localStorage.setItem('rreqs',JSON.stringify(requisiciones));
@@ -5583,7 +5730,7 @@ function abrirPerfilPanelJob(id) {
       +'<button class="btn btn-secondary btn-sm" onclick="editJob('+id+');scrollToForm()" style="font-size:11px;">&#9998; Editar perfil</button>'
       +'<button class="btn btn-accent btn-sm" onclick="abrirNuevaSolicitud('+id+');scrollToForm()" style="font-size:11px;">+ Solicitud</button>'
       +'<div style="margin-left:auto;">'
-        +'<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar puesto e historial</button>'
       +'</div>'
     +'</div>'
   +'</div>';
@@ -5652,7 +5799,7 @@ function abrirDetallePanelJob(id) {
     + '</div>'
 
     // ── Footer acciones ──
-+ '<div style="padding:12px 18px;border-top:0.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+ '<button class="btn btn-secondary btn-sm" onclick="editJob('+id+');scrollToForm()" style="font-size:11px;">&#9998; Editar perfil</button>'+ '<button class="btn btn-accent btn-sm" onclick="abrirModalSolicitud('+id+')" style="font-size:11px;">+ Solicitar</button>'+ '<div style="margin-left:auto;">'+ '<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar</button>'+ '</div>'+ '</div>'
++ '<div style="padding:12px 18px;border-top:0.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+ '<button class="btn btn-secondary btn-sm" onclick="editJob('+id+');scrollToForm()" style="font-size:11px;">&#9998; Editar perfil</button>'+ '<button class="btn btn-accent btn-sm" onclick="abrirModalSolicitud('+id+')" style="font-size:11px;">+ Solicitar</button>'+ '<div style="margin-left:auto;">'+ '<button class="btn btn-danger btn-sm" onclick="deleteJob('+id+')" style="font-size:11px;">&#128465; Eliminar puesto e historial</button>'+ '</div>'+ '</div>'
 
   panel.innerHTML = html;
 }
@@ -6365,6 +6512,8 @@ function filtrarCandidatos() {
   var soloVis = document.getElementById('soloVisibles') && document.getElementById('soloVisibles').checked;
   var busqDni = ((document.getElementById('buscarDni_cand')||{}).value||'').toLowerCase().trim();
   var mostrarCub = document.getElementById('mostrarCubiertos_cand') && document.getElementById('mostrarCubiertos_cand').checked;
+  var misProcesos = document.getElementById('misProcesos_cand') && document.getElementById('misProcesos_cand').checked;
+  var usuarioActivo = _getUsuarioActivo();
 
   var filtered = _allResults.filter(function(r) {
     if (gerencia && r.gerencia!==gerencia) return false;
@@ -6381,6 +6530,13 @@ function filtrarCandidatos() {
       var hayNombre = r.candidato && r.candidato.toLowerCase().includes(busqDni);
       var hayDni = r.dni && r.dni.toLowerCase().includes(busqDni);
       if (!hayNombre && !hayDni) return false;
+    }
+    // Filtro Mis procesos — solo mostrar candidatos de reqs asignadas al usuario activo
+    if (misProcesos && usuarioActivo !== 'GTH') {
+      var reqDelCand = r.reqId
+        ? requisiciones.find(function(q){ return q.id===r.reqId || q.id===parseInt(r.reqId); })
+        : null;
+      if (!reqDelCand || reqDelCand.reclutador !== usuarioActivo) return false;
     }
     return true;
   });
@@ -7816,7 +7972,7 @@ function guardarSolicitudLogin() {
 
   if (!puesto||!area||!sede||!nivel||!motivo||!desc||!horario||!emailLid) { toast('Completa todos los campos obligatorios'); return; }
 
-  var diasPlazo = nivel==='35e'?35:parseInt(nivel);
+  var diasPlazo = PLAZOS[nivel] ? PLAZOS[nivel].dias : 30;
   var fechaLimDate = new Date(); fechaLimDate.setDate(fechaLimDate.getDate()+diasPlazo);
   var nivelLabel = PLAZOS[nivel] ? PLAZOS[nivel].label : nivel;
 
@@ -7922,7 +8078,7 @@ function guardarSolicitudLider() {
     toast('Completa todos los campos obligatorios'); return;
   }
 
-  var diasPlazo = nivel==='35e'?35:parseInt(nivel);
+  var diasPlazo = PLAZOS[nivel] ? PLAZOS[nivel].dias : 30;
   var fechaLimiteDate = new Date(fechaInicio);
   fechaLimiteDate.setDate(fechaLimiteDate.getDate() + diasPlazo);
 
@@ -8037,6 +8193,12 @@ function renderDashboard() {
 
     // ── Filtrar por período ──
     var allReqs = requisiciones;
+    // Filtro Mis procesos
+    var dashMisProcesos = document.getElementById('dashMisProcesos') && document.getElementById('dashMisProcesos').checked;
+    var usuarioDash = _getUsuarioActivo();
+    if (dashMisProcesos && usuarioDash !== 'GTH') {
+      allReqs = allReqs.filter(function(r){ return r.reclutador === usuarioDash; });
+    }
     var reqs = _filtrarPorPeriodo(allReqs, function(r){ return r.fechaInicioRaw||null; });
     var results = _filtrarPorPeriodo(allResults, function(r){ return r.fecha ? r.fecha.split('/').reverse().join('-') : null; });
 
@@ -8204,53 +8366,105 @@ function renderDashboard() {
 
     // Tabla por gerencia
     var byGer = {};
+    var byGerReqs = {}; // reqs individuales por gerencia para el desglose
     reqs.forEach(function(r) {
       var job = jobs.find(function(j){ return getReqsForJob(j.id,j.titulo).some(function(x){ return x.id===r.id; }); });
       var ger = (job&&job.gerencia) ? job.gerencia : (r.gerencia || 'Sin gerencia');
-      if (!byGer[ger]) byGer[ger] = { activos:0, cubiertos:0, sla:0, cands:0, avances:[] };
-      if (r.estado==='Cubierto') byGer[ger].cubiertos++;
+      if (!byGer[ger]) { byGer[ger] = { activos:0, cubiertos:0, sla:0, cands:0, avances:[] }; byGerReqs[ger] = []; }
+      var esCubierto = r.estado==='Cubierto';
+      if (esCubierto) byGer[ger].cubiertos++;
       else {
         byGer[ger].activos++;
-        // % avance del proceso activo (etapa 0-5 sobre 5)
         var etapaIdx = calcularEtapaActual(r, results, feedbacks);
         byGer[ger].avances.push(Math.round(etapaIdx / 4 * 100));
       }
-      if (slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); })) byGer[ger].sla++;
+      var tieneSLA = slaAlerts.some(function(a){ return a.puesto && r.puesto && a.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); });
+      if (tieneSLA) byGer[ger].sla++;
       var candsDePuesto = results.filter(function(c){ return c.puesto && r.puesto && c.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); });
       byGer[ger].cands += candsDePuesto.length;
+      // Guardar req individual con sus métricas para el desglose
+      byGerReqs[ger].push({
+        r: r,
+        area: r.area || (job&&job.area) || '',
+        esCubierto: esCubierto,
+        avance: esCubierto ? null : Math.round(calcularEtapaActual(r, results, feedbacks) / 4 * 100),
+        etapaLabel: esCubierto ? 'Cubierto' : (ETAPA_NOMBRES[ETAPAS[calcularEtapaActual(r, results, feedbacks)]&&ETAPAS[calcularEtapaActual(r, results, feedbacks)].id] || ''),
+        cands: candsDePuesto.length,
+        sla: tieneSLA
+      });
     });
 
-    var gerHtml = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
-      + '<div style="padding:12px 16px;border-bottom:0.5px solid var(--border2);font-size:13px;font-weight:500;">Rendimiento por gerencia</div>'
-      + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
-      + '<thead><tr style="background:var(--surface2);">'
-        + '<th style="padding:8px 14px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Gerencia</th>'
-        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Activos</th>'
-        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Cubiertos</th>'
-        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidatos</th>'
-        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Demora</th>'
-        + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Avance prom.</th>'
-      + '</tr></thead><tbody>';
+    // Estado de apertura de filas (persiste en closure)
+    var gerOpen = {};
 
-    Object.keys(byGer).sort().forEach(function(ger) {
-       var g = byGer[ger];
-       var promAvance = g.avances.length ? Math.round(g.avances.reduce(function(s,v){return s+v;},0)/g.avances.length) : null;
-       var avanceC = promAvance===null?'var(--muted)':promAvance>=66?'#2d7a4f':promAvance>=33?'#b8760a':'#c0392b';
-       gerHtml += '<tr style="border-top:0.5px solid var(--border2);">'
-         + '<td style="padding:10px 14px;font-weight:500;">'+ger+'</td>'
-         + '<td style="padding:10px 14px;text-align:center;">'+(g.activos||'—')+'</td>'
-         + '<td style="padding:10px 14px;text-align:center;color:#2d7a4f;font-weight:500;">'+(g.cubiertos||'—')+'</td>'
-         + '<td style="padding:10px 14px;text-align:center;">'+g.cands+'</td>'
-         + '<td style="padding:10px 14px;text-align:center;">'+(g.sla?'<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:1px 8px;border-radius:4px;">'+g.sla+'</span>':'<span style="color:var(--muted);">—</span>')+'</td>'
-         + '<td style="padding:10px 14px;text-align:center;">'
-           + (promAvance!==null
-             ? '<span style="font-size:12px;color:'+avanceC+';font-weight:500;">'+promAvance+'%</span>'
-             : '<span style="color:var(--muted);">—</span>')
-         + '</td>'
-       + '</tr>';
-    });
+    function buildGerHtml() {
+      var h = '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px;">'
+        + '<div style="padding:12px 16px;border-bottom:0.5px solid var(--border2);font-size:13px;font-weight:500;">Rendimiento por gerencia</div>'
+        + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        + '<thead><tr style="background:var(--surface2);">'
+          + '<th style="padding:8px 14px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Gerencia / Puesto</th>'
+          + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Activos</th>'
+          + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Cubiertos</th>'
+          + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Candidatos</th>'
+          + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Demora</th>'
+          + '<th style="padding:8px 14px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;">Avance / Etapa</th>'
+        + '</tr></thead><tbody>';
 
-    gerHtml += '</tbody></table></div></div>';
+      Object.keys(byGer).sort().forEach(function(ger) {
+        var g = byGer[ger];
+        var isOpen = !!gerOpen[ger];
+        var promAvance = g.avances.length ? Math.round(g.avances.reduce(function(s,v){return s+v;},0)/g.avances.length) : null;
+        var avanceC = promAvance===null?'var(--muted)':promAvance>=66?'#2d7a4f':promAvance>=33?'#b8760a':'#c0392b';
+        var gerEnc = encodeURIComponent(ger);
+        h += '<tr style="border-top:0.5px solid var(--border2);cursor:pointer;background:var(--surface2);" onclick="toggleGerRow(\''+gerEnc+'\')" title="Clic para ver puestos">'
+          + '<td style="padding:10px 14px;font-weight:500;"><span style="font-size:11px;color:var(--muted);margin-right:6px;display:inline-block;transition:transform .2s;transform:'+(isOpen?'rotate(90deg)':'rotate(0deg)')+'">▶</span>'+ger+'</td>'
+          + '<td style="padding:10px 14px;text-align:center;">'+(g.activos||'—')+'</td>'
+          + '<td style="padding:10px 14px;text-align:center;color:#2d7a4f;font-weight:500;">'+(g.cubiertos||'—')+'</td>'
+          + '<td style="padding:10px 14px;text-align:center;">'+g.cands+'</td>'
+          + '<td style="padding:10px 14px;text-align:center;">'+(g.sla?'<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:1px 8px;border-radius:4px;">'+g.sla+'</span>':'<span style="color:var(--muted);">—</span>')+'</td>'
+          + '<td style="padding:10px 14px;text-align:center;">'+(promAvance!==null?'<span style="font-size:12px;color:'+avanceC+';font-weight:500;">'+promAvance+'%</span>':'<span style="color:var(--muted);">—</span>')+'</td>'
+        + '</tr>';
+        // Filas de desglose por puesto
+        if (isOpen) {
+          byGerReqs[ger].forEach(function(item) {
+            var r = item.r;
+            var avC2 = item.avance===null?'var(--muted)':item.avance>=66?'#2d7a4f':item.avance>=33?'#b8760a':'#c0392b';
+            var etapaPill = item.esCubierto
+              ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#E1F5EE;color:#0F6E56;white-space:nowrap;">Cubierto</span>'
+              : (item.etapaLabel ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#EEEDFE;color:#3C3489;white-space:nowrap;">'+item.etapaLabel+'</span>' : '');
+            h += '<tr style="border-top:0.5px solid var(--border2);background:var(--bg);">'
+              + '<td style="padding:7px 14px 7px 34px;">'
+                + '<div style="font-size:11px;color:var(--text);font-weight:500;">'+r.puesto+'</div>'
+                + '<div style="font-size:10px;color:var(--muted);margin-top:1px;">'+(item.area||'')+(r.sede?' · '+r.sede:'')+'</div>'
+              + '</td>'
+              + '<td style="padding:7px 14px;text-align:center;font-size:11px;">'+(item.esCubierto?'—':'1')+'</td>'
+              + '<td style="padding:7px 14px;text-align:center;font-size:11px;color:#2d7a4f;font-weight:500;">'+(item.esCubierto?'1':'—')+'</td>'
+              + '<td style="padding:7px 14px;text-align:center;font-size:11px;">'+item.cands+'</td>'
+              + '<td style="padding:7px 14px;text-align:center;">'+(item.sla?'<span style="font-size:10px;background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;">!</span>':'<span style="color:var(--muted);font-size:11px;">—</span>')+'</td>'
+              + '<td style="padding:7px 14px;text-align:center;">'
+                + (item.avance!==null?'<span style="font-size:11px;color:'+avC2+';font-weight:500;margin-right:5px;">'+item.avance+'%</span>':'')
+                + etapaPill
+              + '</td>'
+            + '</tr>';
+          });
+        }
+      });
+
+      h += '</tbody></table></div></div>';
+      return h;
+    }
+
+    window.toggleGerRow = function(gerEnc) {
+      var ger = decodeURIComponent(gerEnc);
+      gerOpen[ger] = !gerOpen[ger];
+      var panel2 = document.getElementById('dashboardContent');
+      if (!panel2) return;
+      // Re-renderizar solo la tabla de gerencias
+      var tablaEl = panel2.querySelector('.ger-table-wrap');
+      if (tablaEl) tablaEl.outerHTML = '<div class="ger-table-wrap">' + buildGerHtml() + '</div>';
+    };
+
+    var gerHtml = '<div class="ger-table-wrap">' + buildGerHtml() + '</div>';
 
     panel.innerHTML = progresoHtml + kpisHtml + gerHtml;
   });
