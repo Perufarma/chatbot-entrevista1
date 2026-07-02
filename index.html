@@ -461,12 +461,18 @@ a[title]{cursor:pointer;}
           <select id="filtroGerencia" onchange="renderJobsList()" style="font-size:11px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);outline:none;width:100%;">
             <option value="">Todas las gerencias</option>
           </select>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;">
-              <input type="checkbox" id="mostrarCubiertos" onchange="renderJobsList()" style="accent-color:var(--accent2);">Cubiertos
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:3px 8px;border-radius:6px;background:#E1F5EE;color:#0F6E56;">
+              <input type="checkbox" id="filtroEnProceso" checked onchange="renderJobsList()" style="accent-color:#0F6E56;">En proceso
             </label>
-            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;">
-              <input type="checkbox" id="mostrarPendientes" onchange="renderJobsList()" style="accent-color:#E8623A;">Pendientes
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:3px 8px;border-radius:6px;background:#fef8ee;color:#7a5000;">
+              <input type="checkbox" id="filtroPendiente" checked onchange="renderJobsList()" style="accent-color:#b8760a;">Pendiente
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:3px 8px;border-radius:6px;background:var(--surface2);color:var(--muted);">
+              <input type="checkbox" id="filtroStandBy" onchange="renderJobsList()" style="accent-color:var(--muted);">Stand by
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:3px 8px;border-radius:6px;background:#EEEDFE;color:#3C3489;">
+              <input type="checkbox" id="mostrarCubiertos" onchange="renderJobsList()" style="accent-color:#534AB7;">Cubierto
             </label>
           </div>
         </div>
@@ -3671,30 +3677,28 @@ function renderJobsList() {
 
   var texto = (document.getElementById('filtroTexto').value||'').toLowerCase();
   var filtroGer = selGer ? selGer.value : '';
-  var mostrarCub = document.getElementById('mostrarCubiertos') && document.getElementById('mostrarCubiertos').checked;
+  var mostrarCub  = document.getElementById('mostrarCubiertos') && document.getElementById('mostrarCubiertos').checked;
   var mostrarPend = document.getElementById('mostrarPendientes') && document.getElementById('mostrarPendientes').checked;
+  var mostrarEnP  = !document.getElementById('filtroEnProceso') || document.getElementById('filtroEnProceso').checked;
+  var mostrarPen2 = !document.getElementById('filtroPendiente') || document.getElementById('filtroPendiente').checked;
+  var mostrarSB   = document.getElementById('filtroStandBy') && document.getElementById('filtroStandBy').checked;
 
   var filtered = jobs.filter(function(j){
     if (texto && !(j.titulo+' '+(j.area||'')+' '+(j.gerencia||'')).toLowerCase().includes(texto)) return false;
     if (filtroGer && j.gerencia!==filtroGer) return false;
     var jReqs = getReqsForJob(j.id, j.titulo);
     var lastR = jReqs.length ? jReqs[jReqs.length-1] : null;
-    if (!mostrarCub && lastR && lastR.estado==='Cubierto') return false;
-    // Filtro Pendientes: HC sin confirmar O cambio de perfil del líder por revisar
-    if (mostrarPend) {
-      var jReqsPend = getReqsForJob(j.id, j.titulo);
-      var tieneHCPendiente = jReqsPend.some(function(r){
-        return r.estado==='En proceso' && r.etapas && !r.etapas.hc;
-      });
-      var tieneCambioPendiente = jReqsPend.some(function(r){
-        return r.propuestasLider && r.propuestasLiderEstado==='pendiente';
-      });
-      if (!tieneHCPendiente && !tieneCambioPendiente) return false;
-    }
+    // Procesos activos solo muestra puestos que tienen al menos una solicitud
+    if (!lastR) return false;
+    var estado = lastR.estado;
+    if (estado === 'En proceso'  && !mostrarEnP)  return false;
+    if (estado === 'Pendiente'   && !mostrarPen2) return false;
+    if (estado === 'Stand by'    && !mostrarSB)   return false;
+    if (estado === 'Cubierto'    && !mostrarCub)  return false;
     return true;
   });
 
-  if (!filtered.length) { list.innerHTML='<div class="empty-state">No hay puestos que coincidan.</div>'; return; }
+  if (!filtered.length) { list.innerHTML='<div class="empty-state">No hay procesos activos. Los puestos sin solicitud están en el Catálogo de puestos.</div>'; return; }
 
   // Agrupar por gerencia
   var byGerencia = {};
@@ -5341,27 +5345,26 @@ function mostrarModalCandidato(c) {
           + '</label>'
           + '<span style="font-size:11px;color:var(--muted);">o</span>'
           + '<input type="text" id="cmCvUrl" placeholder="Link de Drive o externo" value="'+(c.cvUrl||'')+'" style="font-size:12px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);flex:1;min-width:160px;">'
-        + '</div></div>'
+        + '</div></div>';
 
-      // Detectar si hay un original con datos para este candidato en otro proceso
-      var originalConDatos = _allResults.find(function(r){
-        return r.candidato === c.candidato
-          && !(String(r.reqId||'') === String(c.reqId||'') && r.puesto === c.puesto)
-          && (r.resumen || r.comentarioReclutador || r.notaInterna || r.cvUrl || r.cvBase64);
-      });
-      var mostrarBtnRecuperar = originalConDatos && !(c.resumen || c.comentarioReclutador || c.notaInterna);
-      var btnSincronizar = (mostrarBtnRecuperar && originalConDatos)
-        ? '<button class="btn btn-secondary btn-sm" data-cand="'+cEnc+'" data-req-id-orig="'+encodeURIComponent(String(originalConDatos.reqId||''))+'" onclick="sincronizarDatosOriginal(this)" style="margin-right:auto;" title="Copiar resumen, comentarios y CV del proceso original">&#8635; Recuperar datos del original</button>'
-        : '';
-      var botonesHtml = '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:0.5px solid var(--border2);">'
-        + btnSincronizar
-        + '<button class="btn btn-secondary btn-sm" onclick="cerrarModalCandidato()">Cancelar</button>'
-        + '<button class="btn btn-primary" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="guardarModalCandidato(this.dataset.cand,this.dataset.puesto)">Guardar cambios</button>'
-        + '</div>';
-
-      + botonesHtml
-    + '</div>'
-  + '</div>';
+  // Agregar botones — detectar si hay original con datos
+  var originalConDatos = _allResults.find(function(r){
+    return r.candidato === c.candidato
+      && !(String(r.reqId||'') === String(c.reqId||'') && r.puesto === c.puesto)
+      && (r.resumen || r.comentarioReclutador || r.notaInterna || r.cvUrl || r.cvBase64);
+  });
+  var mostrarBtnRecuperar = originalConDatos && !(c.resumen || c.comentarioReclutador || c.notaInterna);
+  var btnSincronizar = (mostrarBtnRecuperar && originalConDatos)
+    ? '<button class="btn btn-secondary btn-sm" data-cand="'+cEnc+'" data-req-id-orig="'+encodeURIComponent(String(originalConDatos.reqId||''))+'" onclick="sincronizarDatosOriginal(this)" style="margin-right:auto;" title="Copiar resumen, comentarios y CV del proceso original">&#8635; Recuperar datos del original</button>'
+    : '';
+  var botonesHtml = '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:0.5px solid var(--border2);">'
+    + btnSincronizar
+    + '<button class="btn btn-secondary btn-sm" onclick="cerrarModalCandidato()">Cancelar</button>'
+    + '<button class="btn btn-primary" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="guardarModalCandidato(this.dataset.cand,this.dataset.puesto)">Guardar cambios</button>'
+    + '</div>';
+  // Insertar botones en el contenedor interior del modal
+  var innerDiv = overlay.querySelector('div > div');
+  if (innerDiv) innerDiv.insertAdjacentHTML('beforeend', botonesHtml);
 
   document.body.appendChild(overlay);
 }
