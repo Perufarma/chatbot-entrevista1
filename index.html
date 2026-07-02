@@ -781,7 +781,7 @@ a[title]{cursor:pointer;}
         </div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveCandidatoManual()" title="Guarda el candidato y lo incluye en la tabla junto a los del chatbot">Guardar candidato</button>
-        <button class="btn btn-secondary" onclick="toggleCandManualForm()" title="Cierra el formulario sin guardar">Cancelar</button>
+        <button class="btn btn-secondary" onclick="cancelarCandManualForm()" title="Cierra el formulario">Cancelar</button>
       </div>
         </div><!-- /padding -->
       </div><!-- /contenedor blanco -->
@@ -2901,11 +2901,12 @@ function getSLAParaNivel(nivelVal) {
 // SLA_ETAPA mantiene el fallback de Analista/Técnico para compatibilidad
 var SLA_ETAPA = SLA_POR_NIVEL['30'];
 
+var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',validacionCVs:'Validación CVs Líder',entrevista:'Entrevista Técnica',oferta:'Candidato Elegido / Carta Oferta',tramites:'Trámites'};
+
 function calcularSLAAlerts() {
   var alerts = [];
   try {
     var hoy = Date.now();
-var ETAPA_NOMBRES = {hc:'Validar HC',convoc:'Convocatoria y Eval. GTH',validacionCVs:'Validación CVs Líder',entrevista:'Entrevista Técnica',oferta:'Candidato Elegido / Carta Oferta',tramites:'Trámites'};
     if (!Array.isArray(requisiciones)) return alerts;
     requisiciones.forEach(function(r) {
       try {
@@ -4346,19 +4347,86 @@ function copyLink() {
 // ══════════════════════════════════
 // CANDIDATO MANUAL
 // ══════════════════════════════════
+// IDs de todos los campos del formulario manual
+var _CM_CAMPOS = ['cm_nombre','cm_dni','cm_celular','cm_correo','cm_distrito','cm_grado',
+  'cm_experiencia','cm_disponibilidad','cm_remActual','cm_pretension',
+  'cm_puesto','cm_comentarios','cm_estrellas','cm_visibleLider'];
+
+function _cmGuardarBorrador() {
+  var borrador = {};
+  _CM_CAMPOS.forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) borrador[id] = el.value;
+  });
+  try { sessionStorage.setItem('cm_borrador', JSON.stringify(borrador)); } catch(e){}
+}
+
+function _cmRestaurarBorrador() {
+  try {
+    var raw = sessionStorage.getItem('cm_borrador');
+    if (!raw) return false;
+    var borrador = JSON.parse(raw);
+    var hayDatos = Object.values(borrador).some(function(v){ return v && v !== '0'; });
+    if (!hayDatos) return false;
+    _CM_CAMPOS.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el && borrador[id] !== undefined) el.value = borrador[id];
+    });
+    // Restaurar estrellas visualmente
+    var estrellas = parseInt(borrador['cm_estrellas']) || 0;
+    if (estrellas > 0) setCmStar(estrellas);
+    return true;
+  } catch(e){ return false; }
+}
+
+function _cmLimpiarBorrador() {
+  try { sessionStorage.removeItem('cm_borrador'); } catch(e){}
+}
+
 function toggleCandManualForm() {
   var f = document.getElementById('candManualForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) {
     poblarSelectPuestos('cm_puesto');
-    ['cm_nombre','cm_dni','cm_comentarios'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-    setCmStar(0);
-    var cmVL=document.getElementById('cm_visibleLider'); if(cmVL) cmVL.value='';
+    // Intentar restaurar borrador primero
+    var restaurado = _cmRestaurarBorrador();
+    if (!restaurado) {
+      // Sin borrador → limpiar campos
+      ['cm_nombre','cm_dni','cm_celular','cm_correo','cm_distrito','cm_experiencia',
+       'cm_disponibilidad','cm_remActual','cm_pretension','cm_comentarios'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.value='';
+      });
+      setCmStar(0);
+      var cmVL=document.getElementById('cm_visibleLider'); if(cmVL) cmVL.value='';
+    } else {
+      // Restaurado — mostrar aviso
+      toast('📋 Se restauró el borrador anterior');
+    }
+    // Activar auto-guardado en cada campo
+    _CM_CAMPOS.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', _cmGuardarBorrador);
+      if (el && el.tagName === 'SELECT') el.addEventListener('change', _cmGuardarBorrador);
+    });
     f.scrollIntoView({behavior:'smooth'});
   }
 }
 
-// Helper: pobla cualquier select con la lista de puestos actualizada
+function cancelarCandManualForm() {
+  var hayDatos = _CM_CAMPOS.some(function(id){
+    var el = document.getElementById(id);
+    return el && el.value && el.value !== '0' && el.value !== '';
+  });
+  if (hayDatos) {
+    if (confirm('¿Cerrar el formulario? Los datos quedarán guardados como borrador para la próxima vez.\n\nPresiona "Cancelar" si quieres seguir editando, o "Aceptar" para cerrar y guardar borrador.')) {
+      _cmGuardarBorrador();
+      document.getElementById('candManualForm').classList.remove('open');
+    }
+  } else {
+    _cmLimpiarBorrador();
+    document.getElementById('candManualForm').classList.remove('open');
+  }
+}
 function poblarSelectPuestos(selId) {
   var sel = document.getElementById(selId);
   if (!sel) return;
@@ -4395,6 +4463,10 @@ function setCmStar(n) {
   for (var i = 0; i < spans.length; i++) {
     spans[i].style.color = (i < n) ? starsColor(n) : '#e0ddd8';
   }
+  // Auto-guardar borrador al cambiar estrellas
+  if (document.getElementById('candManualForm') && document.getElementById('candManualForm').classList.contains('open')) {
+    _cmGuardarBorrador();
+  }
 }
 
 async function procesarCVCandidato(input) {
@@ -4405,24 +4477,22 @@ async function procesarCVCandidato(input) {
 
   var ext = file.name.split('.').pop().toLowerCase();
 
-  function enviarAIA(base64Data, mediaType) {
+  function enviarTextoAIA(textoCV) {
+    if (!textoCV || !textoCV.trim()) {
+      if (status) status.textContent = 'No se pudo leer el contenido del CV';
+      return;
+    }
     if (status) status.textContent = 'Analizando con IA...';
-    var bodyMsg = mediaType === 'application/pdf'
-      ? [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
-          { type: 'text', text: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown: {"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}. Solo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto.' }
-        ]
-      : [
-          { type: 'text', text: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown: {"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}. Solo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto.\n\nCV:\n' + base64Data }
-        ];
-
-    fetch('https://api.anthropic.com/v1/messages', {
+    fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1000,
-        messages: [{ role: 'user', content: bodyMsg }]
+        messages: [{
+          role: 'user',
+          content: 'Extrae los datos de este CV y responde SOLO con JSON v\u00e1lido sin markdown:\n{"nombre":"","dni":"","celular":"","correo":"","distrito":"","gradoAcademico":"","expLaboral":"","pretension":"","disponibilidad":"","resumen":""}\n\nSolo incluye los campos que encuentres. DNI son 8 d\u00edgitos. Celular son 9 d\u00edgitos. Pretension solo el numero sin texto. resumen: breve evaluaci\u00f3n del perfil en 2-3 l\u00edneas.\n\nCV:\n' + textoCV.substring(0, 6000)
+        }]
       })
     })
     .then(function(r){ return r.json(); })
@@ -4462,31 +4532,63 @@ async function procesarCVCandidato(input) {
     })
     .catch(function(err) {
       if (status) status.textContent = 'Error al conectar con la IA';
-      console.error('CV parse error:', err);
+      console.error('CV IA error:', err);
     });
+  }
+
+  function extraerTextoPDF(arrayBuffer) {
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfjsLib.getDocument({data: arrayBuffer}).promise.then(function(pdf) {
+        var paginas = [];
+        var total = pdf.numPages;
+        for (var i = 1; i <= total; i++) {
+          paginas.push(pdf.getPage(i).then(function(page) {
+            return page.getTextContent().then(function(tc) {
+              return tc.items.map(function(item){ return item.str; }).join(' ');
+            });
+          }));
+        }
+        Promise.all(paginas).then(function(textos) {
+          enviarTextoAIA(textos.join('\n'));
+        });
+      }).catch(function() {
+        if (status) status.textContent = 'Error al leer el PDF';
+      });
+    } else {
+      // Cargar pdf.js dinámicamente
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      sc.onload = function() {
+        var reader2 = new FileReader();
+        reader2.onload = function(e2) { extraerTextoPDF(e2.target.result); };
+        reader2.readAsArrayBuffer(file);
+      };
+      sc.onerror = function() {
+        if (status) status.textContent = 'Error al cargar el lector de PDF';
+      };
+      document.head.appendChild(sc);
+    }
   }
 
   if (ext === 'pdf') {
     var reader = new FileReader();
-    reader.onload = function(e) {
-      var base64 = e.target.result.split(',')[1];
-      enviarAIA(base64, 'application/pdf');
-    };
-    reader.readAsDataURL(file);
+    reader.onload = function(e) { extraerTextoPDF(e.target.result); };
+    reader.readAsArrayBuffer(file);
   } else if (ext === 'docx' || ext === 'doc') {
     if (typeof mammoth !== 'undefined') {
-      var reader2 = new FileReader();
-      reader2.onload = function(e) {
+      var reader3 = new FileReader();
+      reader3.onload = function(e) {
         mammoth.extractRawText({arrayBuffer: e.target.result})
-          .then(function(result) { enviarAIA(result.value, 'text/plain'); })
+          .then(function(result) { enviarTextoAIA(result.value); })
           .catch(function() { if (status) status.textContent = 'Error al leer el archivo Word'; });
       };
-      reader2.readAsArrayBuffer(file);
+      reader3.readAsArrayBuffer(file);
     } else {
-      var sc = document.createElement('script');
-      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
-      sc.onload = function() { procesarCVCandidato(input); };
-      document.head.appendChild(sc);
+      var sc2 = document.createElement('script');
+      sc2.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+      sc2.onload = function() { procesarCVCandidato(input); };
+      document.head.appendChild(sc2);
     }
   }
 }
@@ -4536,6 +4638,7 @@ async function saveCandidatoManual() {
   results.push(entry);
   localStorage.setItem('rresults', JSON.stringify(results));
   await safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:results})});
+  _cmLimpiarBorrador();
   toast('Candidato agregado correctamente');
   document.getElementById('candManualForm').classList.remove('open');
   renderCandidatosPorPuesto();
@@ -4573,7 +4676,6 @@ function procesarPDF(file) {
   var panel = document.getElementById('pdfResultados');
   var cardId = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
 
-  // Card de progreso
   var card = document.createElement('div');
   card.id = cardId;
   card.style.cssText = 'background:var(--surface2);border:0.5px solid var(--border2);border-radius:10px;padding:16px;';
@@ -4584,33 +4686,16 @@ function procesarPDF(file) {
     + '</div>';
   panel.appendChild(card);
 
-  // Leer PDF como base64
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var base64 = e.target.result.split(',')[1];
+  function enviarTextoJobDescIA(textoCV) {
     var statusEl = document.getElementById(cardId + '_status');
     if (statusEl) statusEl.textContent = 'Analizando con IA...';
-
-    // Llamar a la API de Claude con el PDF
-    fetch('https://api.anthropic.com/v1/messages', {
+    fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1500,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: { type: 'base64', media_type: 'application/pdf', data: base64 }
-            },
-            {
-              type: 'text',
-              text: 'Analiza este job description y extrae la información en formato JSON exacto, sin markdown ni texto adicional:\n{"titulo":"nombre del puesto","area":"área o departamento","gerencia":"gerencia o unidad de negocio","desc":"descripción completa del puesto incluyendo misión, funciones principales, resultados esperados, formación requerida, competencias y relaciones. Máximo 800 palabras."}'
-            }
-          ]
-        }]
+        messages: [{ role: 'user', content: 'Analiza este job description y extrae la informaci\u00f3n en formato JSON exacto, sin markdown ni texto adicional:\n{"titulo":"nombre del puesto","area":"\u00e1rea o departamento","gerencia":"gerencia o unidad de negocio","desc":"descripci\u00f3n completa del puesto incluyendo misi\u00f3n, funciones principales, resultados esperados, formaci\u00f3n requerida, competencias y relaciones. M\u00e1ximo 800 palabras."}\n\nJOB DESCRIPTION:\n' + textoCV.substring(0, 6000) }]
       })
     })
     .then(function(r){ return r.json(); })
@@ -4624,17 +4709,15 @@ function procesarPDF(file) {
         if (statusEl) statusEl.textContent = 'Error al parsear respuesta de IA';
         return;
       }
-
-      // Mostrar resultado para revisión
-      var card = document.getElementById(cardId);
-      if (!card) return;
-      card.innerHTML =
+      var cardEl = document.getElementById(cardId);
+      if (!cardEl) return;
+      cardEl.innerHTML =
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;">'
           + '<div>'
-            + '<div style="font-size:14px;font-weight:600;">' + (perfil.titulo||'Sin título') + '</div>'
-            + '<div style="font-size:12px;color:var(--muted);">' + (perfil.area||'') + (perfil.gerencia?' · '+perfil.gerencia:'') + '</div>'
+            + '<div style="font-size:14px;font-weight:600;">' + (perfil.titulo||'Sin t\u00edtulo') + '</div>'
+            + '<div style="font-size:12px;color:var(--muted);">' + (perfil.area||'') + (perfil.gerencia?' \u00b7 '+perfil.gerencia:'') + '</div>'
           + '</div>'
-          + '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:3px 10px;border-radius:8px;">&#10003; IA procesó</span>'
+          + '<span style="font-size:11px;background:#edf7f1;color:#1e5c38;padding:3px 10px;border-radius:8px;">&#10003; IA proces\u00f3</span>'
         + '</div>'
         + '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;max-height:80px;overflow:hidden;">' + (perfil.desc||'').substring(0,200) + '...</div>'
         + '<div style="display:flex;gap:8px;">'
@@ -4644,10 +4727,42 @@ function procesarPDF(file) {
         + '</div>';
     })
     .catch(function(e) {
-      if (statusEl) statusEl.textContent = 'Error al conectar con la IA: ' + e.message;
+      if (statusEl) statusEl.textContent = 'Error al conectar con la IA';
     });
-  };
-  reader.readAsDataURL(file);
+  }
+
+  function extraerTextoPDFJob(arrayBuffer) {
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfjsLib.getDocument({data: arrayBuffer}).promise.then(function(pdf) {
+        var paginas = [];
+        for (var i = 1; i <= pdf.numPages; i++) {
+          paginas.push(pdf.getPage(i).then(function(page) {
+            return page.getTextContent().then(function(tc) {
+              return tc.items.map(function(item){ return item.str; }).join(' ');
+            });
+          }));
+        }
+        Promise.all(paginas).then(function(textos) { enviarTextoJobDescIA(textos.join('\n')); });
+      }).catch(function() {
+        var s = document.getElementById(cardId+'_status');
+        if (s) s.textContent = 'Error al leer el PDF';
+      });
+    } else {
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      sc.onload = function() {
+        var r2 = new FileReader();
+        r2.onload = function(e2) { extraerTextoPDFJob(e2.target.result); };
+        r2.readAsArrayBuffer(file);
+      };
+      document.head.appendChild(sc);
+    }
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) { extraerTextoPDFJob(e.target.result); };
+  reader.readAsArrayBuffer(file);
 }
 
 function guardarPerfilPDF(perfilStr) {
@@ -5238,13 +5353,13 @@ function mostrarModalCandidato(c) {
       var btnSincronizar = (mostrarBtnRecuperar && originalConDatos)
         ? '<button class="btn btn-secondary btn-sm" data-cand="'+cEnc+'" data-req-id-orig="'+encodeURIComponent(String(originalConDatos.reqId||''))+'" onclick="sincronizarDatosOriginal(this)" style="margin-right:auto;" title="Copiar resumen, comentarios y CV del proceso original">&#8635; Recuperar datos del original</button>'
         : '';
-      // Botones
-      + '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:0.5px solid var(--border2);">'
+      var botonesHtml = '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:0.5px solid var(--border2);">'
         + btnSincronizar
         + '<button class="btn btn-secondary btn-sm" onclick="cerrarModalCandidato()">Cancelar</button>'
         + '<button class="btn btn-primary" data-cand="'+cEnc+'" data-puesto="'+pEnc+'" onclick="guardarModalCandidato(this.dataset.cand,this.dataset.puesto)">Guardar cambios</button>'
-      + '</div>'
+        + '</div>';
 
+      + botonesHtml
     + '</div>'
   + '</div>';
 
@@ -8186,8 +8301,10 @@ function renderDashboard() {
   if (!panel) return;
   panel.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px;">Cargando...</div>';
 
-  safeFetch('/api/jobs?type=results').then(function(d) {
-    var allResults = (d&&d.results) ? d.results : JSON.parse(localStorage.getItem('rresults')||'[]');
+  // Usar resultados del localStorage inmediatamente como fallback
+  var _render = function(d) {
+    try {
+    var allResults = (d&&d.results) ? d.results : (_allResults.length ? _allResults : JSON.parse(localStorage.getItem('rresults')||'[]'));
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
     var hoy = new Date();
 
@@ -8265,7 +8382,7 @@ function renderDashboard() {
 
     // Puestos con candidatos sin feedback del líder
     var puestosSinFb = {};
-    var puestosConCands = [...new Set(results.filter(function(r){ return r.visibleLider!==false; }).map(function(r){ return r.puesto; }))];
+    var puestosConCands = Array.from(new Set(results.filter(function(r){ return r.visibleLider!==false; }).map(function(r){ return r.puesto; })));
     puestosConCands.forEach(function(p) {
       var candsDelPuesto = results.filter(function(r){ return r.puesto && p && r.puesto.toLowerCase().trim()===p.toLowerCase().trim() && r.visibleLider!==false; });
       var sinFb = candsDelPuesto.filter(function(r){ return !fbs.find(function(f){ return f.candidato===r.candidato && f.puesto && r.puesto && f.puesto.toLowerCase().trim()===r.puesto.toLowerCase().trim(); }); });
@@ -8388,7 +8505,7 @@ function renderDashboard() {
         area: r.area || (job&&job.area) || '',
         esCubierto: esCubierto,
         avance: esCubierto ? null : Math.round(calcularEtapaActual(r, results, feedbacks) / 4 * 100),
-        etapaLabel: esCubierto ? 'Cubierto' : (ETAPA_NOMBRES[ETAPAS[calcularEtapaActual(r, results, feedbacks)]&&ETAPAS[calcularEtapaActual(r, results, feedbacks)].id] || ''),
+        etapaLabel: esCubierto ? 'Cubierto' : (function(){ var idx=calcularEtapaActual(r,results,feedbacks); var e=ETAPAS[idx]; return e ? (ETAPA_NOMBRES[e.id]||e.label||'') : ''; })(),
         cands: candsDePuesto.length,
         sla: tieneSLA
       });
@@ -8467,7 +8584,19 @@ function renderDashboard() {
     var gerHtml = '<div class="ger-table-wrap">' + buildGerHtml() + '</div>';
 
     panel.innerHTML = progresoHtml + kpisHtml + gerHtml;
-  });
+
+    } catch(err) {
+      console.error('Dashboard error:', err);
+      panel.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:13px;">Error al cargar el dashboard. <button class="btn btn-secondary btn-sm" onclick="renderDashboard()">Reintentar</button></div>';
+    }
+  };
+
+  // Intentar cargar results del servidor, con fallback inmediato al localStorage
+  safeFetch('/api/jobs?type=results').then(function(d){ _render(d); }).catch(function(){ _render(null); });
+  // Si el fetch tarda más de 3 segundos, renderizar con localStorage
+  setTimeout(function(){
+    if (panel.innerHTML.indexOf('Cargando') !== -1) _render(null);
+  }, 3000);
 }
 
 
