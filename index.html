@@ -2760,43 +2760,73 @@ function renderDetalleProcesoSeleccionado(reqId) {
           dimHtml += '<div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">'+d.label+'</div><div>'+starsD+'</div></div>';
         });
         dimHtml += '</div>';
-        // Comentario
+        // Comentario del líder en evaluación
         var comentVal = fb&&fb.comentario ? fb.comentario : '';
-        var comentHtml = '<textarea data-key="'+key+'" id="fbComent_'+key+'" placeholder="Comentario sobre el candidato..." style="width:100%;font-size:12px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);resize:none;height:60px;box-sizing:border-box;margin-bottom:8px;">'+comentVal+'</textarea>';
-        // Campos visibles al líder: nombre, grado académico, disponibilidad, comentarios del reclutador, CV
-        var infoHtml = '';
-        if (cand.gradoAcademico) infoHtml += '<span style="font-size:11px;background:var(--surface2);color:var(--muted);padding:2px 8px;border-radius:10px;border:0.5px solid var(--border2);">'+cand.gradoAcademico+'</span> ';
-        if (cand.disponibilidad) infoHtml += '<span style="font-size:11px;background:#EAF3DE;color:#0F6E56;padding:2px 8px;border-radius:10px;">&#128337; '+cand.disponibilidad+'</span> ';
-        // NO mostrar pretensión ni remuneración al líder
-        // Botones
-        var BTN = 'font-size:11px;padding:4px 12px;';
-        var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'\u2713 Apto':'\u2713 Apto')+'</button>') : '';
-        var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">\u2717 No apto</button>') : '';
-        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">&#127942; Elegir</button>' : '';
+        var comentHtml = '<textarea data-key="'+key+'" id="fbComent_'+key+'" placeholder="Escribe aquí tus comentarios sobre el candidato (opcional)..." style="width:100%;font-size:12px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);resize:none;height:60px;box-sizing:border-box;margin-bottom:10px;">'+comentVal+'</textarea>';
+
+        // CV
         var cEncLcv = encodeURIComponent(cand.candidato);
-        // CV — buscar en caché local primero (el cvBase64 puede ser pesado para el servidor)
         var cvB64 = cand.cvBase64 || (window._cvPreviewCache && window._cvPreviewCache[cand.candidato]) || '';
-        // Cachear para preview
         if (cvB64) { if (!window._cvPreviewCache) window._cvPreviewCache={}; window._cvPreviewCache[cand.candidato] = cvB64; }
         var cvLink = cvB64
-          ? '<button onclick="mostrarPreviewCV(\''+cEncLcv+'\',\'base64\')" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV</button>'
+          ? '<button onclick="mostrarPreviewCV(\''+cEncLcv+'\',\'base64\')" style="font-size:12px;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:5px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV</button>'
           : cand.cvUrl
-            ? '<a href="'+cand.cvUrl+'" target="_blank" style="font-size:12px;font-family:\'DM Sans\',sans-serif;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:4px 13px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV &#8599;</a>'
-            : '<span style="font-size:11px;color:var(--muted);font-style:italic;">Sin CV adjunto</span>';
-        // Comentario del reclutador
-        var recComent = cand.comentarioReclutador||cand.observacion||'';
-        var recHtml = recComent ? '<div style="font-size:11px;background:#f0f7ee;border-radius:6px;padding:6px 10px;color:#1e5c38;margin-bottom:8px;">&#128203; GTH: '+recComent+'</div>' : '';
-        // Botón programar entrevista — abre modal para que el líder ingrese fecha/horario/sede
+            ? '<a href="'+cand.cvUrl+'" target="_blank" style="font-size:12px;background:#EEEDFE;color:#3C3489;border:0.5px solid #534AB7;border-radius:20px;padding:5px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">&#128196; Ver CV &#8599;</a>'
+            : '<span style="font-size:11px;color:var(--muted);font-style:italic;">CV no disponible a\u00fan</span>';
+
+        // Botones de evaluación
+        var BTN = 'font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;border:none;';
+        var btnApto = !esElegido ? ('<button class="btn btn-sm '+(aptoOk?'btn-primary':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,true)" style="'+BTN+'">'+(aptoOk?'\u2713 Marcar como apto':'\u2713 Marcar como apto')+'</button>') : '';
+        var btnNoApto = !esElegido ? ('<button class="btn btn-sm '+(noAptoOk?'btn-danger':'btn-secondary')+'" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="marcarApto(this.dataset.cand,this.dataset.puesto,false)" style="'+BTN+'">\u2717 No apto</button>') : '';
+        var btnElegir = aptoOk && !esElegido ? '<button class="btn btn-sm btn-accent" data-cand="'+cEncL+'" data-puesto="'+pEncL+'" onclick="elegirCandidato(this.dataset.cand,this.dataset.puesto)" style="'+BTN+'">&#127942; Elegir como candidato final</button>' : '';
+
+        // Botón solicitar entrevista
         var btnProgramar = !cand.agendado
-          ? '<button data-cand="'+cEncL+'" data-req-id="'+r.id+'" onclick="abrirModalProgramarEntrevista(this.dataset.cand,this.dataset.reqId)" style="font-size:11px;padding:4px 10px;background:#2563A8;color:white;border:none;border-radius:6px;cursor:pointer;">Programar entrevista</button>'
-          : '<span style="font-size:10px;background:#EAF3DE;color:#1e5c38;padding:2px 8px;border-radius:6px;">\u2713 Entrevista agendada</span>';
-        // Evaluación solo si agendada
+          ? '<button data-cand="'+cEncL+'" data-req-id="'+r.id+'" onclick="abrirModalProgramarEntrevista(this.dataset.cand,this.dataset.reqId)" style="font-size:12px;padding:5px 14px;background:#2563A8;color:white;border:none;border-radius:20px;cursor:pointer;">Solicitar entrevista</button>'
+          : '<span style="font-size:11px;background:#EAF3DE;color:#0F6E56;padding:4px 10px;border-radius:20px;border:0.5px solid #5DCAA5;">\u2713 Entrevista agendada</span>';
+
+        // Info grid con etiquetas descriptivas
+        var infoGrid = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;padding:12px;background:var(--surface2);border-radius:8px;">'
+          + (cand.gradoAcademico ? '<div><div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Formaci\u00f3n acad\u00e9mica</div><div style="font-size:12px;color:var(--text);">'+cand.gradoAcademico+'</div></div>' : '<div></div>')
+          + (cand.disponibilidad ? '<div><div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Disponibilidad de inicio</div><div style="font-size:12px;color:var(--text);">'+cand.disponibilidad+'</div></div>' : '<div></div>')
+          + '</div>';
+
+        // Comentario del reclutador con etiqueta clara
+        var recComent = cand.comentarioReclutador||cand.observacion||'';
+        var recHtml = recComent
+          ? '<div style="background:#f0f7ee;border-left:3px solid #5DCAA5;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:12px;">'
+            + '<div style="font-size:10px;font-weight:500;color:#0F6E56;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Evaluaci\u00f3n del equipo GTH</div>'
+            + '<div style="font-size:12px;color:#085041;line-height:1.5;">'+recComent+'</div>'
+            + '</div>'
+          : '';
+
+        // Bloque evaluación o aviso pendiente
+        var pendienteBox = '<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;">'
+          + '<div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">&#128197;</div>'
+          + '<div style="font-size:12px;color:var(--muted);line-height:1.5;">Para evaluar a este candidato, primero solicita una entrevista usando el bot\u00f3n <strong style="color:var(--text);">\u201cSolicitar entrevista\u201d</strong>. El equipo GTH coordinar\u00e1 la fecha con el candidato.</div>'
+          + '</div>';
+
+        var dimHtmlMejorado = '<div style="margin-bottom:4px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Tu evaluaci\u00f3n \u2014 califica del 1 al 5 en cada dimensi\u00f3n</div>'
+          + dimHtml;
+
         var evalBlock = cand.agendado
-          ? (recHtml + dimHtml + comentHtml
-             + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+          ? (dimHtmlMejorado + comentHtml
+             + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
              + btnApto + btnNoApto + btnElegir + '</div>')
-          : '<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic;">La evaluación estará disponible una vez que se agende la entrevista.</div>';
-        return '<div style="padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:0.5px solid var(--border2);">'          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'          + '<div style="font-size:13px;font-weight:500;">'+cand.candidato+badge+'</div>'          + '<div style="flex:1;"></div>'          + aptoTag + elegidoTag + (cvLink ? ' '+cvLink : '') + ' ' + btnProgramar          + '</div>'          + (infoHtml ? '<div style="margin-bottom:6px;">'+infoHtml+'</div>' : '')          + evalBlock          + '</div>';
+          : pendienteBox;
+
+        return '<div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:10px;padding:16px;margin-bottom:12px;">'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">'
+          + '<div style="font-size:14px;font-weight:500;color:var(--text);">'+cand.candidato+badge+'</div>'
+          + '<div style="flex:1;"></div>'
+          + aptoTag + elegidoTag
+          + (cvLink ? ' '+cvLink : '') + ' ' + btnProgramar
+          + '</div>'
+          + infoGrid
+          + recHtml
+          + (cand.agendado ? '<hr style="border:none;border-top:0.5px solid var(--border2);margin:12px 0;">' : '')
+          + evalBlock
+          + '</div>';
       }).join('');
       html += '</div>';
     } else {
