@@ -727,6 +727,7 @@ a[title]{cursor:pointer;}
           <span class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px;">&#128206; Seleccionar CV</span>
         </label>
         <div id="cvAutoFillStatus" style="font-size:11px;color:var(--muted);"></div>
+        <div id="cvAdjuntoStatus" style="font-size:11px;color:#0F6E56;margin-top:2px;"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Nombre completo *</label><input type="text" id="cm_nombre" placeholder="Ej: Juan Pérez"></div>
@@ -4463,6 +4464,7 @@ function cancelarCandManualForm() {
     }
   } else {
     _cmLimpiarBorrador();
+    window._cmCvPendiente = null;
     document.getElementById('candManualForm').classList.remove('open');
   }
 }
@@ -4513,6 +4515,17 @@ async function procesarCVCandidato(input) {
   if (!file) return;
   var status = document.getElementById('cvAutoFillStatus');
   if (status) status.textContent = 'Leyendo CV...';
+
+  // Guardar el archivo como base64 para adjuntarlo al candidato
+  window._cmCvPendiente = null;
+  var readerB64 = new FileReader();
+  readerB64.onload = function(eb) {
+    window._cmCvPendiente = { base64: eb.target.result, fileName: file.name };
+    var adjEl = document.getElementById('cvAdjuntoStatus');
+    if (adjEl) adjEl.textContent = '📎 CV adjunto: ' + file.name;
+    _cmGuardarBorrador();
+  };
+  readerB64.readAsDataURL(file);
 
   var ext = file.name.split('.').pop().toLowerCase();
 
@@ -4670,7 +4683,9 @@ async function saveCandidatoManual() {
     visibleLider: visibleLiderCM === '1', recomendacion:'', comunicacion:'', conocimiento:'', experiencia:'', motivacion:'',
     fortalezas:comentarios, areas_mejora:'', resumen:comentarios,
     comentarioReclutador:comentarios,
-    transcripcion:'[Evaluación manual del reclutador]', fuente:'manual'
+    transcripcion:'[Evaluación manual del reclutador]', fuente:'manual',
+    cvBase64: window._cmCvPendiente ? window._cmCvPendiente.base64 : '',
+    cvFileName: window._cmCvPendiente ? window._cmCvPendiente.fileName : ''
   };
   var d = await safeFetch('/api/jobs?type=results');
   var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
@@ -4678,6 +4693,7 @@ async function saveCandidatoManual() {
   localStorage.setItem('rresults', JSON.stringify(results));
   await safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:results})});
   _cmLimpiarBorrador();
+  window._cmCvPendiente = null;
   toast('Candidato agregado correctamente');
   document.getElementById('candManualForm').classList.remove('open');
   renderCandidatosPorPuesto();
