@@ -2643,10 +2643,10 @@ function renderDetalleProcesoSeleccionado(reqId) {
   var r = requisiciones.find(function(x){ return x.id===reqId || x.id===parseInt(reqId) || String(x.id)===String(reqId); });
   if (!r) { panel.innerHTML='<div style="padding:20px;color:var(--muted);">Proceso no encontrado</div>'; return; }
 
-  safeFetch('/api/jobs?type=results').then(function(d){
+  safeFetch('/api/jobs?type=results').then(async function(d){
     var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
-    // Fusionar CVs guardados localmente (no viajan al servidor por ser pesados)
-    results = _resultsConCv(results);
+    // Fusionar CVs — localStorage primero, servidor si no están
+    results = await _resultsConCvAsync(results);
     // Sincronizar _allResults para que elegirCandidato tenga datos actualizados
     if (results.length) { _allResults = results; localStorage.setItem('rresults', JSON.stringify(_allResults)); }
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
@@ -4654,7 +4654,27 @@ async function procesarCVCandidato(input) {
 // ══════════════════════════════════
 function _guardarCvLocal(dni, base64, fileName) {
   if (!dni || !base64) return;
+  // Guardar en localStorage como caché inmediato
   try { localStorage.setItem('cv_'+dni, JSON.stringify({base64:base64,fileName:fileName||''})); } catch(e){}
+  // Guardar en servidor via type=config con key por DNI
+  safeFetch('/api/jobs?type=config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ key: 'cv_'+dni, value: JSON.stringify({base64:base64,fileName:fileName||''}) })
+  });
+}
+
+async function _cargarCvServidor(dni) {
+  try {
+    var d = await safeFetch('/api/jobs?type=config');
+    if (d && d.config && d.config['cv_'+dni]) {
+      var parsed = JSON.parse(d.config['cv_'+dni]);
+      // Cachear en localStorage
+      try { localStorage.setItem('cv_'+dni, d.config['cv_'+dni]); } catch(e){}
+      return parsed;
+    }
+  } catch(e){}
+  return null;
 }
 
 function _cargarCvLocal(dni) {
@@ -4662,20 +4682,24 @@ function _cargarCvLocal(dni) {
 }
 
 function _resultsSinCv(arr) {
-  // Guarda los CVs localmente y devuelve el array sin cvBase64
+  // Quita cvBase64 (pesado) y trunca transcripciones largas antes del POST
   return arr.map(function(r) {
-    if (r.cvBase64) {
-      _guardarCvLocal(r.dni, r.cvBase64, r.cvFileName);
-      var copia = Object.assign({}, r);
+    var copia = Object.assign({}, r);
+    // Quitar cvBase64 — viaja por su propio canal
+    if (copia.cvBase64) {
+      _guardarCvLocal(copia.dni, copia.cvBase64, copia.cvFileName);
       delete copia.cvBase64;
-      return copia;
     }
-    return r;
+    // Truncar transcripción a 3000 chars para no saturar Upstash
+    if (copia.transcripcion && copia.transcripcion.length > 3000) {
+      copia.transcripcion = copia.transcripcion.substring(0, 3000) + '... [truncado]';
+    }
+    return copia;
   });
 }
 
 function _resultsConCv(arr) {
-  // Fusiona los CVs desde localStorage al cargar
+  // Fusiona los CVs desde localStorage al cargar (el servidor los tiene en config)
   return arr.map(function(r) {
     if (!r.cvBase64 && r.dni) {
       var cv = _cargarCvLocal(r.dni);
@@ -4683,6 +4707,20 @@ function _resultsConCv(arr) {
     }
     return r;
   });
+}
+
+// Versión async que también consulta el servidor si no hay CV en localStorage
+async function _resultsConCvAsync(arr) {
+  var resultado = arr.slice();
+  for (var i = 0; i < resultado.length; i++) {
+    var r = resultado[i];
+    if (!r.cvBase64 && r.dni) {
+      var cv = _cargarCvLocal(r.dni);
+      if (!cv) cv = await _cargarCvServidor(r.dni);
+      if (cv && cv.base64) resultado[i] = Object.assign({}, r, {cvBase64: cv.base64, cvFileName: cv.fileName||r.cvFileName||''});
+    }
+  }
+  return resultado;
 }
 
 async function _syncResults(results) {
@@ -4734,9 +4772,9 @@ async function saveCandidatoManual() {
     cvBase64: '',
     cvFileName: window._cmCvPendiente ? window._cmCvPendiente.fileName : ''
   };
-  // Guardar cvBase64 en localStorage separado (no en el array de results — demasiado pesado para Upstash)
+  // Guardar CV en localStorage Y servidor via _guardarCvLocal
   if (window._cmCvPendiente && window._cmCvPendiente.base64) {
-    try { localStorage.setItem('cv_'+dni, JSON.stringify({base64:window._cmCvPendiente.base64,fileName:window._cmCvPendiente.fileName})); } catch(e){}
+    _guardarCvLocal(dni, window._cmCvPendiente.base64, window._cmCvPendiente.fileName);
   }
   var d = await safeFetch('/api/jobs?type=results');
   var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
