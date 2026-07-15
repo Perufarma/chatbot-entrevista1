@@ -727,6 +727,7 @@ a[title]{cursor:pointer;}
           <span class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px;">&#128206; Seleccionar CV</span>
         </label>
         <div id="cvAutoFillStatus" style="font-size:11px;color:var(--muted);"></div>
+        <div id="cvAdjuntoStatus" style="font-size:11px;color:#0F6E56;margin-top:2px;"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Nombre completo *</label><input type="text" id="cm_nombre" placeholder="Ej: Juan Pérez"></div>
@@ -2644,6 +2645,8 @@ function renderDetalleProcesoSeleccionado(reqId) {
 
   safeFetch('/api/jobs?type=results').then(function(d){
     var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
+    // Fusionar CVs guardados localmente (no viajan al servidor por ser pesados)
+    results = _resultsConCv(results);
     // Sincronizar _allResults para que elegirCandidato tenga datos actualizados
     if (results.length) { _allResults = results; localStorage.setItem('rresults', JSON.stringify(_allResults)); }
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
@@ -3237,8 +3240,7 @@ function saveJobOnly() {
           if (reqsAfectadas.indexOf(c.reqId) === -1) return c;
           return Object.assign({}, c, {puesto: nuevoTitulo});
         });
-        localStorage.setItem('rresults', JSON.stringify(_allResults));
-        safeFetch('/api/jobs?type=results', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({results:_allResults})});
+        _syncResults(_allResults);
       }
     }
     toast('Puesto actualizado');
@@ -4463,6 +4465,7 @@ function cancelarCandManualForm() {
     }
   } else {
     _cmLimpiarBorrador();
+    window._cmCvPendiente = null;
     document.getElementById('candManualForm').classList.remove('open');
   }
 }
@@ -4513,6 +4516,17 @@ async function procesarCVCandidato(input) {
   if (!file) return;
   var status = document.getElementById('cvAutoFillStatus');
   if (status) status.textContent = 'Leyendo CV...';
+
+  // Guardar el archivo como base64 para adjuntarlo al candidato
+  window._cmCvPendiente = null;
+  var readerB64 = new FileReader();
+  readerB64.onload = function(eb) {
+    window._cmCvPendiente = { base64: eb.target.result, fileName: file.name };
+    var adjEl = document.getElementById('cvAdjuntoStatus');
+    if (adjEl) adjEl.textContent = '📎 CV adjunto: ' + file.name;
+    _cmGuardarBorrador();
+  };
+  readerB64.readAsDataURL(file);
 
   var ext = file.name.split('.').pop().toLowerCase();
 
@@ -4632,6 +4646,52 @@ async function procesarCVCandidato(input) {
   }
 }
 
+
+// ══════════════════════════════════
+// SYNC DE RESULTS — separa cvBase64 del payload del servidor
+// Los CVs en base64 son pesados (500KB-2MB) y superan el límite de Upstash.
+// Se guardan en localStorage con key cv_DNI y se fusionan al cargar.
+// ══════════════════════════════════
+function _guardarCvLocal(dni, base64, fileName) {
+  if (!dni || !base64) return;
+  try { localStorage.setItem('cv_'+dni, JSON.stringify({base64:base64,fileName:fileName||''})); } catch(e){}
+}
+
+function _cargarCvLocal(dni) {
+  try { var raw = localStorage.getItem('cv_'+dni); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
+}
+
+function _resultsSinCv(arr) {
+  // Guarda los CVs localmente y devuelve el array sin cvBase64
+  return arr.map(function(r) {
+    if (r.cvBase64) {
+      _guardarCvLocal(r.dni, r.cvBase64, r.cvFileName);
+      var copia = Object.assign({}, r);
+      delete copia.cvBase64;
+      return copia;
+    }
+    return r;
+  });
+}
+
+function _resultsConCv(arr) {
+  // Fusiona los CVs desde localStorage al cargar
+  return arr.map(function(r) {
+    if (!r.cvBase64 && r.dni) {
+      var cv = _cargarCvLocal(r.dni);
+      if (cv && cv.base64) return Object.assign({}, r, {cvBase64: cv.base64, cvFileName: cv.fileName||r.cvFileName||''});
+    }
+    return r;
+  });
+}
+
+async function _syncResults(results) {
+  localStorage.setItem('rresults', JSON.stringify(results));
+  var payload = _resultsSinCv(results);
+  var ok = await safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:payload})});
+  return ok;
+}
+
 async function saveCandidatoManual() {
   var nombre = document.getElementById('cm_nombre').value.trim();
   var dni = document.getElementById('cm_dni').value.trim();
@@ -4670,15 +4730,23 @@ async function saveCandidatoManual() {
     visibleLider: visibleLiderCM === '1', recomendacion:'', comunicacion:'', conocimiento:'', experiencia:'', motivacion:'',
     fortalezas:comentarios, areas_mejora:'', resumen:comentarios,
     comentarioReclutador:comentarios,
-    transcripcion:'[Evaluación manual del reclutador]', fuente:'manual'
+    transcripcion:'[Evaluación manual del reclutador]', fuente:'manual',
+    cvBase64: '',
+    cvFileName: window._cmCvPendiente ? window._cmCvPendiente.fileName : ''
   };
+  // Guardar cvBase64 en localStorage separado (no en el array de results — demasiado pesado para Upstash)
+  if (window._cmCvPendiente && window._cmCvPendiente.base64) {
+    try { localStorage.setItem('cv_'+dni, JSON.stringify({base64:window._cmCvPendiente.base64,fileName:window._cmCvPendiente.fileName})); } catch(e){}
+  }
   var d = await safeFetch('/api/jobs?type=results');
   var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
   results.push(entry);
   localStorage.setItem('rresults', JSON.stringify(results));
-  await safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:results})});
+  var postOk = await _syncResults(results);
+  if (!postOk) { toast('⚠ Error al guardar en el servidor. Guardado localmente.'); }
+  else { toast('Candidato agregado correctamente'); }
   _cmLimpiarBorrador();
-  toast('Candidato agregado correctamente');
+  window._cmCvPendiente = null;
   document.getElementById('candManualForm').classList.remove('open');
   renderCandidatosPorPuesto();
 }
@@ -5148,8 +5216,7 @@ function guardarEditCand(cand, puesto) {
     if (!matchCand || !matchPuesto || !matchReq) return r;
     return Object.assign({}, r, { visibleLider: nuevoVis, resumen: nuevoRes, notaInterna: nuevaNota, comentarioReclutador: nuevaComentRec, cvUrl: nuevoCvUrl });
   });
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ results: _allResults }) });
+  _syncResults(_allResults);
   toast('Candidato actualizado · ' + candidato);
   toggleEditCand(cand, puesto);
   filtrarCandidatos();
@@ -5166,8 +5233,7 @@ function eliminarCandidato(el) {
     if (reqId) return String(r.reqId) !== String(reqId);
     return false;
   });
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  _syncResults(_allResults);
   toast('Candidato eliminado');
   filtrarCandidatos();
 }
@@ -5498,8 +5564,7 @@ function sincronizarTodosDuplicados() {
   });
 
   if (reparados > 0) {
-    localStorage.setItem('rresults', JSON.stringify(_allResults));
-    safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+    _syncResults(_allResults);
     toast('✓ ' + reparados + ' candidato' + (reparados>1?'s':'') + ' sincronizado' + (reparados>1?'s':'') + ' con datos del original');
     filtrarCandidatos();
   } else {
@@ -5574,10 +5639,13 @@ function guardarModalCandidato(cand, puesto) {
     return Object.assign({}, r, updates);
   });
 
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})})
-    .then(function(){ toast('Candidato actualizado ✓'); cerrarModalCandidato(); filtrarCandidatos(); })
-    .catch(function(){ toast('Error al guardar'); });
+  // Guardar CV localmente si viene nuevo
+  if (cvBase64) _guardarCvLocal(g('cmDni'), cvBase64, cvFileName);
+  _syncResults(_allResults).then(function(ok){
+    if (!ok) toast('⚠ Error al guardar en servidor. Guardado localmente.');
+    else toast('Candidato actualizado ✓');
+    cerrarModalCandidato(); filtrarCandidatos();
+  });
 }
 
 
@@ -5593,8 +5661,7 @@ function toggleVisibilidad(el) {
     return (matchCand && matchReq) ? Object.assign({},r,{visibleLider:visible}) : r;
   });
   // Guardar
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  _syncResults(_allResults);
   toast((visible?'Candidato visible':'Candidato oculto')+' para el líder');
   // Reordenar filas del grupo sin re-renderizar toda la tabla
   reordenarGrupoCandidatos(puesto);
@@ -5613,8 +5680,7 @@ function toggleAgendado(el) {
     var matchReq = reqId ? String(r.reqId) === String(reqId) : !r.reqId;
     return (matchCand && matchReq) ? Object.assign({},r,{agendado:agendado}) : r;
   });
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  _syncResults(_allResults);
   toast(agendado ? 'Entrevista agendada ✓' : 'Entrevista desagendada');
   reordenarGrupoCandidatos(puesto);
 }
@@ -5705,8 +5771,7 @@ function confirmarCopiarCandidatos() {
   });
 
   if (!copiados) { toast('No se copiaron candidatos (ya existen en el destino)'); return; }
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  _syncResults(_allResults);
 
   // Limpiar checkboxes y cerrar
   document.querySelectorAll('.cand-sel-cb').forEach(function(cb){ cb.checked=false; });
@@ -5741,8 +5806,7 @@ function eliminarSeleccionados() {
       return false;
     });
   });
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  _syncResults(_allResults);
   toast(nombres.length + ' candidato' + (nombres.length>1?'s':'') + ' eliminado' + (nombres.length>1?'s':''));
   var wrap = document.getElementById('btnEliminarSelWrap');
   if (wrap) wrap.style.display = 'none';
@@ -6619,12 +6683,7 @@ async function confirmarImportacion() {
     importados++;
   }
 
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  await safeFetch('/api/jobs?type=results', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({results:_allResults})
-  });
+  await _syncResults(_allResults);
 
   cerrarImportador();
   filtrarCandidatos();
@@ -7506,8 +7565,7 @@ function confirmarCopiarDesdeBanco(candEnc, puestoEnc) {
     fuente: 'banco'
   });
   _allResults.push(copia);
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  _syncResults(_allResults);
   document.getElementById('copiarBancoOverlay').remove();
   filtrarCandidatos();
   toast('✓ Candidato copiado desde banco de talentos a '+destData.puesto);
@@ -7891,8 +7949,7 @@ function elegirCandidato(cand, puesto) {
     }
     return r;
   });
-  localStorage.setItem('rresults', JSON.stringify(_allResults));
-  safeFetch('/api/jobs?type=results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({results:_allResults})});
+  _syncResults(_allResults);
   toast('🏆 ' + cDec + ' seleccionado como candidato elegido');
 }
 
