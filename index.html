@@ -1683,6 +1683,15 @@ var _suEl = document.getElementById('shareUrl'); if (_suEl) _suEl.textContent = 
 poblarSelectPuestosDefault();
 
 async function inicializarApp() {
+  // Limpiar cvBase64 del localStorage rresults si existe (puede haber quedado de versiones anteriores)
+  try {
+    var rawR = localStorage.getItem('rresults');
+    if (rawR && rawR.includes('cvBase64') && rawR.includes('base64,')) {
+      var parsed = JSON.parse(rawR);
+      var cleaned = parsed.map(function(r){ if(!r.cvBase64) return r; var c=Object.assign({},r); delete c.cvBase64; return c; });
+      localStorage.setItem('rresults', JSON.stringify(cleaned));
+    }
+  } catch(e){}
   // Cargar jobs
   var d = await safeFetch('/api/jobs');
   if (d && Array.isArray(d.jobs) && d.jobs.length) {
@@ -2644,11 +2653,22 @@ function renderDetalleProcesoSeleccionado(reqId) {
   if (!r) { panel.innerHTML='<div style="padding:20px;color:var(--muted);">Proceso no encontrado</div>'; return; }
 
   safeFetch('/api/jobs?type=results').then(async function(d){
+    try {
     var results = (d&&d.results)?d.results:JSON.parse(localStorage.getItem('rresults')||'[]');
     // Fusionar CVs — localStorage primero, servidor si no están
     results = await _resultsConCvAsync(results);
     // Sincronizar _allResults para que elegirCandidato tenga datos actualizados
-    if (results.length) { _allResults = results; localStorage.setItem('rresults', JSON.stringify(_allResults)); }
+    if (results.length) {
+      _allResults = results;
+      // NO guardar cvBase64 en rresults — solo en keys separadas cv_DNI
+      try {
+        var resultsSinCvCache = results.map(function(r){
+          if (!r.cvBase64) return r;
+          var c2 = Object.assign({},r); delete c2.cvBase64; return c2;
+        });
+        localStorage.setItem('rresults', JSON.stringify(resultsSinCvCache));
+      } catch(e){ console.warn('localStorage rresults lleno:', e); }
+    }
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
 
     // Candidatos de este proceso — por reqId si existe, sino por puesto
@@ -2861,10 +2881,14 @@ function renderDetalleProcesoSeleccionado(reqId) {
     // Feedback ya integrado en las cards de candidatos
     // (bloque anterior eliminado)
 
+    } catch(innerErr) {
+      console.error('renderDetalleProcesoSeleccionado inner error:', innerErr);
+      throw innerErr; // Re-lanzar para que lo capture el .catch externo
+    }
   }).catch(function(err){
     console.error('renderDetalleProcesoSeleccionado error:', err);
     var p2 = document.getElementById('liderDetallePanel');
-    if (p2) p2.innerHTML='<div style="padding:20px;color:var(--muted);">Error al cargar el proceso. <button onclick="renderDetalleProcesoSeleccionado(\''+reqId+'\')" class="btn btn-secondary btn-sm" style="margin-left:8px;">Reintentar</button></div>';
+    if (p2) p2.innerHTML='<div style="padding:20px;color:var(--muted);">Error al cargar el proceso: <code style="font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px;">'+(err&&err.message?err.message:'desconocido')+'</code><br><br><button onclick="renderDetalleProcesoSeleccionado(\''+reqId+'\')" class="btn btn-secondary btn-sm">Reintentar</button></div>';
   });
 }
 
@@ -4660,11 +4684,14 @@ function _guardarCvLocal(dni, base64, fileName) {
   if (!dni || !base64) return;
   // Guardar en localStorage como caché inmediato
   try { localStorage.setItem('cv_'+dni, JSON.stringify({base64:base64,fileName:fileName||''})); } catch(e){}
-  // Guardar en servidor via type=config con key por DNI
+  // Guardar en servidor via type=config con key por DNI y confirmar
   safeFetch('/api/jobs?type=config', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ key: 'cv_'+dni, value: JSON.stringify({base64:base64,fileName:fileName||''}) })
+  }).then(function(ok){
+    if (ok) toast('📎 CV guardado correctamente ✓');
+    else toast('⚠ CV guardado localmente — sin conexión al servidor');
   });
 }
 
@@ -5398,13 +5425,23 @@ function abrirModalCandidato(el) {
       : null;
     if (!c && puestoM) c = _allResults.find(function(r){ return r.candidato===nombre && r.puesto===puestoM; });
     if (!c) c = _allResults.find(function(r){ return r.candidato===nombre; });
-    if (c) { mostrarModalCandidato(c); return; }
+    if (c) {
+      // Recuperar CV del localStorage si no está en memoria
+      if (!c.cvBase64 && c.dni) {
+        var cvLocal = _cargarCvLocal(c.dni);
+        if (cvLocal && cvLocal.base64) c = Object.assign({}, c, {cvBase64: cvLocal.base64, cvFileName: cvLocal.fileName||c.cvFileName||''});
+      }
+      mostrarModalCandidato(c); return;
+    }
   }
   // Caso 2: botón del panel expandido (tiene data-nombre y data-puesto-modal pero no data-cand)
   if (el.dataset && el.dataset.nombre) {
     var c = _allResults.find(function(r){ return r.candidato===el.dataset.nombre && r.puesto===el.dataset.puestoModal; });
     if (!c) c = _allResults.find(function(r){ return r.candidato===el.dataset.nombre; });
-    if (c) { mostrarModalCandidato(c); return; }
+    if (c) {
+      if (!c.cvBase64 && c.dni) { var cvL = _cargarCvLocal(c.dni); if (cvL && cvL.base64) c = Object.assign({},c,{cvBase64:cvL.base64,cvFileName:cvL.fileName||''}); }
+      mostrarModalCandidato(c); return;
+    }
   }
   // Caso 3: fallback — extraer nombre del innerText (menos preciso)
   var container = el.closest ? el.closest('[id^="cands_"]') : null;
@@ -5416,6 +5453,8 @@ function abrirModalCandidato(el) {
     : null;
   if (!c) c = _allResults.find(function(r){ return r.candidato===nombre; });
   if (!c) { toast('No se encontró el perfil'); return; }
+  // Recuperar CV del localStorage si no está en memoria
+  if (!c.cvBase64 && c.dni) { var cvF = _cargarCvLocal(c.dni); if (cvF && cvF.base64) c = Object.assign({},c,{cvBase64:cvF.base64,cvFileName:cvF.fileName||''}); }
   mostrarModalCandidato(c);
 }
 
