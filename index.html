@@ -5426,10 +5426,20 @@ function abrirModalCandidato(el) {
     if (!c && puestoM) c = _allResults.find(function(r){ return r.candidato===nombre && r.puesto===puestoM; });
     if (!c) c = _allResults.find(function(r){ return r.candidato===nombre; });
     if (c) {
-      // Recuperar CV del localStorage si no está en memoria
+      // Recuperar CV del localStorage si no está en memoria, luego del servidor
       if (!c.cvBase64 && c.dni) {
         var cvLocal = _cargarCvLocal(c.dni);
-        if (cvLocal && cvLocal.base64) c = Object.assign({}, c, {cvBase64: cvLocal.base64, cvFileName: cvLocal.fileName||c.cvFileName||''});
+        if (cvLocal && cvLocal.base64) {
+          c = Object.assign({}, c, {cvBase64: cvLocal.base64, cvFileName: cvLocal.fileName||c.cvFileName||''});
+          mostrarModalCandidato(c); return;
+        }
+        // No en localStorage — buscar en servidor async
+        var _cCopy = c;
+        _cargarCvServidor(c.dni).then(function(cvSrv) {
+          if (cvSrv && cvSrv.base64) _cCopy = Object.assign({}, _cCopy, {cvBase64: cvSrv.base64, cvFileName: cvSrv.fileName||_cCopy.cvFileName||''});
+          mostrarModalCandidato(_cCopy);
+        });
+        return;
       }
       mostrarModalCandidato(c); return;
     }
@@ -5718,7 +5728,7 @@ function guardarModalCandidato(cand, puesto) {
     var matchPuesto = r.puesto && puestoD && r.puesto.toLowerCase().trim() === puestoD.toLowerCase().trim();
     var matchReq = reqIdModal
       ? (String(r.reqId) === String(reqIdModal))
-      : !r.reqId; // si no hay reqId en el modal, solo actualizar registros sin reqId
+      : true; // sin reqId en el modal, actualizar cualquier match de candidato+puesto
     if (!matchCand || !matchPuesto || !matchReq) return r;
     var updates = {
       dni:g('cmDni'), celular:g('cmCelular'), correo:g('cmCorreo'),
