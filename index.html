@@ -2861,6 +2861,10 @@ function renderDetalleProcesoSeleccionado(reqId) {
     // Feedback ya integrado en las cards de candidatos
     // (bloque anterior eliminado)
 
+  }).catch(function(err){
+    console.error('renderDetalleProcesoSeleccionado error:', err);
+    var p2 = document.getElementById('liderDetallePanel');
+    if (p2) p2.innerHTML='<div style="padding:20px;color:var(--muted);">Error al cargar el proceso. <button onclick="renderDetalleProcesoSeleccionado(\''+reqId+'\')" class="btn btn-secondary btn-sm" style="margin-left:8px;">Reintentar</button></div>';
   });
 }
 
@@ -4711,16 +4715,28 @@ function _resultsConCv(arr) {
 
 // Versión async que también consulta el servidor si no hay CV en localStorage
 async function _resultsConCvAsync(arr) {
-  var resultado = arr.slice();
-  for (var i = 0; i < resultado.length; i++) {
-    var r = resultado[i];
-    if (!r.cvBase64 && r.dni) {
-      var cv = _cargarCvLocal(r.dni);
-      if (!cv) cv = await _cargarCvServidor(r.dni);
-      if (cv && cv.base64) resultado[i] = Object.assign({}, r, {cvBase64: cv.base64, cvFileName: cv.fileName||r.cvFileName||''});
+  // Cargar config del servidor UNA SOLA VEZ para obtener todos los CVs
+  var configServidor = null;
+  try {
+    var d = await safeFetch('/api/jobs?type=config');
+    if (d && d.config) configServidor = d.config;
+  } catch(e){}
+
+  return arr.map(function(r) {
+    if (r.cvBase64 || !r.dni) return r;
+    // 1. Buscar en localStorage (caché local)
+    var cv = _cargarCvLocal(r.dni);
+    // 2. Si no está en local, buscar en config del servidor
+    if (!cv && configServidor && configServidor['cv_'+r.dni]) {
+      try {
+        cv = JSON.parse(configServidor['cv_'+r.dni]);
+        // Cachear localmente para próxima vez
+        try { localStorage.setItem('cv_'+r.dni, configServidor['cv_'+r.dni]); } catch(e){}
+      } catch(e){}
     }
-  }
-  return resultado;
+    if (cv && cv.base64) return Object.assign({}, r, {cvBase64: cv.base64, cvFileName: cv.fileName||r.cvFileName||''});
+    return r;
+  });
 }
 
 async function _syncResults(results) {
