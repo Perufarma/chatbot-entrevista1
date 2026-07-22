@@ -1683,6 +1683,15 @@ var _suEl = document.getElementById('shareUrl'); if (_suEl) _suEl.textContent = 
 poblarSelectPuestosDefault();
 
 async function inicializarApp() {
+  // Limpiar cvBase64 del localStorage rresults si existe (puede haber quedado de versiones anteriores)
+  try {
+    var rawR = localStorage.getItem('rresults');
+    if (rawR && rawR.includes('cvBase64') && rawR.includes('base64,')) {
+      var parsed = JSON.parse(rawR);
+      var cleaned = parsed.map(function(r){ if(!r.cvBase64) return r; var c=Object.assign({},r); delete c.cvBase64; return c; });
+      localStorage.setItem('rresults', JSON.stringify(cleaned));
+    }
+  } catch(e){}
   // Cargar jobs
   var d = await safeFetch('/api/jobs');
   if (d && Array.isArray(d.jobs) && d.jobs.length) {
@@ -2649,7 +2658,17 @@ function renderDetalleProcesoSeleccionado(reqId) {
     // Fusionar CVs — localStorage primero, servidor si no están
     results = await _resultsConCvAsync(results);
     // Sincronizar _allResults para que elegirCandidato tenga datos actualizados
-    if (results.length) { _allResults = results; localStorage.setItem('rresults', JSON.stringify(_allResults)); }
+    if (results.length) {
+      _allResults = results;
+      // NO guardar cvBase64 en rresults — solo en keys separadas cv_DNI
+      try {
+        var resultsSinCvCache = results.map(function(r){
+          if (!r.cvBase64) return r;
+          var c2 = Object.assign({},r); delete c2.cvBase64; return c2;
+        });
+        localStorage.setItem('rresults', JSON.stringify(resultsSinCvCache));
+      } catch(e){ console.warn('localStorage rresults lleno:', e); }
+    }
     var fbs = feedbacks.length ? feedbacks : JSON.parse(localStorage.getItem('rfeedbacks')||'[]');
 
     // Candidatos de este proceso — por reqId si existe, sino por puesto
